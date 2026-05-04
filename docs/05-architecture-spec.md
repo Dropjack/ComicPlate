@@ -1,6 +1,6 @@
 # Architecture Spec
 
-本文是 ComicPlate 的架构草案。它必须服务最小闭环，不允许为了未来高级功能过度抽象。
+本文是 ComicPlate 的架构草案。它必须服务最小闭环，不允许为了未来高级功能过度抽象。ComicPlate 读取用户漫画内容，但不修改用户漫画内容。
 
 ## 1. 技术栈
 
@@ -96,6 +96,7 @@ MVP 策略：
 - 下一页/上一页/跳转。
 - 单页/双页模式。
 - 阅读方向。
+- 当前目录侧栏选择。
 
 规则：
 
@@ -110,6 +111,13 @@ MVP 策略：
 - 保存配置。
 - 保存最近打开。
 - 保存阅读进度。
+- 只写 ComicPlate 自己的数据文件。
+
+禁止：
+
+- 修改用户图片。
+- 修改用户压缩包。
+- 移动、删除、重命名用户文件。
 
 文件：
 
@@ -148,6 +156,8 @@ MVP 策略：
       "sourceKind": "Folder",
       "lastPageIndex": 41,
       "lastKnownPageCount": 180,
+      "readingDirection": "RightToLeft",
+      "viewMode": "DoublePage",
       "lastOpenedAt": "2026-04-25T10:30:00Z"
     }
   ]
@@ -197,7 +207,7 @@ MVP 不做复杂日志系统，但错误对象要带 message 和 exception。
 - 可编辑命令系统。
 - 复杂主题系统。
 - 多窗口协调器。
-- 面板停靠系统。
+- 拖拽组合/复杂面板停靠系统。
 - 数据库。
 
 如果未来确实需要，再从真实需求抽象。
@@ -212,5 +222,37 @@ MVP 不做复杂日志系统，但错误对象要带 message 和 exception。
 4. 显示第一张。
 5. 左右键翻页。
 
-这条线跑通前，不做设置、不做 ZIP、不做双页、不做视觉抛光。
+这条线跑通前，不做设置、不做 ZIP、不做视觉抛光。
 
+这条线跑通后，第一批立即补齐：
+
+1. 双页模式。
+2. 阅读方向。
+3. 基础目录侧栏。
+4. 阅读进度保存。
+
+## 9. Action 和右键菜单
+
+ComicPlate 不做 NeeView 式复杂命令系统，但需要一组简单固定 Action。
+
+示例：
+
+- `OpenFolder`
+- `OpenArchive`
+- `NextPage`
+- `PreviousPage`
+- `GoToPage`
+- `ToggleDoublePage`
+- `SetReadingDirection`
+- `FitToWindow`
+- `RevealInFileManager`
+- `CopyPath`
+- `RemoveFromRecent`
+
+规则：
+
+- 快捷键、工具栏按钮、右键菜单都可以调用这些 Action。
+- Action 不支持脚本扩展。
+- Action 不支持用户复制或参数化命令。
+- 右键菜单按区域固定定义。
+- 所有 Action 必须遵守只读原则。
