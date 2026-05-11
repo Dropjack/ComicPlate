@@ -29,7 +29,7 @@
                 Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource BorderBrushSoft}"
                 BorderThickness="0,0,0,1">
-            <Grid ColumnDefinitions="Auto,Auto,*,Auto"
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto"
                   Margin="10,0"
                   ColumnSpacing="8"
                   VerticalAlignment="Center">
@@ -43,14 +43,20 @@
                         Content="Open Folder"
                         Padding="12,5"
                         CornerRadius="4" />
-                <TextBlock Grid.Column="2"
+                <Button Grid.Column="2"
+                        Command="{Binding ToggleNavigationPaneCommand}"
+                        Content="{Binding NavigationPaneToggleText}"
+                        Padding="12,5"
+                        CornerRadius="4"
+                        IsVisible="{Binding IsReaderVisible}" />
+                <TextBlock Grid.Column="3"
                            Text="{Binding HeaderTitle}"
                            Foreground="{StaticResource TextBrush}"
                            FontSize="15"
                            VerticalAlignment="Center"
                            TextTrimming="CharacterEllipsis" />
-                <TextBlock Grid.Column="3"
-                           Text="Fit"
+                <TextBlock Grid.Column="4"
+                           Text="AutoFit"
                            Foreground="{StaticResource MutedTextBrush}"
                            VerticalAlignment="Center" />
             </Grid>
@@ -106,90 +112,65 @@
         <Grid Grid.Row="1"
               IsVisible="{Binding IsReaderVisible}"
               RowDefinitions="*,34,34"
-              ColumnDefinitions="230,260,*">
+              ColumnDefinitions="Auto,*">
             <Border Grid.Row="0"
                     Grid.Column="0"
+                    Width="300"
+                    IsVisible="{Binding IsNavigationPaneVisible}"
                     Background="{StaticResource PanelBrush}"
                     BorderBrush="{StaticResource BorderBrushSoft}"
                     BorderThickness="0,0,1,0">
-                <Grid RowDefinitions="34,*">
-                    <Border Grid.Row="0"
-                            Background="{StaticResource SubtlePanelBrush}"
-                            BorderBrush="{StaticResource BorderBrushSoft}"
-                            BorderThickness="0,0,0,1">
-                        <TextBlock Text="Bookshelf"
-                                   Margin="12,0"
-                                   VerticalAlignment="Center"
-                                   Foreground="{StaticResource TextBrush}"
-                                   FontWeight="SemiBold" />
-                    </Border>
-                    <ListBox Grid.Row="1"
-                             ItemsSource="{Binding BookItems}"
-                             SelectedIndex="{Binding CurrentBookIndex, Mode=TwoWay}"
-                             Background="{StaticResource PanelBrush}"
-                             BorderThickness="0">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid RowDefinitions="Auto,Auto"
-                                      Margin="4,5">
-                                    <TextBlock Text="{Binding DisplayName}"
-                                               Foreground="{StaticResource TextBrush}"
-                                               FontWeight="SemiBold"
-                                               TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Grid.Row="1"
-                                               Text="{Binding SourceLabel}"
-                                               Foreground="{StaticResource MutedTextBrush}"
-                                               FontSize="12" />
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </Grid>
+                <TabControl>
+                    <TabItem Header="Bookshelf">
+                        <ListBox ItemsSource="{Binding BookItems}"
+                                 SelectedIndex="{Binding CurrentBookIndex, Mode=TwoWay}"
+                                 Background="{StaticResource PanelBrush}"
+                                 BorderThickness="0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid RowDefinitions="Auto,Auto"
+                                          Margin="4,5">
+                                        <TextBlock Text="{Binding DisplayName}"
+                                                   Foreground="{StaticResource TextBrush}"
+                                                   FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Row="1"
+                                                   Text="{Binding SourceLabel}"
+                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                   FontSize="12" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </TabItem>
+                    <TabItem Header="Pages">
+                        <ListBox ItemsSource="{Binding PageItems}"
+                                 SelectedIndex="{Binding CurrentPageIndex, Mode=TwoWay}"
+                                 Background="{StaticResource PanelBrush}"
+                                 BorderThickness="0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="42,*"
+                                          Margin="4,2">
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding DisplayIndex}"
+                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                   HorizontalAlignment="Right"
+                                                   Margin="0,0,8,0" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding FileName}"
+                                                   Foreground="{StaticResource TextBrush}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </TabItem>
+                </TabControl>
             </Border>
 
             <Border Grid.Row="0"
                     Grid.Column="1"
-                    Background="{StaticResource PanelBrush}"
-                    BorderBrush="{StaticResource BorderBrushSoft}"
-                    BorderThickness="0,0,1,0">
-                <Grid RowDefinitions="34,*">
-                    <Border Grid.Row="0"
-                            Background="{StaticResource SubtlePanelBrush}"
-                            BorderBrush="{StaticResource BorderBrushSoft}"
-                            BorderThickness="0,0,0,1">
-                        <TextBlock Text="Pages"
-                                   Margin="12,0"
-                                   VerticalAlignment="Center"
-                                   Foreground="{StaticResource TextBrush}"
-                                   FontWeight="SemiBold" />
-                    </Border>
-                    <ListBox Grid.Row="1"
-                             ItemsSource="{Binding PageItems}"
-                             SelectedIndex="{Binding CurrentPageIndex, Mode=TwoWay}"
-                             Background="{StaticResource PanelBrush}"
-                             BorderThickness="0">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid ColumnDefinitions="42,*"
-                                      Margin="4,2">
-                                    <TextBlock Grid.Column="0"
-                                               Text="{Binding DisplayIndex}"
-                                               Foreground="{StaticResource MutedTextBrush}"
-                                               HorizontalAlignment="Right"
-                                               Margin="0,0,8,0" />
-                                    <TextBlock Grid.Column="1"
-                                               Text="{Binding FileName}"
-                                               Foreground="{StaticResource TextBrush}"
-                                               TextTrimming="CharacterEllipsis" />
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </Grid>
-            </Border>
-
-            <Border Grid.Row="0"
-                    Grid.Column="2"
                     Background="#EDEDED"
                     ClipToBounds="True"
                     SizeChanged="OnReaderViewportSizeChanged">
@@ -197,7 +178,7 @@
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Disabled">
                         <ItemsControl ItemsSource="{Binding ReaderStripItems}"
-                                      HorizontalAlignment="Center"
+                                      HorizontalAlignment="{Binding ReaderStripHorizontalAlignment}"
                                       VerticalAlignment="Stretch">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -262,7 +243,7 @@
 
             <Border Grid.Row="1"
                     Grid.Column="0"
-                    Grid.ColumnSpan="3"
+                    Grid.ColumnSpan="2"
                     Background="{StaticResource PanelBrush}"
                     BorderBrush="{StaticResource BorderBrushSoft}"
                     BorderThickness="0,1,0,0">
@@ -270,16 +251,16 @@
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Spacing="8">
-                    <Button Command="{Binding PreviousPageCommand}"
-                            Content="Previous"
+                    <Button Command="{Binding VisualLeftCommand}"
+                            Content="Left"
                             Padding="12,3"
                             CornerRadius="4" />
                     <Button Content="{Binding PageText}"
                             IsEnabled="False"
                             Padding="14,3"
                             CornerRadius="4" />
-                    <Button Command="{Binding NextPageCommand}"
-                            Content="Next"
+                    <Button Command="{Binding VisualRightCommand}"
+                            Content="Right"
                             Padding="12,3"
                             CornerRadius="4" />
                 </StackPanel>
@@ -287,7 +268,7 @@
 
             <Border Grid.Row="2"
                     Grid.Column="0"
-                    Grid.ColumnSpan="3"
+                    Grid.ColumnSpan="2"
                     Background="{StaticResource PanelBrush}"
                     BorderBrush="{StaticResource BorderBrushSoft}"
                     BorderThickness="0,1,0,0">
@@ -301,8 +282,8 @@
                     <ProgressBar Grid.Column="1"
                                  Margin="14,0"
                                  Minimum="0"
-                                 Maximum="{Binding PageCount}"
-                                 Value="{Binding CurrentPageNumber}"
+                                 Maximum="{Binding LastPageProgressIndex}"
+                                 Value="{Binding CurrentPageProgressIndex}"
                                  Height="4"
                                  VerticalAlignment="Center" />
                     <TextBlock Grid.Column="2"

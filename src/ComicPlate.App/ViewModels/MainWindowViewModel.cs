@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using Avalonia.Layout;
 using Avalonia.Media.Imaging;
 using ComicPlate.App.Services;
 using ComicPlate.Core.Books;
@@ -21,6 +22,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private int _currentBookIndex = -1;
     private int _currentPageIndex;
     private string _headerTitle = "ComicPlate";
+    private bool _isNavigationPaneVisible = true;
     private bool _isReaderVisible;
     private bool _isStartVisible = true;
     private bool _isLoading;
@@ -36,6 +38,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         OpenFolderCommand = new AsyncRelayCommand(OpenFolderAsync, () => !IsLoading);
         ShowStartCommand = new RelayCommand(ShowStart);
+        ToggleNavigationPaneCommand = new RelayCommand(ToggleNavigationPane);
         NextPageCommand = new RelayCommand(NextPage, () => _readerState.CanGoNext);
         PreviousPageCommand = new RelayCommand(PreviousPage, () => _readerState.CanGoPrevious);
         VisualLeftCommand = new RelayCommand(VisualLeft, () => _readerState.HasPages);
@@ -53,6 +56,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ICommand OpenFolderCommand { get; }
 
     public ICommand ShowStartCommand { get; }
+
+    public ICommand ToggleNavigationPaneCommand { get; }
 
     public RelayCommand NextPageCommand { get; }
 
@@ -114,6 +119,20 @@ public sealed class MainWindowViewModel : ViewModelBase
         private set => SetProperty(ref _isReaderVisible, value);
     }
 
+    public bool IsNavigationPaneVisible
+    {
+        get => _isNavigationPaneVisible;
+        private set
+        {
+            if (SetProperty(ref _isNavigationPaneVisible, value))
+            {
+                OnPropertyChanged(nameof(NavigationPaneToggleText));
+            }
+        }
+    }
+
+    public string NavigationPaneToggleText => IsNavigationPaneVisible ? "Hide Panels" : "Show Panels";
+
     public bool IsLoading
     {
         get => _isLoading;
@@ -143,6 +162,23 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public int CurrentPageNumber => _readerState.HasPages ? _readerState.CurrentPageIndex + 1 : 0;
 
+    public int CurrentPageProgressIndex
+    {
+        get
+        {
+            if (!_readerState.HasPages)
+            {
+                return 0;
+            }
+
+            return _readerState.ReadingDirection == ReadingDirection.RightToLeft
+                ? LastPageProgressIndex - _readerState.CurrentPageIndex
+                : _readerState.CurrentPageIndex;
+        }
+    }
+
+    public int LastPageProgressIndex => _readerState.HasPages ? Math.Max(_readerState.PageCount - 1, 0) : 0;
+
     public int PageCount => _readerState.PageCount;
 
     public string PageText
@@ -156,6 +192,10 @@ public sealed class MainWindowViewModel : ViewModelBase
         get => _currentLogicalPath;
         private set => SetProperty(ref _currentLogicalPath, value);
     }
+
+    public HorizontalAlignment ReaderStripHorizontalAlignment => _readerState.ReadingDirection == ReadingDirection.RightToLeft
+        ? HorizontalAlignment.Right
+        : HorizontalAlignment.Left;
 
     public void SetReaderViewportSize(double width, double height)
     {
@@ -422,6 +462,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         IsReaderVisible = true;
     }
 
+    private void ToggleNavigationPane()
+    {
+        IsNavigationPaneVisible = !IsNavigationPaneVisible;
+    }
+
     private void SetMessage(string message)
     {
         StatusMessage = message;
@@ -430,6 +475,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     private void UpdatePageStatus()
     {
         OnPropertyChanged(nameof(CurrentPageNumber));
+        OnPropertyChanged(nameof(CurrentPageProgressIndex));
+        OnPropertyChanged(nameof(LastPageProgressIndex));
         OnPropertyChanged(nameof(PageCount));
 
         PageText = _readerState.HasPages
