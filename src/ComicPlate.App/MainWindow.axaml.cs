@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using ComicPlate.App.Services;
 using ComicPlate.App.ViewModels;
 
@@ -61,5 +62,10 @@ public partial class MainWindow : Window
             _viewModel.OpenFolderCommand.Execute(null);
             e.Handled = true;
         }
+    }
+
+    private void OnReaderViewportSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        _viewModel.SetReaderViewportSize(e.NewSize.Width, e.NewSize.Height);
     }
 }

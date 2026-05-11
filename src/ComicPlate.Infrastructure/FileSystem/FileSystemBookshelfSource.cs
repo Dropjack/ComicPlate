@@ -20,6 +20,7 @@ public sealed class FileSystemBookshelfSource : IBookshelfSource
 
         var books = EnumerateBookEntries(cancellationToken)
             .OrderBy(book => book.DisplayName, NaturalPathComparer.Instance)
+            .ThenBy(book => book.Path, NaturalPathComparer.Instance)
             .ToArray();
 
         return Task.FromResult(new Bookshelf(_rootPath, books));
@@ -27,17 +28,32 @@ public sealed class FileSystemBookshelfSource : IBookshelfSource
 
     private IEnumerable<BookEntry> EnumerateBookEntries(CancellationToken cancellationToken)
     {
-        foreach (var directory in EnumerateDirectories(cancellationToken))
+        foreach (var book in EnumerateBookEntriesInDirectory(_rootPath, allowCurrentDirectoryAsBook: false, cancellationToken))
         {
-            var fullPath = Path.GetFullPath(directory);
+            yield return book;
+        }
+    }
+
+    private static IEnumerable<BookEntry> EnumerateBookEntriesInDirectory(
+        string directory,
+        bool allowCurrentDirectoryAsBook,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var fullDirectoryPath = Path.GetFullPath(directory);
+
+        if (allowCurrentDirectoryAsBook && ContainsDirectPageFiles(fullDirectoryPath, cancellationToken))
+        {
             yield return new BookEntry(
-                fullPath,
-                Path.GetFileName(fullPath),
+                fullDirectoryPath,
+                Path.GetFileName(fullDirectoryPath),
                 BookSourceKind.Folder,
-                fullPath);
+                fullDirectoryPath);
+            yield break;
         }
 
-        foreach (var archive in EnumerateArchiveFiles(cancellationToken))
+        foreach (var archive in EnumerateArchiveFiles(fullDirectoryPath, cancellationToken))
         {
             var fullPath = Path.GetFullPath(archive);
             yield return new BookEntry(
@@ -46,49 +62,58 @@ public sealed class FileSystemBookshelfSource : IBookshelfSource
                 BookSourceKind.Zip,
                 fullPath);
         }
-    }
 
-    private IEnumerable<string> EnumerateDirectories(CancellationToken cancellationToken)
-    {
-        IEnumerable<string> directories;
-
-        try
+        foreach (var childDirectory in EnumerateDirectories(fullDirectoryPath, cancellationToken))
         {
-            directories = Directory.EnumerateDirectories(_rootPath);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            yield break;
-        }
-
-        foreach (var directory in directories)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            yield return directory;
-        }
-    }
-
-    private IEnumerable<string> EnumerateArchiveFiles(CancellationToken cancellationToken)
-    {
-        IEnumerable<string> files;
-
-        try
-        {
-            files = Directory.EnumerateFiles(_rootPath);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            yield break;
-        }
-
-        foreach (var file in files)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (IsSupportedArchivePath(file))
+            foreach (var book in EnumerateBookEntriesInDirectory(childDirectory, allowCurrentDirectoryAsBook: true, cancellationToken))
             {
-                yield return file;
+                yield return book;
             }
+        }
+    }
+
+    private static IEnumerable<string> EnumerateDirectories(string directory, CancellationToken cancellationToken)
+    {
+        return EnumerateSafe(directory, Directory.EnumerateDirectories, cancellationToken);
+    }
+
+    private static IEnumerable<string> EnumerateArchiveFiles(string directory, CancellationToken cancellationToken)
+    {
+        return EnumerateFiles(directory, cancellationToken)
+            .Where(IsSupportedArchivePath);
+    }
+
+    private static bool ContainsDirectPageFiles(string directory, CancellationToken cancellationToken)
+    {
+        return EnumerateFiles(directory, cancellationToken)
+            .Any(file => SupportedPageFormats.IsSupportedExtension(Path.GetExtension(file)));
+    }
+
+    private static IEnumerable<string> EnumerateFiles(string directory, CancellationToken cancellationToken)
+    {
+        return EnumerateSafe(directory, Directory.EnumerateFiles, cancellationToken);
+    }
+
+    private static IEnumerable<string> EnumerateSafe(
+        string directory,
+        Func<string, IEnumerable<string>> enumerate,
+        CancellationToken cancellationToken)
+    {
+        IEnumerable<string> items;
+
+        try
+        {
+            items = enumerate(directory);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            yield break;
+        }
+
+        foreach (var item in items)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return item;
         }
     }
 

@@ -11,8 +11,8 @@ public sealed record AppSettings(
 {
     public static AppSettings Default { get; } = new(
         Version: 1,
-        ReadingDirection: ReadingDirection.LeftToRight,
-        DefaultFitMode: "Fit",
+        ReadingDirection: ReadingDirection.RightToLeft,
+        DefaultFitMode: "AutoFit",
         RecentLimit: 20,
         RestoreProgress: true);
 }

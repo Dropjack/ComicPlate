@@ -13,8 +13,9 @@
 7. [06 Todo List](06-todo-list.md)
 8. [07 To Learn List](07-to-learn-list.md)
 9. [08 Dev Environment](08-dev-environment.md)
-10. [Guideline](Guideline.md)
-11. [logs](logs)
+10. [09 MVP Knowledge Handbook](09-mvp-knowledge-handbook.md)
+11. [Guideline](Guideline.md)
+12. [logs](logs)
 
 当前原则：
 

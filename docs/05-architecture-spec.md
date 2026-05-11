@@ -144,6 +144,16 @@ MVP 策略：
 - ReaderStrip 不直接解码图片。
 - ReaderStrip 的窗口大小可以配置，但必须有上限，避免内存失控。
 
+### PageDisplaySizeCalculator
+
+责任：
+
+- 根据图片原始尺寸、阅读区可用尺寸和 FitMode 计算显示尺寸。
+- 默认 FitMode 为 AutoFit。
+- AutoFit 下，普通竖页按阅读区高度适配，横向大图按完整窗口适配。
+- 不负责图片解码，不负责 UI 控件。
+- 可单元测试，避免缩放规则散落在 XAML 或 ViewModel 中。
+
 ### ReaderState
 
 责任：
@@ -198,7 +208,7 @@ MVP 策略：
 {
   "version": 1,
   "readingDirection": "RightToLeft",
-  "defaultFitMode": "Fit",
+  "defaultFitMode": "AutoFit",
   "recentLimit": 20,
   "restoreProgress": true,
   "bookshelf": {

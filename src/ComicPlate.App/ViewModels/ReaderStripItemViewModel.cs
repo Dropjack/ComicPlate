@@ -5,8 +5,16 @@ namespace ComicPlate.App.ViewModels;
 
 public sealed class ReaderStripItemViewModel : ViewModelBase
 {
+    private const double HorizontalPadding = 24;
+    private const double VerticalPadding = 24;
+    private const double MinimumDisplaySize = 160;
+
+    private double _displayHeight = 320;
+    private double _displayWidth = 240;
     private Bitmap? _image;
     private string _statusMessage = "";
+    private double _viewportHeight = 600;
+    private double _viewportWidth = 800;
 
     public ReaderStripItemViewModel(ReaderStripSlot slot)
     {
@@ -21,9 +29,19 @@ public sealed class ReaderStripItemViewModel : ViewModelBase
 
     public bool IsCurrent => Slot.IsCurrent;
 
-    public double SlotWidth => IsCurrent ? 560 : 420;
+    public double DisplayWidth
+    {
+        get => _displayWidth;
+        private set => SetProperty(ref _displayWidth, value);
+    }
 
-    public double SlotOpacity => IsCurrent ? 1.0 : 0.72;
+    public double DisplayHeight
+    {
+        get => _displayHeight;
+        private set => SetProperty(ref _displayHeight, value);
+    }
+
+    public double SlotOpacity => IsCurrent ? 1.0 : 0.92;
 
     public Bitmap? Image
     {
@@ -34,6 +52,7 @@ public sealed class ReaderStripItemViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(HasImage));
                 OnPropertyChanged(nameof(HasMessage));
+                RecalculateDisplaySize();
             }
         }
     }
@@ -53,4 +72,39 @@ public sealed class ReaderStripItemViewModel : ViewModelBase
     }
 
     public bool HasMessage => !HasImage && !string.IsNullOrWhiteSpace(StatusMessage);
+
+    public void SetViewportSize(double width, double height)
+    {
+        if (width <= 0 || height <= 0)
+        {
+            return;
+        }
+
+        _viewportWidth = width;
+        _viewportHeight = height;
+        RecalculateDisplaySize();
+    }
+
+    private void RecalculateDisplaySize()
+    {
+        var availableWidth = Math.Max(MinimumDisplaySize, _viewportWidth - HorizontalPadding);
+        var availableHeight = Math.Max(MinimumDisplaySize, _viewportHeight - VerticalPadding);
+
+        if (Image is null)
+        {
+            DisplayWidth = Math.Min(availableWidth, 320);
+            DisplayHeight = Math.Min(availableHeight, 420);
+            return;
+        }
+
+        var size = PageDisplaySizeCalculator.Calculate(
+            Image.PixelSize.Width,
+            Image.PixelSize.Height,
+            availableWidth,
+            availableHeight,
+            FitMode.AutoFit);
+
+        DisplayWidth = size.Width;
+        DisplayHeight = size.Height;
+    }
 }

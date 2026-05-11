@@ -25,6 +25,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     private bool _isStartVisible = true;
     private bool _isLoading;
     private string _pageText = "";
+    private double _readerViewportHeight = 600;
+    private double _readerViewportWidth = 800;
     private string _statusMessage = "No recent books yet.";
 
     public MainWindowViewModel(IFolderPickerService folderPickerService, ImagePageLoader imagePageLoader)
@@ -153,6 +155,22 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         get => _currentLogicalPath;
         private set => SetProperty(ref _currentLogicalPath, value);
+    }
+
+    public void SetReaderViewportSize(double width, double height)
+    {
+        if (width <= 0 || height <= 0)
+        {
+            return;
+        }
+
+        _readerViewportWidth = width;
+        _readerViewportHeight = height;
+
+        foreach (var item in ReaderStripItems)
+        {
+            item.SetViewportSize(width, height);
+        }
     }
 
     private async Task OpenFolderAsync()
@@ -290,6 +308,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         foreach (var slot in slots)
         {
             var item = new ReaderStripItemViewModel(slot);
+            item.SetViewportSize(_readerViewportWidth, _readerViewportHeight);
 
             try
             {
