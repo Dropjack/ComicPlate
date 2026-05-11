@@ -1,0 +1,206 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        d:DesignWidth="1200"
+        d:DesignHeight="800"
+        x:Class="ComicPlate.App.MainWindow"
+        Title="ComicPlate"
+        Width="1200"
+        Height="800"
+        MinWidth="900"
+        MinHeight="620"
+        Background="#F4F4F4"
+        KeyDown="OnKeyDown">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="PanelBrush" Color="#FAFAFA" />
+        <SolidColorBrush x:Key="SubtlePanelBrush" Color="#F0F0F0" />
+        <SolidColorBrush x:Key="BorderBrushSoft" Color="#D8D8D8" />
+        <SolidColorBrush x:Key="TextBrush" Color="#1F1F1F" />
+        <SolidColorBrush x:Key="MutedTextBrush" Color="#666666" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#0078D4" />
+    </Window.Resources>
+
+    <Grid RowDefinitions="44,*"
+          Background="#F4F4F4">
+        <Border Grid.Row="0"
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource BorderBrushSoft}"
+                BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto"
+                  Margin="10,0"
+                  ColumnSpacing="8"
+                  VerticalAlignment="Center">
+                <Button Grid.Column="0"
+                        Command="{Binding ShowStartCommand}"
+                        Content="Home"
+                        Padding="12,5"
+                        CornerRadius="4" />
+                <Button Grid.Column="1"
+                        Command="{Binding OpenFolderCommand}"
+                        Content="Open Folder"
+                        Padding="12,5"
+                        CornerRadius="4" />
+                <TextBlock Grid.Column="2"
+                           Text="{Binding HeaderTitle}"
+                           Foreground="{StaticResource TextBrush}"
+                           FontSize="15"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="3"
+                           Text="Fit"
+                           Foreground="{StaticResource MutedTextBrush}"
+                           VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1"
+              IsVisible="{Binding IsStartVisible}"
+              ColumnDefinitions="260,*">
+            <Border Grid.Column="0"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="{StaticResource BorderBrushSoft}"
+                    BorderThickness="0,0,1,0">
+                <StackPanel Margin="14"
+                            Spacing="18">
+                    <TextBlock Text="ComicPlate"
+                               FontSize="24"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextBrush}" />
+                    <StackPanel Spacing="8">
+                        <Button Command="{Binding OpenFolderCommand}"
+                                Content="Open Folder"
+                                HorizontalAlignment="Stretch"
+                                Padding="12,8"
+                                CornerRadius="4" />
+                        <TextBlock Text="Subfolders are included by default."
+                                   Foreground="{StaticResource MutedTextBrush}"
+                                   FontSize="12" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Column="1"
+                  RowDefinitions="Auto,*"
+                  Margin="24">
+                <TextBlock Text="Recent"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextBrush}" />
+                <Border Grid.Row="1"
+                        Margin="0,12,0,0"
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                    <TextBlock Text="No recent books yet."
+                               Foreground="{StaticResource MutedTextBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Border>
+            </Grid>
+        </Grid>
+
+        <Grid Grid.Row="1"
+              IsVisible="{Binding IsReaderVisible}"
+              RowDefinitions="*,34"
+              ColumnDefinitions="260,*">
+            <Border Grid.Row="0"
+                    Grid.Column="0"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="{StaticResource BorderBrushSoft}"
+                    BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="34,*">
+                    <Border Grid.Row="0"
+                            Background="{StaticResource SubtlePanelBrush}"
+                            BorderBrush="{StaticResource BorderBrushSoft}"
+                            BorderThickness="0,0,0,1">
+                        <TextBlock Text="Pages"
+                                   Margin="12,0"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextBrush}"
+                                   FontWeight="SemiBold" />
+                    </Border>
+                    <ListBox Grid.Row="1"
+                             ItemsSource="{Binding PageItems}"
+                             SelectedIndex="{Binding CurrentPageIndex, Mode=TwoWay}"
+                             Background="{StaticResource PanelBrush}"
+                             BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="42,*"
+                                      Margin="4,2">
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding DisplayIndex}"
+                                               Foreground="{StaticResource MutedTextBrush}"
+                                               HorizontalAlignment="Right"
+                                               Margin="0,0,8,0" />
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding FileName}"
+                                               Foreground="{StaticResource TextBrush}"
+                                               TextTrimming="CharacterEllipsis" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="0"
+                    Grid.Column="1"
+                    Background="#EDEDED">
+                <Grid>
+                    <Image Source="{Binding CurrentImage}"
+                           Stretch="Uniform"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           IsVisible="{Binding HasImage}" />
+                    <Border Background="{StaticResource PanelBrush}"
+                            BorderBrush="{StaticResource BorderBrushSoft}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="18,14"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            IsVisible="{Binding HasMessage}">
+                        <TextBlock Text="{Binding StatusMessage}"
+                                   Foreground="{StaticResource MutedTextBrush}"
+                                   FontSize="15"
+                                   TextAlignment="Center" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="1"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="2"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="{StaticResource BorderBrushSoft}"
+                    BorderThickness="0,1,0,0">
+                <Grid ColumnDefinitions="Auto,*,Auto"
+                      Margin="12,0"
+                      VerticalAlignment="Center">
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding PageText}"
+                               Foreground="{StaticResource TextBrush}"
+                               VerticalAlignment="Center" />
+                    <ProgressBar Grid.Column="1"
+                                 Margin="14,0"
+                                 Minimum="0"
+                                 Maximum="{Binding PageCount}"
+                                 Value="{Binding CurrentPageNumber}"
+                                 Height="4"
+                                 VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding CurrentLogicalPath}"
+                               Foreground="{StaticResource MutedTextBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               MaxWidth="460"
+                               VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

@@ -23,8 +23,8 @@
 建议项目结构：
 
 - `ComicPlate.App`：Avalonia UI、窗口、视图、ViewModel。
-- `ComicPlate.Core`：Book、Page、ReaderState、排序、文件来源接口。
-- `ComicPlate.Infrastructure`：文件系统、ZIP、JSON 持久化、平台路径。
+- `ComicPlate.Core`：Bookshelf、Book、Page、ReaderState、ReaderStrip、排序、文件来源接口。
+- `ComicPlate.Infrastructure`：文件系统书架扫描、文件夹/ZIP BookSource、JSON 持久化、平台路径。
 - `ComicPlate.Tests`：核心逻辑测试。
 
 MVP 可以先用单项目起步，但命名空间按上述边界分组。等代码稳定后再拆项目。
@@ -39,6 +39,45 @@ MVP 可以先用单项目起步，但命名空间按上述边界分组。等代�
 - 返回 PageEntry 列表。
 - 不负责图片解码。
 - 不负责 UI。
+
+工程命名说明：
+
+- 文件夹漫画和 ZIP/CBZ 漫画在代码里都统一称为 Book。
+- Book 内部的图片页面称为 Page。
+- Bookshelf 是 Book 的列表。
+- 用户界面文案可以写“漫画书”“文件夹漫画”“ZIP/CBZ 漫画”，不强迫用户理解 Book 这个工程词。
+
+### Bookshelf
+
+责任：
+
+- 表示一个书架根目录。
+- 列出根目录下可阅读的 Book。
+- 支持第一层子文件夹作为文件夹 Book。
+- 支持第一层 `.zip` 和 `.cbz` 作为压缩包 Book。
+- 不递归识别 Book，避免章节目录被误判为独立书籍。
+- 不修改用户文件。
+
+建议模型：
+
+```csharp
+public sealed record Bookshelf(
+    string RootPath,
+    IReadOnlyList<BookEntry> Books);
+
+public sealed record BookEntry(
+    string Id,
+    string DisplayName,
+    BookSourceKind SourceKind,
+    string Path);
+```
+
+注意：
+
+- Bookshelf 是 Book 列表。
+- PageList 是当前 Book 内的 Page 列表。
+- 二者都可以显示在左侧栏，但不是同一个概念。
+- 书架项后续可以有首页缩略图：文件夹 Book 取自然排序后的第一张图片，ZIP/CBZ Book 取压缩包内自然排序后的第一张图片。缩略图解码和缓存必须有上限，不能为生成书架一次性解码所有封面。
 
 接口草案：
 
@@ -82,9 +121,25 @@ public sealed record PageEntry(
 
 MVP 策略：
 
-- 当前页加载。
-- 预加载下一页可以放到 V1。
-- 缓存最多保留当前页、上一页、下一页，避免内存爆。
+- 横向阅读带需要加载当前页附近的有限页面。
+- 不允许一次性解码整本书。
+- 缓存必须有明确上限，例如当前页和左右有限邻页。
+- 翻页后释放超出窗口范围的 Bitmap。
+
+### ReaderStrip
+
+责任：
+
+- 根据当前页、阅读方向、显示窗口大小，计算阅读带中应该出现哪些页面。
+- 让当前页位于视觉中心。
+- 根据 RightToLeft / LeftToRight 决定前后页排列方向。
+- 为 UI 提供有限数量的可显示页面槽位。
+
+规则：
+
+- ReaderStrip 是阅读布局状态，不负责文件扫描。
+- ReaderStrip 不直接解码图片。
+- ReaderStrip 的窗口大小可以配置，但必须有上限，避免内存失控。
 
 ### ReaderState
 
@@ -97,6 +152,8 @@ MVP 策略：
 - 单页/双页模式。
 - 阅读方向。
 - 当前目录侧栏选择。
+- 当前书架选择。
+- 当前页面列表选择。
 
 规则：
 
@@ -137,10 +194,17 @@ MVP 策略：
 ```json
 {
   "version": 1,
-  "readingDirection": "LeftToRight",
+  "readingDirection": "RightToLeft",
   "defaultFitMode": "Fit",
   "recentLimit": 20,
-  "restoreProgress": true
+  "restoreProgress": true,
+  "bookshelf": {
+    "sortMode": "Name",
+    "groupMode": "None"
+  },
+  "readerStrip": {
+    "neighborPageLimit": 2
+  }
 }
 ```
 
@@ -164,11 +228,19 @@ MVP 策略：
 }
 ```
 
+说明：
+
+- 配置文件格式当前仍按 JSON 草案记录。
+- 书架排序、分组、过滤属于需要预留的配置区域，但 MVP 可以先只实现名称排序和无分组。
+- 如果后续决定使用 TOML，应先作为单独决策记录，不和当前结构草案混用。
+
 ## 5. 错误处理
 
 错误分层：
 
 - Book 打不开：显示全页错误状态。
+- 书架根目录打不开：显示书架错误状态。
+- 书架为空：显示空书架状态。
 - Book 没有图片：显示空状态。
 - 单页打不开：显示错误占位页。
 - 配置读失败：使用默认值并备份坏文件。
@@ -217,10 +289,11 @@ MVP 不做复杂日志系统，但错误对象要带 message 和 exception。
 第一段代码只追求：
 
 1. Avalonia 窗口启动。
-2. 点击打开文件夹。
-3. 扫描图片。
-4. 显示第一张。
-5. 左右键翻页。
+2. 点击打开书架根目录。
+3. 书架列出第一层文件夹 Book。
+4. 点击 Book 后递归扫描图片。
+5. 横向阅读带显示当前页，当前页居中。
+6. 左右键按阅读方向翻页。
 
 这条线跑通前，不做设置、不做 ZIP、不做视觉抛光。
 
@@ -228,7 +301,7 @@ MVP 不做复杂日志系统，但错误对象要带 message 和 exception。
 
 1. 双页模式。
 2. 阅读方向。
-3. 基础目录侧栏。
+3. 基础页面列表。
 4. 阅读进度保存。
 
 ## 9. Action 和右键菜单

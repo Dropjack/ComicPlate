@@ -5,3 +5,6 @@ obj/
 *.user
 *.suo
 debug.log
+artifacts/
+dist/
+publish/
