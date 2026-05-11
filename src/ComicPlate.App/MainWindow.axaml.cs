@@ -22,12 +22,28 @@ public partial class MainWindow : Window
     {
         if (e.Key == Key.Right || e.Key == Key.Space)
         {
-            _viewModel.NextPageCommand.Execute(null);
+            if (e.Key == Key.Right)
+            {
+                _viewModel.VisualRightCommand.Execute(null);
+            }
+            else
+            {
+                _viewModel.NextPageCommand.Execute(null);
+            }
+
             e.Handled = true;
         }
         else if (e.Key == Key.Left || e.Key == Key.Back)
         {
-            _viewModel.PreviousPageCommand.Execute(null);
+            if (e.Key == Key.Left)
+            {
+                _viewModel.VisualLeftCommand.Execute(null);
+            }
+            else
+            {
+                _viewModel.PreviousPageCommand.Execute(null);
+            }
+
             e.Handled = true;
         }
         else if (e.Key == Key.Home)

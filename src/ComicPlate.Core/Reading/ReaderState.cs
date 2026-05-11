@@ -20,7 +20,7 @@ public sealed class ReaderState
 
     public ViewMode ViewMode { get; private set; } = ViewMode.SinglePage;
 
-    public ReadingDirection ReadingDirection { get; private set; } = ReadingDirection.LeftToRight;
+    public ReadingDirection ReadingDirection { get; private set; } = ReadingDirection.RightToLeft;
 
     public void LoadPages(IReadOnlyList<PageEntry> pages, int initialPageIndex = 0)
     {

@@ -10,11 +10,15 @@ namespace ComicPlate.App.ViewModels;
 
 public sealed class MainWindowViewModel : ViewModelBase
 {
+    private const int NeighborPageLimit = 3;
+
     private readonly IFolderPickerService _folderPickerService;
     private readonly ImagePageLoader _imagePageLoader;
     private readonly ReaderState _readerState = new();
-    private Bitmap? _currentImage;
+    private readonly ReaderStrip _readerStrip = new(NeighborPageLimit);
+    private readonly Dictionary<int, Bitmap> _imageCache = new();
     private string _currentLogicalPath = "";
+    private int _currentBookIndex = -1;
     private int _currentPageIndex;
     private string _headerTitle = "ComicPlate";
     private bool _isReaderVisible;
@@ -32,11 +36,17 @@ public sealed class MainWindowViewModel : ViewModelBase
         ShowStartCommand = new RelayCommand(ShowStart);
         NextPageCommand = new RelayCommand(NextPage, () => _readerState.CanGoNext);
         PreviousPageCommand = new RelayCommand(PreviousPage, () => _readerState.CanGoPrevious);
+        VisualLeftCommand = new RelayCommand(VisualLeft, () => _readerState.HasPages);
+        VisualRightCommand = new RelayCommand(VisualRight, () => _readerState.HasPages);
         FirstPageCommand = new RelayCommand(FirstPage, () => _readerState.HasPages);
         LastPageCommand = new RelayCommand(LastPage, () => _readerState.HasPages);
     }
 
+    public ObservableCollection<BookListItemViewModel> BookItems { get; } = new();
+
     public ObservableCollection<PageListItemViewModel> PageItems { get; } = new();
+
+    public ObservableCollection<ReaderStripItemViewModel> ReaderStripItems { get; } = new();
 
     public ICommand OpenFolderCommand { get; }
 
@@ -46,26 +56,29 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public RelayCommand PreviousPageCommand { get; }
 
+    public RelayCommand VisualLeftCommand { get; }
+
+    public RelayCommand VisualRightCommand { get; }
+
     public RelayCommand FirstPageCommand { get; }
 
     public RelayCommand LastPageCommand { get; }
 
-    public Bitmap? CurrentImage
+    public int CurrentBookIndex
     {
-        get => _currentImage;
-        private set
+        get => _currentBookIndex;
+        set
         {
-            if (SetProperty(ref _currentImage, value))
+            if (value == _currentBookIndex || value < 0 || value >= BookItems.Count)
             {
-                OnPropertyChanged(nameof(HasImage));
-                OnPropertyChanged(nameof(HasMessage));
+                return;
             }
+
+            _currentBookIndex = value;
+            OnPropertyChanged(nameof(CurrentBookIndex));
+            _ = OpenBookAsync(BookItems[value].Book);
         }
     }
-
-    public bool HasImage => CurrentImage is not null;
-
-    public bool HasMessage => !string.IsNullOrWhiteSpace(StatusMessage) && CurrentImage is null;
 
     public string StatusMessage
     {
@@ -78,6 +91,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             }
         }
     }
+
+    public bool HasMessage => !string.IsNullOrWhiteSpace(StatusMessage) && ReaderStripItems.Count == 0;
 
     public string HeaderTitle
     {
@@ -120,7 +135,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             }
 
             _readerState.GoToPage(value);
-            _ = RefreshCurrentPageAsync();
+            _ = RefreshReaderStripAsync();
         }
     }
 
@@ -151,18 +166,73 @@ public sealed class MainWindowViewModel : ViewModelBase
         IsLoading = true;
         HeaderTitle = Path.GetFileName(folderPath);
         ShowReader();
+        SetMessage("Loading bookshelf...");
+
+        try
+        {
+            var source = new FileSystemBookshelfSource(folderPath);
+            var bookshelf = await Task.Run(() => source.LoadAsync(CancellationToken.None));
+            LoadBookshelf(bookshelf);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            BookItems.Clear();
+            LoadPages(Array.Empty<PageEntry>());
+            SetMessage("ComicPlate could not read this bookshelf folder.");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void LoadBookshelf(Bookshelf bookshelf)
+    {
+        BookItems.Clear();
+
+        foreach (var book in bookshelf.Books)
+        {
+            BookItems.Add(new BookListItemViewModel(book));
+        }
+
+        _currentBookIndex = -1;
+        OnPropertyChanged(nameof(CurrentBookIndex));
+        HeaderTitle = Path.GetFileName(bookshelf.RootPath);
+        LoadPages(Array.Empty<PageEntry>());
+
+        if (BookItems.Count == 0)
+        {
+            SetMessage("This bookshelf has no folder comics or ZIP/CBZ comics.");
+            return;
+        }
+
+        SetMessage("Select a comic from the bookshelf.");
+    }
+
+    private async Task OpenBookAsync(BookEntry book)
+    {
+        IsLoading = true;
+        HeaderTitle = book.DisplayName;
         SetMessage("Loading pages...");
 
         try
         {
-            var source = new FolderBookSource(folderPath, recursive: true);
+            IBookSource source = book.SourceKind == BookSourceKind.Zip
+                ? new ZipBookSource(book.Path)
+                : new FolderBookSource(book.Path, recursive: true);
+
             var pages = await Task.Run(() => source.LoadPagesAsync(CancellationToken.None));
             LoadPages(pages);
+
+            if (pages.Count == 0)
+            {
+                SetMessage("This comic has no readable images.");
+            }
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
         {
             LoadPages(Array.Empty<PageEntry>());
-            SetMessage("ComicPlate could not read this folder.");
+            SetMessage("ComicPlate could not read this comic.");
         }
         finally
         {
@@ -172,8 +242,10 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void LoadPages(IReadOnlyList<PageEntry> pages)
     {
+        ClearImageCache();
         _readerState.LoadPages(pages);
         PageItems.Clear();
+        ReaderStripItems.Clear();
 
         for (var index = 0; index < pages.Count; index++)
         {
@@ -182,22 +254,19 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         if (pages.Count == 0)
         {
-            CurrentImage = null;
-            SetMessage("This folder has no readable images.");
             UpdatePageStatus();
             RaiseCommandStates();
             return;
         }
 
-        _ = RefreshCurrentPageAsync();
+        _ = RefreshReaderStripAsync();
     }
 
-    private async Task RefreshCurrentPageAsync()
+    private async Task RefreshReaderStripAsync()
     {
         if (!_readerState.HasPages)
         {
-            CurrentImage = null;
-            SetMessage("This folder has no readable images.");
+            ReaderStripItems.Clear();
             UpdatePageStatus();
             return;
         }
@@ -209,43 +278,116 @@ public sealed class MainWindowViewModel : ViewModelBase
         CurrentLogicalPath = page.LogicalPath;
         SetMessage("");
 
-        try
+        var slots = _readerStrip.CreateSlots(
+            _readerState.Pages,
+            _readerState.CurrentPageIndex,
+            _readerState.ReadingDirection);
+        var activeIndexes = slots.Select(slot => slot.PageIndex).ToHashSet();
+
+        TrimImageCache(activeIndexes);
+        ReaderStripItems.Clear();
+
+        foreach (var slot in slots)
         {
-            CurrentImage?.Dispose();
-            CurrentImage = await _imagePageLoader.LoadAsync(page, CancellationToken.None);
-        }
-        catch (Exception)
-        {
-            CurrentImage = null;
-            SetMessage($"Could not display this image:{Environment.NewLine}{page.DisplayName}");
+            var item = new ReaderStripItemViewModel(slot);
+
+            try
+            {
+                item.Image = await GetOrLoadImageAsync(slot);
+            }
+            catch (Exception)
+            {
+                item.StatusMessage = $"Could not display{Environment.NewLine}{slot.Page.DisplayName}";
+            }
+
+            ReaderStripItems.Add(item);
         }
 
         UpdatePageStatus();
         RaiseCommandStates();
     }
 
+    private async Task<Bitmap> GetOrLoadImageAsync(ReaderStripSlot slot)
+    {
+        if (_imageCache.TryGetValue(slot.PageIndex, out var cachedImage))
+        {
+            return cachedImage;
+        }
+
+        var image = await _imagePageLoader.LoadAsync(slot.Page, CancellationToken.None);
+        _imageCache[slot.PageIndex] = image;
+        return image;
+    }
+
+    private void TrimImageCache(HashSet<int> activeIndexes)
+    {
+        var staleIndexes = _imageCache.Keys
+            .Where(index => !activeIndexes.Contains(index))
+            .ToArray();
+
+        foreach (var index in staleIndexes)
+        {
+            _imageCache[index].Dispose();
+            _imageCache.Remove(index);
+        }
+    }
+
+    private void ClearImageCache()
+    {
+        foreach (var image in _imageCache.Values)
+        {
+            image.Dispose();
+        }
+
+        _imageCache.Clear();
+    }
+
     private void NextPage()
     {
         _readerState.NextPage();
-        _ = RefreshCurrentPageAsync();
+        _ = RefreshReaderStripAsync();
     }
 
     private void PreviousPage()
     {
         _readerState.PreviousPage();
-        _ = RefreshCurrentPageAsync();
+        _ = RefreshReaderStripAsync();
+    }
+
+    private void VisualLeft()
+    {
+        if (_readerState.ReadingDirection == ReadingDirection.RightToLeft)
+        {
+            NextPage();
+        }
+        else
+        {
+            PreviousPage();
+        }
+    }
+
+    private void VisualRight()
+    {
+        if (_readerState.ReadingDirection == ReadingDirection.RightToLeft)
+        {
+            PreviousPage();
+        }
+        else
+        {
+            NextPage();
+        }
     }
 
     private void FirstPage()
     {
         _readerState.GoToFirstPage();
-        _ = RefreshCurrentPageAsync();
+        _ = RefreshReaderStripAsync();
     }
 
     private void LastPage()
     {
         _readerState.GoToLastPage();
-        _ = RefreshCurrentPageAsync();
+        _ = RefreshReaderStripAsync();
     }
 
     private void ShowStart()
@@ -285,6 +427,8 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         NextPageCommand.RaiseCanExecuteChanged();
         PreviousPageCommand.RaiseCanExecuteChanged();
+        VisualLeftCommand.RaiseCanExecuteChanged();
+        VisualRightCommand.RaiseCanExecuteChanged();
         FirstPageCommand.RaiseCanExecuteChanged();
         LastPageCommand.RaiseCanExecuteChanged();
     }

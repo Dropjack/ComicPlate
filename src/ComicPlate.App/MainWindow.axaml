@@ -105,10 +105,50 @@
 
         <Grid Grid.Row="1"
               IsVisible="{Binding IsReaderVisible}"
-              RowDefinitions="*,34"
-              ColumnDefinitions="260,*">
+              RowDefinitions="*,34,34"
+              ColumnDefinitions="230,260,*">
             <Border Grid.Row="0"
                     Grid.Column="0"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="{StaticResource BorderBrushSoft}"
+                    BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="34,*">
+                    <Border Grid.Row="0"
+                            Background="{StaticResource SubtlePanelBrush}"
+                            BorderBrush="{StaticResource BorderBrushSoft}"
+                            BorderThickness="0,0,0,1">
+                        <TextBlock Text="Bookshelf"
+                                   Margin="12,0"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextBrush}"
+                                   FontWeight="SemiBold" />
+                    </Border>
+                    <ListBox Grid.Row="1"
+                             ItemsSource="{Binding BookItems}"
+                             SelectedIndex="{Binding CurrentBookIndex, Mode=TwoWay}"
+                             Background="{StaticResource PanelBrush}"
+                             BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid RowDefinitions="Auto,Auto"
+                                      Margin="4,5">
+                                    <TextBlock Text="{Binding DisplayName}"
+                                               Foreground="{StaticResource TextBrush}"
+                                               FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Row="1"
+                                               Text="{Binding SourceLabel}"
+                                               Foreground="{StaticResource MutedTextBrush}"
+                                               FontSize="12" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="0"
+                    Grid.Column="1"
                     Background="{StaticResource PanelBrush}"
                     BorderBrush="{StaticResource BorderBrushSoft}"
                     BorderThickness="0,0,1,0">
@@ -149,14 +189,58 @@
             </Border>
 
             <Border Grid.Row="0"
-                    Grid.Column="1"
+                    Grid.Column="2"
                     Background="#EDEDED">
                 <Grid>
-                    <Image Source="{Binding CurrentImage}"
-                           Stretch="Uniform"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           IsVisible="{Binding HasImage}" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding ReaderStripItems}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Stretch">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Width="{Binding SlotWidth}"
+                                          Margin="8,12"
+                                          Opacity="{Binding SlotOpacity}">
+                                        <Border Background="#FFFFFF"
+                                                BorderBrush="{StaticResource BorderBrushSoft}"
+                                                BorderThickness="1"
+                                                HorizontalAlignment="Stretch"
+                                                VerticalAlignment="Stretch">
+                                            <Image Source="{Binding Image}"
+                                                   Stretch="Uniform"
+                                                   IsVisible="{Binding HasImage}" />
+                                        </Border>
+                                        <Border Background="{StaticResource PanelBrush}"
+                                                BorderBrush="{StaticResource BorderBrushSoft}"
+                                                BorderThickness="1"
+                                                CornerRadius="4"
+                                                Padding="10"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                IsVisible="{Binding HasMessage}">
+                                            <TextBlock Text="{Binding StatusMessage}"
+                                                       Foreground="{StaticResource MutedTextBrush}"
+                                                       TextAlignment="Center" />
+                                        </Border>
+                                        <Border Background="#CCFFFFFF"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Top"
+                                                Padding="6,2">
+                                            <TextBlock Text="{Binding PageLabel}"
+                                                       Foreground="{StaticResource MutedTextBrush}"
+                                                       FontSize="12" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                     <Border Background="{StaticResource PanelBrush}"
                             BorderBrush="{StaticResource BorderBrushSoft}"
                             BorderThickness="1"
@@ -175,7 +259,32 @@
 
             <Border Grid.Row="1"
                     Grid.Column="0"
-                    Grid.ColumnSpan="2"
+                    Grid.ColumnSpan="3"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="{StaticResource BorderBrushSoft}"
+                    BorderThickness="0,1,0,0">
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="8">
+                    <Button Command="{Binding PreviousPageCommand}"
+                            Content="Previous"
+                            Padding="12,3"
+                            CornerRadius="4" />
+                    <Button Content="{Binding PageText}"
+                            IsEnabled="False"
+                            Padding="14,3"
+                            CornerRadius="4" />
+                    <Button Command="{Binding NextPageCommand}"
+                            Content="Next"
+                            Padding="12,3"
+                            CornerRadius="4" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="2"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
                     Background="{StaticResource PanelBrush}"
                     BorderBrush="{StaticResource BorderBrushSoft}"
                     BorderThickness="0,1,0,0">
