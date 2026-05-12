@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
-using Avalonia.Layout;
 using Avalonia.Media.Imaging;
 using ComicPlate.App.Services;
 using ComicPlate.Core.Books;
@@ -12,12 +11,16 @@ namespace ComicPlate.App.ViewModels;
 public sealed class MainWindowViewModel : ViewModelBase
 {
     private const int NeighborPageLimit = 3;
+    private const double DragCommitThresholdRatio = 0.18;
+    private const double MinimumDragCommitThreshold = 80;
+    private const double ReaderStripItemHorizontalMargin = 8;
 
     private readonly IFolderPickerService _folderPickerService;
     private readonly ImagePageLoader _imagePageLoader;
     private readonly ReaderState _readerState = new();
-    private readonly ReaderStrip _readerStrip = new(NeighborPageLimit);
+    private readonly VirtualizedReaderStrip _readerStrip = new(NeighborPageLimit);
     private readonly Dictionary<int, Bitmap> _imageCache = new();
+    private IReadOnlyList<VirtualizedReaderStripSlot> _readerStripLayoutSlots = Array.Empty<VirtualizedReaderStripSlot>();
     private string _currentLogicalPath = "";
     private int _currentBookIndex = -1;
     private int _currentPageIndex;
@@ -29,6 +32,10 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _pageText = "";
     private double _readerViewportHeight = 600;
     private double _readerViewportWidth = 800;
+    private double _readerStripBaseOffset;
+    private double _readerStripDragOffset;
+    private double _readerStripTranslateX;
+    private int _readerStripRefreshVersion;
     private string _statusMessage = "No recent books yet.";
 
     public MainWindowViewModel(IFolderPickerService folderPickerService, ImagePageLoader imagePageLoader)
@@ -51,7 +58,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public ObservableCollection<PageListItemViewModel> PageItems { get; } = new();
 
-    public ObservableCollection<ReaderStripItemViewModel> ReaderStripItems { get; } = new();
+    public ObservableCollection<ReaderStripItemViewModel> ReaderStripItems { get; private set; } = new();
 
     public ICommand OpenFolderCommand { get; }
 
@@ -193,9 +200,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         private set => SetProperty(ref _currentLogicalPath, value);
     }
 
-    public HorizontalAlignment ReaderStripHorizontalAlignment => _readerState.ReadingDirection == ReadingDirection.RightToLeft
-        ? HorizontalAlignment.Right
-        : HorizontalAlignment.Left;
+    public double ReaderStripTranslateX
+    {
+        get => _readerStripTranslateX;
+        private set => SetProperty(ref _readerStripTranslateX, value);
+    }
 
     public void SetReaderViewportSize(double width, double height)
     {
@@ -211,6 +220,76 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             item.SetViewportSize(width, height);
         }
+
+        UpdateReaderStripOffset();
+    }
+
+    public void WheelNextReadingGroup()
+    {
+        NextPage();
+    }
+
+    public void WheelPreviousReadingGroup()
+    {
+        PreviousPage();
+    }
+
+    public void BeginReaderStripDrag()
+    {
+        _readerStripDragOffset = 0;
+        UpdateReaderStripTransform();
+    }
+
+    public void DragReaderStrip(double horizontalDelta)
+    {
+        if (!_readerState.HasPages)
+        {
+            return;
+        }
+
+        _readerStripDragOffset = horizontalDelta;
+        UpdateReaderStripTransform();
+    }
+
+    public void EndReaderStripDrag(double horizontalDelta)
+    {
+        if (!_readerState.HasPages)
+        {
+            ResetReaderStripDrag();
+            return;
+        }
+
+        var threshold = Math.Max(MinimumDragCommitThreshold, _readerViewportWidth * DragCommitThresholdRatio);
+        if (Math.Abs(horizontalDelta) < threshold)
+        {
+            ResetReaderStripDrag();
+            return;
+        }
+
+        var targetPageIndex = _readerStrip.FindNearestPageIndex(
+            _readerStripLayoutSlots,
+            _readerViewportWidth,
+            _readerStripBaseOffset + horizontalDelta,
+            _readerState.CurrentPageIndex);
+        if (targetPageIndex == _readerState.CurrentPageIndex)
+        {
+            targetPageIndex = GetDragFallbackTargetPageIndex(horizontalDelta);
+        }
+
+        _readerStripDragOffset = 0;
+        if (targetPageIndex == _readerState.CurrentPageIndex)
+        {
+            ResetReaderStripDrag();
+            return;
+        }
+
+        _readerState.GoToPage(targetPageIndex);
+        _ = RefreshReaderStripAsync();
+    }
+
+    public void CancelReaderStripDrag()
+    {
+        ResetReaderStripDrag();
     }
 
     private async Task OpenFolderAsync()
@@ -303,7 +382,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         ClearImageCache();
         _readerState.LoadPages(pages);
         PageItems.Clear();
-        ReaderStripItems.Clear();
+        ReplaceReaderStripItems(new ObservableCollection<ReaderStripItemViewModel>());
 
         for (var index = 0; index < pages.Count; index++)
         {
@@ -322,9 +401,11 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private async Task RefreshReaderStripAsync()
     {
+        var refreshVersion = ++_readerStripRefreshVersion;
+
         if (!_readerState.HasPages)
         {
-            ReaderStripItems.Clear();
+            ReplaceReaderStripItems(new ObservableCollection<ReaderStripItemViewModel>());
             UpdatePageStatus();
             return;
         }
@@ -336,17 +417,20 @@ public sealed class MainWindowViewModel : ViewModelBase
         CurrentLogicalPath = page.LogicalPath;
         SetMessage("");
 
-        var slots = _readerStrip.CreateSlots(
-            _readerState.Pages,
+        var windowPageIndexes = _readerStrip.CreateWindow(
+            _readerState.PageCount,
             _readerState.CurrentPageIndex,
             _readerState.ReadingDirection);
-        var activeIndexes = slots.Select(slot => slot.PageIndex).ToHashSet();
+        var activeIndexes = windowPageIndexes.ToHashSet();
+        var nextItems = new ObservableCollection<ReaderStripItemViewModel>();
 
-        TrimImageCache(activeIndexes);
-        ReaderStripItems.Clear();
-
-        foreach (var slot in slots)
+        foreach (var pageIndex in windowPageIndexes)
         {
+            var slot = new ReaderStripSlot(
+                pageIndex,
+                pageIndex + 1,
+                _readerState.Pages[pageIndex],
+                pageIndex == _readerState.CurrentPageIndex);
             var item = new ReaderStripItemViewModel(slot);
             item.SetViewportSize(_readerViewportWidth, _readerViewportHeight);
 
@@ -359,9 +443,16 @@ public sealed class MainWindowViewModel : ViewModelBase
                 item.StatusMessage = $"Could not display{Environment.NewLine}{slot.Page.DisplayName}";
             }
 
-            ReaderStripItems.Add(item);
+            nextItems.Add(item);
         }
 
+        if (refreshVersion != _readerStripRefreshVersion)
+        {
+            return;
+        }
+
+        ReplaceReaderStripItems(nextItems);
+        TrimImageCache(activeIndexes);
         UpdatePageStatus();
         RaiseCommandStates();
     }
@@ -470,6 +561,86 @@ public sealed class MainWindowViewModel : ViewModelBase
     private void SetMessage(string message)
     {
         StatusMessage = message;
+    }
+
+    private void ReplaceReaderStripItems(ObservableCollection<ReaderStripItemViewModel> items)
+    {
+        ReaderStripItems = items;
+        OnPropertyChanged(nameof(ReaderStripItems));
+        OnPropertyChanged(nameof(HasMessage));
+        UpdateReaderStripOffset();
+    }
+
+    private void UpdateReaderStripOffset()
+    {
+        if (ReaderStripItems.Count == 0)
+        {
+            _readerStripBaseOffset = 0;
+            _readerStripLayoutSlots = Array.Empty<VirtualizedReaderStripSlot>();
+            UpdateReaderStripTransform();
+            return;
+        }
+
+        var windowPageIndexes = ReaderStripItems
+            .Select(item => item.PageIndex)
+            .ToArray();
+        var pageExtents = ReaderStripItems.ToDictionary(
+            item => item.PageIndex,
+            item => item.DisplayWidth + (ReaderStripItemHorizontalMargin * 2));
+        _readerStripLayoutSlots = _readerStrip.CreateLayout(
+            windowPageIndexes,
+            _readerState.CurrentPageIndex,
+            pageExtents);
+
+        if (_readerStripLayoutSlots.Count == 0)
+        {
+            _readerStripBaseOffset = 0;
+            UpdateReaderStripTransform();
+            return;
+        }
+
+        _readerStripBaseOffset = _readerStrip.GetCenteredOffset(
+            _readerStripLayoutSlots,
+            _readerState.CurrentPageIndex,
+            _readerViewportWidth);
+        UpdateReaderStripTransform();
+    }
+
+    private int GetDragFallbackTargetPageIndex(double horizontalDelta)
+    {
+        var currentLayoutIndex = -1;
+        for (var index = 0; index < _readerStripLayoutSlots.Count; index++)
+        {
+            if (_readerStripLayoutSlots[index].PageIndex == _readerState.CurrentPageIndex)
+            {
+                currentLayoutIndex = index;
+                break;
+            }
+        }
+
+        if (currentLayoutIndex < 0)
+        {
+            return _readerState.CurrentPageIndex;
+        }
+
+        var targetLayoutIndex = horizontalDelta > 0
+            ? currentLayoutIndex - 1
+            : currentLayoutIndex + 1;
+
+        return targetLayoutIndex >= 0 && targetLayoutIndex < _readerStripLayoutSlots.Count
+            ? _readerStripLayoutSlots[targetLayoutIndex].PageIndex
+            : _readerState.CurrentPageIndex;
+    }
+
+    private void ResetReaderStripDrag()
+    {
+        _readerStripDragOffset = 0;
+        UpdateReaderStripTransform();
+    }
+
+    private void UpdateReaderStripTransform()
+    {
+        ReaderStripTranslateX = _readerStripBaseOffset + _readerStripDragOffset;
     }
 
     private void UpdatePageStatus()

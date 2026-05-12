@@ -12,7 +12,8 @@
         MinWidth="900"
         MinHeight="620"
         Background="#F4F4F4"
-        KeyDown="OnKeyDown">
+        KeyDown="OnKeyDown"
+        PointerWheelChanged="OnPointerWheelChanged">
 
     <Window.Resources>
         <SolidColorBrush x:Key="PanelBrush" Color="#FAFAFA" />
@@ -173,13 +174,16 @@
                     Grid.Column="1"
                     Background="#EDEDED"
                     ClipToBounds="True"
-                    SizeChanged="OnReaderViewportSizeChanged">
+                    SizeChanged="OnReaderViewportSizeChanged"
+                    PointerPressed="OnReaderPointerPressed"
+                    PointerMoved="OnReaderPointerMoved"
+                    PointerReleased="OnReaderPointerReleased"
+                    PointerCaptureLost="OnReaderPointerCaptureLost">
                 <Grid>
-                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                                  VerticalScrollBarVisibility="Disabled">
+                    <Canvas ClipToBounds="False">
                         <ItemsControl ItemsSource="{Binding ReaderStripItems}"
-                                      HorizontalAlignment="{Binding ReaderStripHorizontalAlignment}"
-                                      VerticalAlignment="Stretch">
+                                      Canvas.Left="{Binding ReaderStripTranslateX}"
+                                      Canvas.Top="0">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <StackPanel Orientation="Horizontal" />
@@ -224,7 +228,7 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                    </ScrollViewer>
+                    </Canvas>
                     <Border Background="{StaticResource PanelBrush}"
                             BorderBrush="{StaticResource BorderBrushSoft}"
                             BorderThickness="1"

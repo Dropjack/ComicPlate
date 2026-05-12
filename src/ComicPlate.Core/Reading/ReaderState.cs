@@ -18,6 +18,10 @@ public sealed class ReaderState
 
     public bool CanGoPrevious => HasPages && CurrentPageIndex > 0;
 
+    public int CurrentReadingGroupSize => ViewMode == ViewMode.DoublePage && CurrentPageIndex > 0
+        ? Math.Min(2, PageCount - CurrentPageIndex)
+        : Math.Min(1, PageCount);
+
     public ViewMode ViewMode { get; private set; } = ViewMode.SinglePage;
 
     public ReadingDirection ReadingDirection { get; private set; } = ReadingDirection.RightToLeft;
@@ -47,7 +51,7 @@ public sealed class ReaderState
     {
         if (CanGoNext)
         {
-            CurrentPageIndex++;
+            CurrentPageIndex = ClampPageIndex(CurrentPageIndex + GetReadingGroupStep());
         }
     }
 
@@ -55,7 +59,7 @@ public sealed class ReaderState
     {
         if (CanGoPrevious)
         {
-            CurrentPageIndex--;
+            CurrentPageIndex = ClampPageIndex(CurrentPageIndex - GetReadingGroupStep());
         }
     }
 
@@ -77,5 +81,12 @@ public sealed class ReaderState
         }
 
         return Math.Clamp(pageIndex, 0, PageCount - 1);
+    }
+
+    private int GetReadingGroupStep()
+    {
+        return ViewMode == ViewMode.DoublePage && CurrentPageIndex > 0
+            ? 2
+            : 1;
     }
 }
