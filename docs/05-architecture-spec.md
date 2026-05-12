@@ -23,8 +23,8 @@
 建议项目结构：
 
 - `ComicPlate.App`：Avalonia UI、窗口、视图、ViewModel。
-- `ComicPlate.Core`：Bookshelf、Book、Page、ReaderState、ReaderStrip、排序、文件来源接口。
-- `ComicPlate.Infrastructure`：文件系统书架扫描、文件夹/ZIP BookSource、JSON 持久化、平台路径。
+- `ComicPlate.Core`：Book、Page、ReadableUnit、ReaderState、ReaderStrip、排序、文件来源接口。
+- `ComicPlate.Infrastructure`：可阅读单元打开、文件夹/ZIP BookSource、JSON 持久化、平台路径。
 - `ComicPlate.Tests`：核心逻辑测试。
 
 MVP 可以先用单项目起步，但命名空间按上述边界分组。等代码稳定后再拆项目。
@@ -42,29 +42,28 @@ MVP 可以先用单项目起步，但命名空间按上述边界分组。等代�
 
 工程命名说明：
 
-- 文件夹漫画和 ZIP/CBZ 漫画在代码里都统一称为 Book。
+- 用户打开的文件夹、ZIP/CBZ 和后续支持的漫画压缩包在代码里都统一称为 Book。
 - Book 内部的图片页面称为 Page。
-- Bookshelf 是 Book 的列表。
-- 用户界面文案可以写“漫画书”“文件夹漫画”“ZIP/CBZ 漫画”，不强迫用户理解 Book 这个工程词。
+- Book 是用户选择路径形成的可阅读单元，不是书架条目。
+- 用户界面文案可以写“漫画”“文件夹”“ZIP/CBZ”，不强迫用户理解 Book 这个工程词。
 
-### Bookshelf
+### ReadableUnitOpener
 
 责任：
 
-- 表示一个书架根目录。
-- 递归发现根目录下可阅读的 Book。
-- 支持文件夹作为文件夹 Book。
-- 支持 `.zip` 和 `.cbz` 作为压缩包 Book。
-- 使用明确边界避免章节目录被重复误判为独立书籍。
+- 接收用户主动选择的路径。
+- 判断该路径是否能作为可阅读单元打开。
+- 为该路径创建 BookEntry 和对应 IBookSource。
+- 支持文件夹作为 Book。
+- 支持 `.zip` 和 `.cbz` 作为 Book。
+- 后续支持 RAR/CBR/7z/CB7 作为 Book。
+- 支持单张图片作为单页 Book。
+- 不做漫画库扫描，不自动拆分作品，不把子文件夹识别为独立书籍。
 - 不修改用户文件。
 
 建议模型：
 
 ```csharp
-public sealed record Bookshelf(
-    string RootPath,
-    IReadOnlyList<BookEntry> Books);
-
 public sealed record BookEntry(
     string Id,
     string DisplayName,
@@ -74,13 +73,12 @@ public sealed record BookEntry(
 
 注意：
 
-- Bookshelf 是 Book 列表。
 - PageList 是当前 Book 内的 Page 列表。
-- 二者都可以显示在左侧栏，但不是同一个概念。
-- Book 发现和 Page 收集必须分开：Bookshelf 负责发现 Book，IBookSource 负责打开一本 Book 并收集 Page。
-- 文件系统里的 ZIP/CBZ 可以通过递归目录扫描被发现为 Book；ZIP/CBZ 内部不继续递归发现子 Book。
-- 文件夹 Book 的边界由发现策略决定：当某个文件夹自身直接包含支持格式图片时，它可以成为 Book；它下面的子文件夹作为该 Book 的章节结构参与 Page 收集。
-- 书架项后续可以有首页缩略图：文件夹 Book 取自然排序后的第一张图片，ZIP/CBZ Book 取压缩包内自然排序后的第一张图片。缩略图解码和缓存必须有上限，不能为生成书架一次性解码所有封面。
+- BookEntry 描述当前打开范围，不描述书架中的一项。
+- Book 打开和 Page 收集可以分开：ReadableUnitOpener 负责按路径选择 IBookSource，IBookSource 负责收集 Page。
+- 文件夹 Book 默认递归收集内部图片，并按相对路径自然排序。
+- ZIP/CBZ 内部子目录属于这本 ZIP/CBZ Book 的 Page 结构。
+- 文件夹里的 ZIP/CBZ 串联阅读属于 MVP：它仍然生成同一个 Book 的 Page 流，不生成书架。
 
 接口草案：
 
@@ -137,6 +135,7 @@ MVP 策略：
 - 让当前页位于视觉中心。
 - 根据 RightToLeft / LeftToRight 决定前后页排列方向。
 - 为 UI 提供有限数量的可显示页面槽位。
+- MVP 可以使用三页窗口：当前页和左右邻页。单张图片 Book 只显示当前页。
 
 规则：
 
@@ -187,7 +186,6 @@ MVP 策略：
 - 单页/双页模式。
 - 阅读方向。
 - 当前目录侧栏选择。
-- 当前书架选择。
 - 当前页面列表选择。
 
 规则：
@@ -233,10 +231,6 @@ MVP 策略：
   "defaultFitMode": "AutoFit",
   "recentLimit": 20,
   "restoreProgress": true,
-  "bookshelf": {
-    "sortMode": "Name",
-    "groupMode": "None"
-  },
   "readerStrip": {
     "neighborPageLimit": 2
   }
@@ -266,7 +260,7 @@ MVP 策略：
 说明：
 
 - 配置文件格式当前仍按 JSON 草案记录。
-- 书架排序、分组、过滤属于需要预留的配置区域，但 MVP 可以先只实现名称排序和无分组。
+- 不为书架排序、分组、过滤预留配置；ComicPlate 不做漫画库管理。
 - 如果后续决定使用 TOML，应先作为单独决策记录，不和当前结构草案混用。
 
 ## 5. 错误处理
@@ -274,8 +268,6 @@ MVP 策略：
 错误分层：
 
 - Book 打不开：显示全页错误状态。
-- 书架根目录打不开：显示书架错误状态。
-- 书架为空：显示空书架状态。
 - Book 没有图片：显示空状态。
 - 单页打不开：显示错误占位页。
 - 配置读失败：使用默认值并备份坏文件。
@@ -324,14 +316,14 @@ MVP 不做复杂日志系统，但错误对象要带 message 和 exception。
 第一段代码只追求：
 
 1. Avalonia 窗口启动。
-2. 点击打开书架根目录。
-3. 书架递归发现文件夹 Book 和 ZIP/CBZ Book。
-4. 点击文件夹 Book 或 ZIP/CBZ Book 后收集并自然排序 Page。
+2. 点击打开文件夹、ZIP/CBZ 或单张图片。
+3. 把用户选择的路径作为 Book 打开。
+4. 收集并自然排序 Page，包括文件夹内 ZIP/CBZ 合集。
 5. 横向阅读带显示当前页，当前页居中。
 6. 左右键按阅读方向翻页。
 7. 底部进度条显示当前阅读位置在阅读带里的相对位置。
 
-这条线跑通前，不做设置、不做视觉抛光、不做复杂书架管理。
+这条线跑通前，不做设置、不做视觉抛光、不做漫画库管理。
 
 这条线跑通后，第一批立即补齐：
 
@@ -339,6 +331,7 @@ MVP 不做复杂日志系统，但错误对象要带 message 和 exception。
 2. 阅读方向设置 UI。
 3. 基础页面列表。
 4. 阅读进度保存。
+5. 多窗口：每个窗口是一套完整独立阅读器。
 
 ## 9. Action 和右键菜单
 
