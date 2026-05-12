@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using ComicPlate.App.Services;
 using ComicPlate.App.ViewModels;
 
@@ -20,6 +21,13 @@ public partial class MainWindow : Window
             new FolderPickerService(this),
             new ImagePageLoader());
         DataContext = _viewModel;
+        AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
+        Opened += OnOpened;
+    }
+
+    private void OnOpened(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(() => Focus());
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
@@ -70,6 +78,20 @@ public partial class MainWindow : Window
     private void OnReaderViewportSizeChanged(object? sender, SizeChangedEventArgs e)
     {
         _viewModel.SetReaderViewportSize(e.NewSize.Width, e.NewSize.Height);
+    }
+
+    private void OnVisualLeftClick(object? sender, RoutedEventArgs e)
+    {
+        _viewModel.VisualLeftCommand.Execute(null);
+        Focus();
+        e.Handled = true;
+    }
+
+    private void OnVisualRightClick(object? sender, RoutedEventArgs e)
+    {
+        _viewModel.VisualRightCommand.Execute(null);
+        Focus();
+        e.Handled = true;
     }
 
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)

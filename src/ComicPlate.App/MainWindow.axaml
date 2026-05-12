@@ -255,16 +255,16 @@
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Spacing="8">
-                    <Button Command="{Binding VisualLeftCommand}"
-                            Content="Left"
+                    <Button Content="Left"
+                            Click="OnVisualLeftClick"
                             Padding="12,3"
                             CornerRadius="4" />
                     <Button Content="{Binding PageText}"
                             IsEnabled="False"
                             Padding="14,3"
                             CornerRadius="4" />
-                    <Button Command="{Binding VisualRightCommand}"
-                            Content="Right"
+                    <Button Content="Right"
+                            Click="OnVisualRightClick"
                             Padding="12,3"
                             CornerRadius="4" />
                 </StackPanel>

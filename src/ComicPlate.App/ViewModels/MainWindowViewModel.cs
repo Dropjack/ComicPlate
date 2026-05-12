@@ -11,9 +11,8 @@ namespace ComicPlate.App.ViewModels;
 public sealed class MainWindowViewModel : ViewModelBase
 {
     private const int NeighborPageLimit = 3;
-    private const double DragCommitThresholdRatio = 0.18;
-    private const double MinimumDragCommitThreshold = 80;
     private const double ReaderStripItemHorizontalMargin = 8;
+    private const double WheelFreeMoveViewportRatio = 0.35;
 
     private readonly IFolderPickerService _folderPickerService;
     private readonly ImagePageLoader _imagePageLoader;
@@ -48,8 +47,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         ToggleNavigationPaneCommand = new RelayCommand(ToggleNavigationPane);
         NextPageCommand = new RelayCommand(NextPage, () => _readerState.CanGoNext);
         PreviousPageCommand = new RelayCommand(PreviousPage, () => _readerState.CanGoPrevious);
-        VisualLeftCommand = new RelayCommand(VisualLeft, () => _readerState.HasPages);
-        VisualRightCommand = new RelayCommand(VisualRight, () => _readerState.HasPages);
+        VisualLeftCommand = new RelayCommand(VisualLeft);
+        VisualRightCommand = new RelayCommand(VisualRight);
         FirstPageCommand = new RelayCommand(FirstPage, () => _readerState.HasPages);
         LastPageCommand = new RelayCommand(LastPage, () => _readerState.HasPages);
     }
@@ -226,12 +225,12 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public void WheelNextReadingGroup()
     {
-        NextPage();
+        MoveReaderStripFreely(GetNextReadingDirectionOffsetDelta());
     }
 
     public void WheelPreviousReadingGroup()
     {
-        PreviousPage();
+        MoveReaderStripFreely(-GetNextReadingDirectionOffsetDelta());
     }
 
     public void BeginReaderStripDrag()
@@ -259,32 +258,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        var threshold = Math.Max(MinimumDragCommitThreshold, _readerViewportWidth * DragCommitThresholdRatio);
-        if (Math.Abs(horizontalDelta) < threshold)
-        {
-            ResetReaderStripDrag();
-            return;
-        }
-
-        var targetPageIndex = _readerStrip.FindNearestPageIndex(
-            _readerStripLayoutSlots,
-            _readerViewportWidth,
-            _readerStripBaseOffset + horizontalDelta,
-            _readerState.CurrentPageIndex);
-        if (targetPageIndex == _readerState.CurrentPageIndex)
-        {
-            targetPageIndex = GetDragFallbackTargetPageIndex(horizontalDelta);
-        }
-
-        _readerStripDragOffset = 0;
-        if (targetPageIndex == _readerState.CurrentPageIndex)
-        {
-            ResetReaderStripDrag();
-            return;
-        }
-
-        _readerState.GoToPage(targetPageIndex);
-        _ = RefreshReaderStripAsync();
+        CommitReaderStripFreeOffset(_readerStripBaseOffset + horizontalDelta);
     }
 
     public void CancelReaderStripDrag()
@@ -399,7 +373,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         _ = RefreshReaderStripAsync();
     }
 
-    private async Task RefreshReaderStripAsync()
+    private async Task RefreshReaderStripAsync(ReaderStripPlacement? placement = null)
     {
         var refreshVersion = ++_readerStripRefreshVersion;
 
@@ -451,7 +425,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        ReplaceReaderStripItems(nextItems);
+        ReplaceReaderStripItems(nextItems, placement);
         TrimImageCache(activeIndexes);
         UpdatePageStatus();
         RaiseCommandStates();
@@ -506,6 +480,11 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void VisualLeft()
     {
+        if (!_readerState.HasPages)
+        {
+            return;
+        }
+
         if (_readerState.ReadingDirection == ReadingDirection.RightToLeft)
         {
             NextPage();
@@ -518,6 +497,11 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void VisualRight()
     {
+        if (!_readerState.HasPages)
+        {
+            return;
+        }
+
         if (_readerState.ReadingDirection == ReadingDirection.RightToLeft)
         {
             PreviousPage();
@@ -563,15 +547,17 @@ public sealed class MainWindowViewModel : ViewModelBase
         StatusMessage = message;
     }
 
-    private void ReplaceReaderStripItems(ObservableCollection<ReaderStripItemViewModel> items)
+    private void ReplaceReaderStripItems(
+        ObservableCollection<ReaderStripItemViewModel> items,
+        ReaderStripPlacement? placement = null)
     {
         ReaderStripItems = items;
         OnPropertyChanged(nameof(ReaderStripItems));
         OnPropertyChanged(nameof(HasMessage));
-        UpdateReaderStripOffset();
+        UpdateReaderStripOffset(placement);
     }
 
-    private void UpdateReaderStripOffset()
+    private void UpdateReaderStripOffset(ReaderStripPlacement? placement = null)
     {
         if (ReaderStripItems.Count == 0)
         {
@@ -599,37 +585,73 @@ public sealed class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        _readerStripBaseOffset = _readerStrip.GetCenteredOffset(
-            _readerStripLayoutSlots,
-            _readerState.CurrentPageIndex,
-            _readerViewportWidth);
+        _readerStripBaseOffset = placement is null
+            ? _readerStrip.GetCenteredOffset(
+                _readerStripLayoutSlots,
+                _readerState.CurrentPageIndex,
+                _readerViewportWidth)
+            : GetPreservedReaderStripOffset(placement);
         UpdateReaderStripTransform();
     }
 
-    private int GetDragFallbackTargetPageIndex(double horizontalDelta)
+    private double GetPreservedReaderStripOffset(ReaderStripPlacement placement)
     {
-        var currentLayoutIndex = -1;
-        for (var index = 0; index < _readerStripLayoutSlots.Count; index++)
+        var anchorSlot = _readerStripLayoutSlots
+            .FirstOrDefault(slot => slot.PageIndex == placement.AnchorPageIndex);
+        return anchorSlot is null
+            ? _readerStrip.GetCenteredOffset(
+                _readerStripLayoutSlots,
+                _readerState.CurrentPageIndex,
+                _readerViewportWidth)
+            : placement.AnchorScreenX - anchorSlot.CenterX;
+    }
+
+    private void MoveReaderStripFreely(double horizontalDelta)
+    {
+        CommitReaderStripFreeOffset(ReaderStripTranslateX + horizontalDelta);
+    }
+
+    private void CommitReaderStripFreeOffset(double targetOffset)
+    {
+        if (!_readerState.HasPages)
         {
-            if (_readerStripLayoutSlots[index].PageIndex == _readerState.CurrentPageIndex)
-            {
-                currentLayoutIndex = index;
-                break;
-            }
+            return;
         }
 
-        if (currentLayoutIndex < 0)
+        var targetPageIndex = _readerStrip.FindNearestPageIndex(
+            _readerStripLayoutSlots,
+            _readerViewportWidth,
+            targetOffset,
+            _readerState.CurrentPageIndex);
+        var anchorScreenX = GetPageScreenCenter(targetPageIndex, targetOffset);
+
+        _readerStripBaseOffset = targetOffset;
+        _readerStripDragOffset = 0;
+        UpdateReaderStripTransform();
+
+        if (targetPageIndex == _readerState.CurrentPageIndex)
         {
-            return _readerState.CurrentPageIndex;
+            return;
         }
 
-        var targetLayoutIndex = horizontalDelta > 0
-            ? currentLayoutIndex - 1
-            : currentLayoutIndex + 1;
+        _readerState.GoToPage(targetPageIndex);
+        _ = RefreshReaderStripAsync(new ReaderStripPlacement(targetPageIndex, anchorScreenX));
+    }
 
-        return targetLayoutIndex >= 0 && targetLayoutIndex < _readerStripLayoutSlots.Count
-            ? _readerStripLayoutSlots[targetLayoutIndex].PageIndex
-            : _readerState.CurrentPageIndex;
+    private double GetPageScreenCenter(int pageIndex, double stripOffset)
+    {
+        var slot = _readerStripLayoutSlots.FirstOrDefault(slot => slot.PageIndex == pageIndex);
+        return slot is null
+            ? _readerViewportWidth / 2
+            : stripOffset + slot.CenterX;
+    }
+
+    private double GetNextReadingDirectionOffsetDelta()
+    {
+        var magnitude = Math.Max(120, _readerViewportWidth * WheelFreeMoveViewportRatio);
+        return _readerState.ReadingDirection == ReadingDirection.RightToLeft
+            ? magnitude
+            : -magnitude;
     }
 
     private void ResetReaderStripDrag()
@@ -642,6 +664,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         ReaderStripTranslateX = _readerStripBaseOffset + _readerStripDragOffset;
     }
+
+    private sealed record ReaderStripPlacement(int AnchorPageIndex, double AnchorScreenX);
 
     private void UpdatePageStatus()
     {
