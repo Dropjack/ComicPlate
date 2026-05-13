@@ -200,15 +200,16 @@ MVP 策略：
 
 - 保存当前阅读流的轻量导航栈。
 - 记录用户从哪个容器进入当前内容。
-- 支持 Back 回到上一个容器或上一本书所在的上层上下文。
-- 区分“打开容器/打开 Book”和“跳转 Page”：前者进入导航历史，后者只更新阅读进度。
+- 支持 Back 回到上一个 shelf 容器或上一本书所在的上层上下文。
+- 区分“浏览 shelf 容器/打开 Book”和“跳转 Page”：前两者进入导航历史，Page 跳转只更新阅读进度。
 - 可单元测试。
 
 规则：
 
 - NavigationHistory 不是书架，不保存扫描结果，不保存缩略图，不保存目录内容。
-- 空启动 Continue 可以恢复少量历史 entry，让用户读完当前内容后继续 Back 回上层。
+- 空启动的 Continue Reading 可以恢复少量历史 entry，让用户读完当前内容后继续 Back 回上层。
 - 手动 Open 新内容时重置当前窗口的导航栈。
+- Back 默认只刷新左侧 Context Shelf，不强制清空或重置主阅读面板。
 - 导航栈应设置上限，例如 8 层，避免长期积累成文件浏览器历史。
 - MVP 只做 Back；Forward 留到确认真实需求后再评估。
 
@@ -235,7 +236,6 @@ public sealed class NavigationHistory
 责任：
 
 - 保存配置。
-- 保存最近打开。
 - 保存阅读进度。
 - 保存上次阅读会话的轻量恢复状态。
 - 只写 ComicPlate 自己的数据文件。
@@ -249,8 +249,8 @@ public sealed class NavigationHistory
 文件：
 
 - `settings.json`
-- `library.json`
 - `session.json`
+- `progress.json`
 
 位置：
 
@@ -267,7 +267,7 @@ public sealed class NavigationHistory
   "version": 1,
   "readingDirection": "RightToLeft",
   "defaultFitMode": "AutoFit",
-  "recentLimit": 20,
+    "progressLimit": 500,
   "restoreProgress": true,
   "readerStrip": {
     "neighborPageLimit": 2
@@ -275,14 +275,14 @@ public sealed class NavigationHistory
 }
 ```
 
-`library.json` 草案：
+`progress.json` 草案：
 
 ```json
 {
   "version": 1,
-  "books": [
-    {
-      "id": "D:\\Comics\\BookA",
+  "books": {
+    "D:\\Comics\\BookA": {
+      "path": "D:\\Comics\\BookA",
       "displayName": "BookA",
       "sourceKind": "Folder",
       "lastPageIndex": 41,
@@ -291,9 +291,19 @@ public sealed class NavigationHistory
       "viewMode": "DoublePage",
       "lastOpenedAt": "2026-04-25T10:30:00Z"
     }
-  ]
+  }
 }
 ```
+
+`progress.json` 规则：
+
+- 记录用于同一路径再次打开时恢复页码，不展示为历史列表。
+- progress key 使用最终打开的可阅读单元规范化路径，而不是启动入口路径或父容器路径。
+- 打开父文件夹只加载该容器和 shelf；用户从 shelf 点进某个 ZIP/CBZ/文件夹漫画时，才用该最终 Book 路径查询并应用 progress。
+- 记录数量必须有上限，MVP 默认 500 条；超过上限按 `lastOpenedAt` 删除最旧记录。
+- 关闭时如果当前 Book 停在最后一页，MVP 可以删除该 Book 的 progress 记录。
+- 路径变化视为新书；MVP 不做内容 hash 或跨盘符匹配。
+- 多窗口同时写同一本书时，最后写入胜出。
 
 `session.json` 草案：
 
@@ -324,7 +334,8 @@ public sealed class NavigationHistory
 - 配置文件格式当前仍按 JSON 草案记录。
 - 不为书架排序、分组、过滤预留配置；ComicPlate 不做漫画库管理。
 - `session.json` 只保存路径、类型、页码和少量 Back 栈；不保存容器扫描结果、缩略图缓存、全库索引或 UI 展开状态。
-- Continue 只读取 `session.json` 的当前内容并打开；只有用户触发 Back 时才重新读取上层路径。
+- Continue Reading 只读取 `session.json` 的当前内容并打开；只有用户触发 Back 时才重新读取上层路径。
+- 多窗口场景下，`lastSession` 表示最后更新或最后关闭的窗口，不表示窗口组或标签页系统。
 - 如果后续决定使用 TOML，应先作为单独决策记录，不和当前结构草案混用。
 
 ## 5. 错误处理
@@ -413,7 +424,6 @@ ComicPlate 不做 NeeView 式复杂命令系统，但需要一组简单固定 Ac
 - `FitToWindow`
 - `RevealInFileManager`
 - `CopyPath`
-- `RemoveFromRecent`
 
 规则：
 

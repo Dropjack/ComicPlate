@@ -12,14 +12,12 @@ public sealed class ContentListItemViewModel : ViewModelBase
         ContentListItemKind kind,
         string displayName,
         string detail,
-        BookEntry? book,
-        PageListItemViewModel? page)
+        BookEntry book)
     {
         Kind = kind;
         DisplayName = displayName;
         Detail = detail;
         Book = book;
-        Page = page;
     }
 
     public ContentListItemKind Kind { get; }
@@ -28,13 +26,7 @@ public sealed class ContentListItemViewModel : ViewModelBase
 
     public string Detail { get; }
 
-    public BookEntry? Book { get; }
-
-    public PageListItemViewModel? Page { get; }
-
-    public bool IsPage => Page is not null;
-
-    public bool IsBook => Book is not null;
+    public BookEntry Book { get; }
 
     public bool HasThumbnail => Thumbnail is not null;
 
@@ -42,10 +34,10 @@ public sealed class ContentListItemViewModel : ViewModelBase
     {
         ContentListItemKind.Archive => "ZIP",
         ContentListItemKind.Folder => "Folder",
-        _ => ""
+        _ => "Folder"
     };
 
-    public bool HasKindOverlay => Kind != ContentListItemKind.Page;
+    public bool HasKindOverlay => true;
 
     public Bitmap? Thumbnail
     {
@@ -82,20 +74,11 @@ public sealed class ContentListItemViewModel : ViewModelBase
         var detail = book.SourceKind switch
         {
             BookSourceKind.Collection => "Folder",
+            BookSourceKind.Image => "Image",
             BookSourceKind.Zip => "ZIP/CBZ",
             _ => "Comic folder"
         };
 
-        return new ContentListItemViewModel(kind, book.DisplayName, detail, book, null);
-    }
-
-    public static ContentListItemViewModel FromPage(PageListItemViewModel page)
-    {
-        return new ContentListItemViewModel(
-            ContentListItemKind.Page,
-            page.FileName,
-            $"Page {page.DisplayIndex}",
-            null,
-            page);
+        return new ContentListItemViewModel(kind, book.DisplayName, detail, book);
     }
 }

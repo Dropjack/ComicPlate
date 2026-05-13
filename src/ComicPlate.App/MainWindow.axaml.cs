@@ -11,23 +11,41 @@ namespace ComicPlate.App;
 public partial class MainWindow : Window
 {
     private readonly MainWindowViewModel _viewModel;
+    private readonly string? _startupPath;
     private bool _isReaderDragging;
     private Point _readerDragStartPoint;
 
     public MainWindow()
+        : this(null)
+    {
+    }
+
+    public MainWindow(string? startupPath)
     {
         InitializeComponent();
+        _startupPath = startupPath;
         _viewModel = new MainWindowViewModel(
             new FolderPickerService(this),
             new ImagePageLoader());
         DataContext = _viewModel;
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         Opened += OnOpened;
+        Closed += OnClosed;
     }
 
     private void OnOpened(object? sender, EventArgs e)
     {
         Dispatcher.UIThread.Post(() => Focus());
+
+        if (!string.IsNullOrWhiteSpace(_startupPath))
+        {
+            Dispatcher.UIThread.Post(async () => await _viewModel.OpenStartupPathAsync(_startupPath));
+        }
+    }
+
+    private void OnClosed(object? sender, EventArgs e)
+    {
+        _viewModel.SaveCurrentState();
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)

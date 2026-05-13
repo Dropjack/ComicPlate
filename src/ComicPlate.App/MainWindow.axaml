@@ -30,7 +30,7 @@
                 Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource BorderBrushSoft}"
                 BorderThickness="0,0,0,1">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto"
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto"
                   Margin="10,0"
                   ColumnSpacing="8"
                   VerticalAlignment="Center">
@@ -50,13 +50,19 @@
                         Padding="12,5"
                         CornerRadius="4"
                         IsVisible="{Binding IsReaderVisible}" />
-                <TextBlock Grid.Column="3"
+                <Button Grid.Column="3"
+                        Command="{Binding ToggleViewModeCommand}"
+                        Content="{Binding ViewModeText}"
+                        Padding="12,5"
+                        CornerRadius="4"
+                        IsVisible="{Binding IsReaderVisible}" />
+                <TextBlock Grid.Column="4"
                            Text="{Binding HeaderTitle}"
                            Foreground="{StaticResource TextBrush}"
                            FontSize="15"
                            VerticalAlignment="Center"
                            TextTrimming="CharacterEllipsis" />
-                <TextBlock Grid.Column="4"
+                <TextBlock Grid.Column="5"
                            Text="AutoFit"
                            Foreground="{StaticResource MutedTextBrush}"
                            VerticalAlignment="Center" />
@@ -71,42 +77,32 @@
                     BorderBrush="{StaticResource BorderBrushSoft}"
                     BorderThickness="0,0,1,0">
                 <StackPanel Margin="14"
-                            Spacing="18">
+                            Spacing="10">
                     <TextBlock Text="ComicPlate"
                                FontSize="24"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource TextBrush}" />
-                    <StackPanel Spacing="8">
-                        <Button Command="{Binding OpenFolderCommand}"
-                                Content="Open Folder"
-                                HorizontalAlignment="Stretch"
-                                Padding="12,8"
-                                CornerRadius="4" />
-                        <TextBlock Text="Subfolders are included by default."
-                                   Foreground="{StaticResource MutedTextBrush}"
-                                   FontSize="12" />
-                    </StackPanel>
                 </StackPanel>
             </Border>
 
             <Grid Grid.Column="1"
-                  RowDefinitions="Auto,*"
+                  RowDefinitions="*,Auto,*"
                   Margin="24">
-                <TextBlock Text="Recent"
-                           FontSize="18"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource TextBrush}" />
-                <Border Grid.Row="1"
-                        Margin="0,12,0,0"
-                        Background="{StaticResource PanelBrush}"
-                        BorderBrush="{StaticResource BorderBrushSoft}"
-                        BorderThickness="1"
-                        CornerRadius="6">
-                    <TextBlock Text="No recent books yet."
-                               Foreground="{StaticResource MutedTextBrush}"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center" />
-                </Border>
+                <StackPanel Grid.Row="1"
+                            Width="260"
+                            HorizontalAlignment="Center"
+                            Spacing="10">
+                    <Button Command="{Binding OpenLastReadingPositionCommand}"
+                            Content="{Binding LastReadingPositionText}"
+                            HorizontalAlignment="Stretch"
+                            Padding="12,9"
+                            CornerRadius="4" />
+                    <Button Command="{Binding OpenFolderCommand}"
+                            Content="Open Comics"
+                            HorizontalAlignment="Stretch"
+                            Padding="12,9"
+                            CornerRadius="4" />
+                </StackPanel>
             </Grid>
         </Grid>
 
@@ -122,7 +118,7 @@
                     BorderBrush="{StaticResource BorderBrushSoft}"
                     BorderThickness="0,0,1,0">
                 <Grid RowDefinitions="36,36,*">
-                    <TextBlock Text="Contents"
+                    <TextBlock Text="Shelf"
                                Margin="12,0"
                                Foreground="{StaticResource TextBrush}"
                                FontWeight="SemiBold"

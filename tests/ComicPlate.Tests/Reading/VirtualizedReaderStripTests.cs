@@ -15,6 +15,19 @@ public sealed class VirtualizedReaderStripTests
     }
 
     [Fact]
+    public void CreatesRightToLeftDoublePageWindowInVisualOrder()
+    {
+        var strip = new VirtualizedReaderStrip(neighborPageLimit: 2);
+
+        var window = strip.CreateWindow(
+            pageCount: 7,
+            currentGroupPageIndexes: new[] { 2, 1 },
+            ReadingDirection.RightToLeft);
+
+        Assert.Equal(new[] { 4, 3, 2, 1, 0 }, window);
+    }
+
+    [Fact]
     public void CentersCurrentSlot()
     {
         var strip = new VirtualizedReaderStrip(neighborPageLimit: 2);
@@ -25,6 +38,19 @@ public sealed class VirtualizedReaderStripTests
         var offset = strip.GetCenteredOffset(layout, currentPageIndex: 3, viewportWidth: 500);
 
         Assert.Equal(100, offset);
+    }
+
+    [Fact]
+    public void CentersCurrentGroup()
+    {
+        var strip = new VirtualizedReaderStrip(neighborPageLimit: 2);
+        var window = new[] { 4, 3, 2, 1, 0 };
+        var extents = window.ToDictionary(index => index, _ => 100.0);
+        var layout = strip.CreateLayout(window, currentPageIndexes: new[] { 2, 1 }, extents);
+
+        var offset = strip.GetCenteredOffset(layout, currentPageIndexes: new[] { 2, 1 }, viewportWidth: 500);
+
+        Assert.Equal(-50, offset);
     }
 
     [Fact]

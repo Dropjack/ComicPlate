@@ -106,6 +106,32 @@ public sealed class ReaderStateTests
         Assert.Equal(new[] { 2, 1 }, state.CurrentReadingGroupPageIndexes);
     }
 
+    [Fact]
+    public void DoublePageModeNormalizesCurrentPageToSpreadStart()
+    {
+        var state = new ReaderState();
+        state.LoadPages(CreatePages(5));
+        state.SetViewMode(ViewMode.DoublePage);
+
+        state.GoToPage(2);
+
+        Assert.Equal(1, state.CurrentPageIndex);
+        Assert.Equal(new[] { 2, 1 }, state.CurrentReadingGroupPageIndexes);
+    }
+
+    [Fact]
+    public void DoublePageModeLastPageOpensLastSpread()
+    {
+        var state = new ReaderState();
+        state.LoadPages(CreatePages(5));
+        state.SetViewMode(ViewMode.DoublePage);
+
+        state.GoToLastPage();
+
+        Assert.Equal(3, state.CurrentPageIndex);
+        Assert.Equal(new[] { 4, 3 }, state.CurrentReadingGroupPageIndexes);
+    }
+
     private static IReadOnlyList<PageEntry> CreatePages(int count)
     {
         return Enumerable.Range(0, count)

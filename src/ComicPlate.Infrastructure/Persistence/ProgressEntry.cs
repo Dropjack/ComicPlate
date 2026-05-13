@@ -3,8 +3,8 @@ using ComicPlate.Core.Reading;
 
 namespace ComicPlate.Infrastructure.Persistence;
 
-public sealed record LibraryBookEntry(
-    string Id,
+public sealed record ProgressEntry(
+    string Path,
     string DisplayName,
     BookSourceKind SourceKind,
     int LastPageIndex,

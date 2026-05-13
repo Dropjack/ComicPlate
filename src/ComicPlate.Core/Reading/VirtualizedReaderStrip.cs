@@ -16,25 +16,43 @@ public sealed class VirtualizedReaderStrip
 
     public IReadOnlyList<int> CreateWindow(int pageCount, int currentPageIndex, ReadingDirection readingDirection)
     {
+        return CreateWindow(pageCount, new[] { currentPageIndex }, readingDirection);
+    }
+
+    public IReadOnlyList<int> CreateWindow(
+        int pageCount,
+        IReadOnlyList<int> currentGroupPageIndexes,
+        ReadingDirection readingDirection)
+    {
         if (pageCount <= 0)
         {
             return Array.Empty<int>();
         }
 
-        var clampedCurrentIndex = Math.Clamp(currentPageIndex, 0, pageCount - 1);
+        var currentGroup = currentGroupPageIndexes
+            .Select(index => Math.Clamp(index, 0, pageCount - 1))
+            .Distinct()
+            .ToArray();
+        if (currentGroup.Length == 0)
+        {
+            return Array.Empty<int>();
+        }
+
+        var firstLogicalIndex = currentGroup.Min();
+        var lastLogicalIndex = currentGroup.Max();
         var indexes = new List<int>();
 
         if (readingDirection == ReadingDirection.RightToLeft)
         {
-            AddIndexes(indexes, pageCount, clampedCurrentIndex, direction: 1, farToNear: true);
-            indexes.Add(clampedCurrentIndex);
-            AddIndexes(indexes, pageCount, clampedCurrentIndex, direction: -1, farToNear: false);
+            AddIndexes(indexes, pageCount, lastLogicalIndex, direction: 1, farToNear: true);
+            indexes.AddRange(currentGroup);
+            AddIndexes(indexes, pageCount, firstLogicalIndex, direction: -1, farToNear: false);
         }
         else
         {
-            AddIndexes(indexes, pageCount, clampedCurrentIndex, direction: -1, farToNear: true);
-            indexes.Add(clampedCurrentIndex);
-            AddIndexes(indexes, pageCount, clampedCurrentIndex, direction: 1, farToNear: false);
+            AddIndexes(indexes, pageCount, firstLogicalIndex, direction: -1, farToNear: true);
+            indexes.AddRange(currentGroup);
+            AddIndexes(indexes, pageCount, lastLogicalIndex, direction: 1, farToNear: false);
         }
 
         return indexes;
@@ -45,8 +63,17 @@ public sealed class VirtualizedReaderStrip
         int currentPageIndex,
         IReadOnlyDictionary<int, double> pageExtents)
     {
+        return CreateLayout(windowPageIndexes, new[] { currentPageIndex }, pageExtents);
+    }
+
+    public IReadOnlyList<VirtualizedReaderStripSlot> CreateLayout(
+        IReadOnlyList<int> windowPageIndexes,
+        IReadOnlyCollection<int> currentPageIndexes,
+        IReadOnlyDictionary<int, double> pageExtents)
+    {
         var slots = new List<VirtualizedReaderStripSlot>();
         var cursor = 0.0;
+        var currentPages = currentPageIndexes.ToHashSet();
 
         foreach (var pageIndex in windowPageIndexes)
         {
@@ -57,7 +84,7 @@ public sealed class VirtualizedReaderStrip
 
             slots.Add(new VirtualizedReaderStripSlot(
                 pageIndex,
-                pageIndex == currentPageIndex,
+                currentPages.Contains(pageIndex),
                 cursor,
                 extent));
             cursor += extent;
@@ -71,10 +98,26 @@ public sealed class VirtualizedReaderStrip
         int currentPageIndex,
         double viewportWidth)
     {
-        var currentSlot = slots.FirstOrDefault(slot => slot.PageIndex == currentPageIndex);
-        return currentSlot is null
-            ? 0
-            : (viewportWidth / 2) - currentSlot.CenterX;
+        return GetCenteredOffset(slots, new[] { currentPageIndex }, viewportWidth);
+    }
+
+    public double GetCenteredOffset(
+        IReadOnlyList<VirtualizedReaderStripSlot> slots,
+        IReadOnlyCollection<int> currentPageIndexes,
+        double viewportWidth)
+    {
+        var currentSlots = slots
+            .Where(slot => currentPageIndexes.Contains(slot.PageIndex))
+            .ToArray();
+        if (currentSlots.Length == 0)
+        {
+            return 0;
+        }
+
+        var startX = currentSlots.Min(slot => slot.StartX);
+        var endX = currentSlots.Max(slot => slot.StartX + slot.Extent);
+        var centerX = startX + ((endX - startX) / 2);
+        return (viewportWidth / 2) - centerX;
     }
 
     public int FindNearestPageIndex(

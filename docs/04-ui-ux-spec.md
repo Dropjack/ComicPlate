@@ -11,7 +11,7 @@
 
 阅读页基础布局：
 
-- 左侧：当前容器的 Books+Pages 统一侧栏。
+- 左侧：当前容器的 Context Shelf。
 - 中央：横向阅读画布。
 - 顶部：轻量工具栏。
 - 底部：页码/进度区。
@@ -30,61 +30,54 @@ exe 空启动时显示启动面板。启动面板不是书架，不扫描任何�
 启动面板显示：
 
 - 应用名 ComicPlate。
-- Continue：继续上一次内容。
-- Open：打开新内容。
-- 最近打开列表。
+- Continue Reading：继续阅读上一次位置；有记录时可显示为 `Continue Reading "BookA.cbz"`。
+- Open Comics：打开漫画。
 
 如果 ComicPlate 由文件关联或命令行路径启动，应跳过启动面板，直接打开传入内容。
 
-最近打开列表每项显示：
-
-- 名称：文件夹名或压缩包文件名。
-- 路径，弱化显示。
-- 上次阅读页码，如 `42 / 180`。
-- 最后打开时间。
-
-空最近列表：
-
-- 显示简短空状态，不写长说明。
-
 启动面板不规定具体按钮位置。按钮、图标、布局细节由实现阶段根据 Windows 风格调整。
 
-Continue 行为：
+Continue Reading 行为：
 
-- 点击 Continue 后直接打开上次正在阅读的内容，并恢复到上次页码。
-- Continue 不展示完整书架，不扫描上层目录，不预加载最近列表以外的内容。
+- 点击后直接打开上次正在阅读的内容，并恢复到上次页码。
+- 没有可恢复会话时按钮不可用，不额外显示说明文字。
+- 不展示完整书架，不扫描上层目录，不展示历史列表。
 - 如果上次阅读状态保存了轻量导航上下文，进入阅读页后 Back 可以回到上层容器。
 - 如果上层路径已经不存在或无法读取，保留当前内容阅读，并用轻量状态提示说明 Back 不可用。
+- 动态名称优先显示有意义的文件夹/压缩包名；单张图片通常文件名无意义，后续 UX 可以显示上层一到两级目录。
+
+Open Comics 行为：
+
+- 入口位于启动面板中央主操作区。
+- MVP 阶段可以先复用现有文件夹选择器；后续扩展为文件夹、ZIP/CBZ、图片统一打开。
+- 文案先使用英文，UX 阶段再统一本地化。
 
 ## 3. 阅读页
 
 阅读页区域：
 
-- 左侧：Books+Pages 统一列表。
+- 左侧：Context Shelf。
 - 中央：横向阅读带。
 - 顶部：轻量工具栏。
 - 底部：页码/进度条。
 
-Books+Pages 统一列表 MVP 项：
+Context Shelf MVP 项：
 
-- 显示当前容器一层内容。
-- Book-like entry：当前层文件夹、ZIP/CBZ。
-- Page entry：当前层支持格式图片。
+- 显示当前容器一层可打开项。
+- Shelf entry：当前层文件夹、ZIP/CBZ。
 - 每项显示缩略图或类型占位图。
-- 图片 Page entry 直接展示图片缩略图。
-- ZIP/CBZ 和文件夹 Book-like entry 展示封面缩略图，并叠加类型遮罩或角标。
-- 当前正在阅读的 Page 高亮。
-- 点击 Page entry 跳转到该页。
-- 点击 Book-like entry 打开该项。
+- ZIP/CBZ 和文件夹 Shelf entry 展示封面缩略图，并叠加类型遮罩或角标。
+- 点击 Shelf entry 打开该项或进入该容器。
+- 当前层图片不进入左侧栏；它们显示在主阅读/预览面板。
 
 左侧栏关系：
 
-- 左侧导航面板只显示当前容器的一层 Books+Pages 统一列表。
-- 最近打开属于启动面板或菜单，不放进阅读页侧栏作为书架。
+- 左侧导航面板只显示当前容器的一层 Context Shelf。
+- 最近打开列表不进入 MVP，也不放进阅读页侧栏作为书架。
 - 当前 Book 可以是文件夹、ZIP/CBZ，或后续支持的其他漫画压缩包。
 - 左侧导航面板可以隐藏和显示；MVP 先做简单切换，不做动画、不做停靠、不做持久化。
 - 左侧导航面板不承担完整文件浏览器职责。MVP 可以有轻量 Back，但不做面包屑路径、树形目录或全量递归播放列表。
-- Back 只回到本次阅读流里进入过的上层容器或恢复状态中保存的轻量上层路径，不等同于系统文件浏览器历史。
+- Back 只改变左侧 Context Shelf 的当前容器，不强制清空或重置主阅读面板；它不等同于系统文件浏览器历史。
 
 左侧栏暂不做：
 
@@ -99,10 +92,9 @@ Books+Pages 统一列表 MVP 项：
 - 用户自定义面板布局。
 - 底部缩略图。
 
-统一侧栏缩略图视觉规则：
+Context Shelf 缩略图视觉规则：
 
 - 缩略图尺寸固定，列表滚动时不能因为图片加载导致行高跳动。
-- 图片 entry 不显示额外类型遮罩，保持直接预览感。
 - 文件夹 entry 使用文件夹角标或半透明遮罩。
 - 压缩包 entry 使用 ZIP/CBZ 角标或半透明遮罩。
 - 缩略图加载前显示稳定占位图。
@@ -192,25 +184,13 @@ Books+Pages 统一列表 MVP 项：
 - Reveal in Finder/Explorer。
 - Copy Current File Path。
 
-目录侧栏：
-
-- Jump to Page。
-- Reveal in Finder/Explorer。
-- Copy Path。
-
-最近打开列表：
+Context Shelf：
 
 - Open。
 - Reveal in Finder/Explorer。
 - Copy Path。
-- Remove from Recent。
 
-Books+Pages 统一列表：
-
-- Open。
-- Jump to Page。
-- Reveal in Finder/Explorer。
-- Copy Path。
+Page 导航以后交给底部进度条/缩略图条，不放在左侧栏作为主导航。
 
 不做：
 
@@ -227,7 +207,7 @@ Books+Pages 统一列表：
 
 - Reading：阅读方向、单页/双页、封面单独显示。
 - Display：适配窗口、背景色、图片插值质量。
-- Recent：是否自动恢复进度、最近打开数量。
+- Progress：是否自动恢复进度、进度记录上限。
 - File Associations：是否关联 ZIP/CBZ、后续 CBR/CB7，以及是否作为图片查看器。
 - Shortcuts：V1 做快捷键预设或少量自定义；MVP 不做快捷键设置页。
 

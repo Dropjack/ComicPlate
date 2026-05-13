@@ -57,10 +57,15 @@ public sealed class ReaderState
     public void LoadPages(IReadOnlyList<PageEntry> pages, int initialPageIndex = 0)
     {
         _pages = pages;
-        CurrentPageIndex = ClampPageIndex(initialPageIndex);
+        CurrentPageIndex = NormalizePageIndexForViewMode(ClampPageIndex(initialPageIndex));
     }
 
     public void GoToPage(int pageIndex)
+    {
+        CurrentPageIndex = NormalizePageIndexForViewMode(ClampPageIndex(pageIndex));
+    }
+
+    public void GoToFrameStartPage(int pageIndex)
     {
         CurrentPageIndex = ClampPageIndex(pageIndex);
     }
@@ -72,7 +77,7 @@ public sealed class ReaderState
 
     public void GoToLastPage()
     {
-        CurrentPageIndex = HasPages ? PageCount - 1 : 0;
+        CurrentPageIndex = NormalizePageIndexForViewMode(HasPages ? PageCount - 1 : 0);
     }
 
     public void NextPage()
@@ -94,6 +99,7 @@ public sealed class ReaderState
     public void SetViewMode(ViewMode viewMode)
     {
         ViewMode = viewMode;
+        CurrentPageIndex = NormalizePageIndexForViewMode(CurrentPageIndex);
     }
 
     public void SetReadingDirection(ReadingDirection readingDirection)
@@ -109,6 +115,16 @@ public sealed class ReaderState
         }
 
         return Math.Clamp(pageIndex, 0, PageCount - 1);
+    }
+
+    private int NormalizePageIndexForViewMode(int pageIndex)
+    {
+        if (ViewMode != ViewMode.DoublePage || pageIndex <= 0)
+        {
+            return pageIndex;
+        }
+
+        return pageIndex % 2 == 0 ? pageIndex - 1 : pageIndex;
     }
 
     private int GetReadingGroupStep()

@@ -58,6 +58,36 @@ public sealed class NavigationHistoryTests
         Assert.False(history.CanGoBack);
     }
 
+    [Fact]
+    public void BackStackIsLimitedToEightEntries()
+    {
+        var history = new NavigationHistory();
+        history.StartAt(CreateEntry("root"));
+
+        for (var index = 1; index <= 10; index++)
+        {
+            history.NavigateTo(CreateEntry($"item-{index}"));
+        }
+
+        Assert.Equal(8, history.BackStack.Count);
+        Assert.Equal("item-9", history.BackStack[0].Path);
+        Assert.Equal("item-2", history.BackStack[^1].Path);
+    }
+
+    [Fact]
+    public void RestoreKeepsBackOrder()
+    {
+        var history = new NavigationHistory();
+
+        history.Restore(
+            CreateEntry("book"),
+            new[] { CreateEntry("series"), CreateEntry("root") });
+
+        Assert.Equal("series", history.Back()?.Path);
+        Assert.Equal("root", history.Back()?.Path);
+        Assert.False(history.CanGoBack);
+    }
+
     private static NavigationEntry CreateEntry(string path)
     {
         return new NavigationEntry(path, path, BookSourceKind.Collection);

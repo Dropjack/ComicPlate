@@ -48,16 +48,6 @@ public sealed class SidebarThumbnailLoader : IDisposable
 
     private async Task<Bitmap?> LoadThumbnailAsync(ContentListItemViewModel item, CancellationToken cancellationToken)
     {
-        if (item.Page is not null)
-        {
-            return await LoadPageThumbnailAsync($"page:{item.Page.Page.LogicalPath}", item.Page.Page, cancellationToken);
-        }
-
-        if (item.Book is null)
-        {
-            return null;
-        }
-
         return item.Book.SourceKind switch
         {
             BookSourceKind.Zip => await LoadZipThumbnailAsync(item.Book, cancellationToken),

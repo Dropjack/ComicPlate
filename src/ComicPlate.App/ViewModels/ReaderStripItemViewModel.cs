@@ -5,9 +5,7 @@ namespace ComicPlate.App.ViewModels;
 
 public sealed class ReaderStripItemViewModel : ViewModelBase
 {
-    private const double HorizontalPadding = 24;
-    private const double VerticalPadding = 24;
-    private const double MinimumDisplaySize = 160;
+    private const double DecodeScale = 2.0;
 
     private double _displayHeight = 320;
     private double _displayWidth = 240;
@@ -28,6 +26,10 @@ public sealed class ReaderStripItemViewModel : ViewModelBase
     public string PageLabel => Slot.DisplayIndex.ToString();
 
     public bool IsCurrent => Slot.IsCurrent;
+
+    public int DecodePixelWidth => Math.Max(1, (int)Math.Ceiling(DisplayWidth * DecodeScale));
+
+    public int DecodePixelHeight => Math.Max(1, (int)Math.Ceiling(DisplayHeight * DecodeScale));
 
     public double DisplayWidth
     {
@@ -52,7 +54,6 @@ public sealed class ReaderStripItemViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(HasImage));
                 OnPropertyChanged(nameof(HasMessage));
-                RecalculateDisplaySize();
             }
         }
     }
@@ -82,29 +83,13 @@ public sealed class ReaderStripItemViewModel : ViewModelBase
 
         _viewportWidth = width;
         _viewportHeight = height;
-        RecalculateDisplaySize();
     }
 
-    private void RecalculateDisplaySize()
+    public void SetDisplaySize(double width, double height)
     {
-        var availableWidth = Math.Max(MinimumDisplaySize, _viewportWidth - HorizontalPadding);
-        var availableHeight = Math.Max(MinimumDisplaySize, _viewportHeight - VerticalPadding);
-
-        if (Image is null)
-        {
-            DisplayWidth = Math.Min(availableWidth, 320);
-            DisplayHeight = Math.Min(availableHeight, 420);
-            return;
-        }
-
-        var size = PageDisplaySizeCalculator.Calculate(
-            Image.PixelSize.Width,
-            Image.PixelSize.Height,
-            availableWidth,
-            availableHeight,
-            FitMode.AutoFit);
-
-        DisplayWidth = size.Width;
-        DisplayHeight = size.Height;
+        DisplayWidth = Math.Max(1, width);
+        DisplayHeight = Math.Max(1, height);
+        OnPropertyChanged(nameof(DecodePixelWidth));
+        OnPropertyChanged(nameof(DecodePixelHeight));
     }
 }
