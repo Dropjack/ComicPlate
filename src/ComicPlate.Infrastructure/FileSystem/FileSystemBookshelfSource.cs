@@ -28,32 +28,17 @@ public sealed class FileSystemBookshelfSource : IBookshelfSource
 
     private IEnumerable<BookEntry> EnumerateBookEntries(CancellationToken cancellationToken)
     {
-        foreach (var book in EnumerateBookEntriesInDirectory(_rootPath, allowCurrentDirectoryAsBook: false, cancellationToken))
-        {
-            yield return book;
-        }
-    }
-
-    private static IEnumerable<BookEntry> EnumerateBookEntriesInDirectory(
-        string directory,
-        bool allowCurrentDirectoryAsBook,
-        CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var fullDirectoryPath = Path.GetFullPath(directory);
-
-        if (allowCurrentDirectoryAsBook && ContainsDirectPageFiles(fullDirectoryPath, cancellationToken))
+        if (ContainsDirectPageFiles(_rootPath, cancellationToken))
         {
             yield return new BookEntry(
-                fullDirectoryPath,
-                Path.GetFileName(fullDirectoryPath),
+                _rootPath,
+                Path.GetFileName(_rootPath),
                 BookSourceKind.Folder,
-                fullDirectoryPath);
+                _rootPath);
             yield break;
         }
 
-        foreach (var archive in EnumerateArchiveFiles(fullDirectoryPath, cancellationToken))
+        foreach (var archive in EnumerateArchiveFiles(_rootPath, cancellationToken))
         {
             var fullPath = Path.GetFullPath(archive);
             yield return new BookEntry(
@@ -63,13 +48,36 @@ public sealed class FileSystemBookshelfSource : IBookshelfSource
                 fullPath);
         }
 
-        foreach (var childDirectory in EnumerateDirectories(fullDirectoryPath, cancellationToken))
+        foreach (var childDirectory in EnumerateDirectories(_rootPath, cancellationToken))
         {
-            foreach (var book in EnumerateBookEntriesInDirectory(childDirectory, allowCurrentDirectoryAsBook: true, cancellationToken))
+            var fullPath = Path.GetFullPath(childDirectory);
+            var sourceKind = GetDirectorySourceKind(fullPath, cancellationToken);
+            if (sourceKind is null)
             {
-                yield return book;
+                continue;
             }
+
+            yield return new BookEntry(
+                fullPath,
+                Path.GetFileName(fullPath),
+                sourceKind.Value,
+                fullPath);
         }
+    }
+
+    private static BookSourceKind? GetDirectorySourceKind(string directory, CancellationToken cancellationToken)
+    {
+        if (ContainsDirectPageFiles(directory, cancellationToken))
+        {
+            return BookSourceKind.Folder;
+        }
+
+        if (ContainsChildContentCandidates(directory, cancellationToken))
+        {
+            return BookSourceKind.Collection;
+        }
+
+        return null;
     }
 
     private static IEnumerable<string> EnumerateDirectories(string directory, CancellationToken cancellationToken)
@@ -87,6 +95,12 @@ public sealed class FileSystemBookshelfSource : IBookshelfSource
     {
         return EnumerateFiles(directory, cancellationToken)
             .Any(file => SupportedPageFormats.IsSupportedExtension(Path.GetExtension(file)));
+    }
+
+    private static bool ContainsChildContentCandidates(string directory, CancellationToken cancellationToken)
+    {
+        return EnumerateArchiveFiles(directory, cancellationToken).Any()
+            || EnumerateDirectories(directory, cancellationToken).Any();
     }
 
     private static IEnumerable<string> EnumerateFiles(string directory, CancellationToken cancellationToken)

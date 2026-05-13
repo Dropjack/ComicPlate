@@ -89,7 +89,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
             _currentBookIndex = value;
             OnPropertyChanged(nameof(CurrentBookIndex));
-            _ = OpenBookAsync(BookItems[value].Book);
+            _ = ActivateBookItemAsync(BookItems[value].Book);
         }
     }
 
@@ -283,7 +283,12 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             var source = new FileSystemBookshelfSource(folderPath);
             var bookshelf = await Task.Run(() => source.LoadAsync(CancellationToken.None));
-            LoadBookshelf(bookshelf);
+            var autoOpenBook = LoadBookshelf(bookshelf);
+
+            if (autoOpenBook is not null)
+            {
+                await OpenBookAsync(autoOpenBook);
+            }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -297,7 +302,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private void LoadBookshelf(Bookshelf bookshelf)
+    private BookEntry? LoadBookshelf(Bookshelf bookshelf)
     {
         BookItems.Clear();
 
@@ -313,11 +318,61 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         if (BookItems.Count == 0)
         {
-            SetMessage("This bookshelf has no folder comics or ZIP/CBZ comics.");
+            SetMessage("This folder has no readable contents.");
+            return null;
+        }
+
+        if (BookItems.Count == 1 &&
+            BookItems[0].Book.SourceKind == BookSourceKind.Folder &&
+            Path.GetFullPath(BookItems[0].Book.Path) == Path.GetFullPath(bookshelf.RootPath))
+        {
+            _currentBookIndex = 0;
+            OnPropertyChanged(nameof(CurrentBookIndex));
+            return BookItems[0].Book;
+        }
+
+        SetMessage("Select an item from the current folder.");
+        return null;
+    }
+
+    private async Task ActivateBookItemAsync(BookEntry book)
+    {
+        if (book.SourceKind == BookSourceKind.Collection)
+        {
+            await OpenContentFolderAsync(book.Path);
             return;
         }
 
-        SetMessage("Select a comic from the bookshelf.");
+        await OpenBookAsync(book);
+    }
+
+    private async Task OpenContentFolderAsync(string folderPath)
+    {
+        IsLoading = true;
+        HeaderTitle = Path.GetFileName(folderPath);
+        SetMessage("Loading contents...");
+
+        try
+        {
+            var source = new FileSystemBookshelfSource(folderPath);
+            var bookshelf = await Task.Run(() => source.LoadAsync(CancellationToken.None));
+            var autoOpenBook = LoadBookshelf(bookshelf);
+
+            if (autoOpenBook is not null)
+            {
+                await OpenBookAsync(autoOpenBook);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            BookItems.Clear();
+            LoadPages(Array.Empty<PageEntry>());
+            SetMessage("ComicPlate could not read this folder.");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     private async Task OpenBookAsync(BookEntry book)
@@ -330,7 +385,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             IBookSource source = book.SourceKind == BookSourceKind.Zip
                 ? new ZipBookSource(book.Path)
-                : new FolderBookSource(book.Path, recursive: true);
+                : new FolderBookSource(book.Path, recursive: false);
 
             var pages = await Task.Run(() => source.LoadPagesAsync(CancellationToken.None));
             LoadPages(pages);

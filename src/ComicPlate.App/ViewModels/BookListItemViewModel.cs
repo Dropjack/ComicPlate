@@ -13,5 +13,10 @@ public sealed class BookListItemViewModel
 
     public string DisplayName => Book.DisplayName;
 
-    public string SourceLabel => Book.SourceKind == BookSourceKind.Zip ? "ZIP/CBZ" : "Folder";
+    public string SourceLabel => Book.SourceKind switch
+    {
+        BookSourceKind.Collection => "Folder",
+        BookSourceKind.Zip => "ZIP/CBZ",
+        _ => "Comic"
+    };
 }
