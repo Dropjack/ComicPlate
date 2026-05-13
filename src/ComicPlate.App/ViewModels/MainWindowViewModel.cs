@@ -3,6 +3,7 @@ using System.Windows.Input;
 using Avalonia.Media.Imaging;
 using ComicPlate.App.Services;
 using ComicPlate.Core.Books;
+using ComicPlate.Core.Navigation;
 using ComicPlate.Core.Reading;
 using ComicPlate.Infrastructure.FileSystem;
 
@@ -16,12 +17,16 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private readonly IFolderPickerService _folderPickerService;
     private readonly ImagePageLoader _imagePageLoader;
+    private readonly SidebarThumbnailLoader _sidebarThumbnailLoader;
+    private readonly NavigationHistory _navigationHistory = new();
     private readonly ReaderState _readerState = new();
     private readonly VirtualizedReaderStrip _readerStrip = new(NeighborPageLimit);
     private readonly Dictionary<int, Bitmap> _imageCache = new();
     private IReadOnlyList<VirtualizedReaderStripSlot> _readerStripLayoutSlots = Array.Empty<VirtualizedReaderStripSlot>();
+    private CancellationTokenSource _sidebarThumbnailCancellationTokenSource = new();
     private string _currentLogicalPath = "";
     private int _currentBookIndex = -1;
+    private int _currentContentIndex = -1;
     private int _currentPageIndex;
     private string _headerTitle = "ComicPlate";
     private bool _isNavigationPaneVisible = true;
@@ -41,10 +46,12 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         _folderPickerService = folderPickerService;
         _imagePageLoader = imagePageLoader;
+        _sidebarThumbnailLoader = new SidebarThumbnailLoader();
 
         OpenFolderCommand = new AsyncRelayCommand(OpenFolderAsync, () => !IsLoading);
         ShowStartCommand = new RelayCommand(ShowStart);
         ToggleNavigationPaneCommand = new RelayCommand(ToggleNavigationPane);
+        BackCommand = new RelayCommand(GoBack, () => CanGoBack);
         NextPageCommand = new RelayCommand(NextPage, () => _readerState.CanGoNext);
         PreviousPageCommand = new RelayCommand(PreviousPage, () => _readerState.CanGoPrevious);
         VisualLeftCommand = new RelayCommand(VisualLeft);
@@ -57,6 +64,8 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public ObservableCollection<PageListItemViewModel> PageItems { get; } = new();
 
+    public ObservableCollection<ContentListItemViewModel> ContentItems { get; } = new();
+
     public ObservableCollection<ReaderStripItemViewModel> ReaderStripItems { get; private set; } = new();
 
     public ICommand OpenFolderCommand { get; }
@@ -64,6 +73,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ICommand ShowStartCommand { get; }
 
     public ICommand ToggleNavigationPaneCommand { get; }
+
+    public RelayCommand BackCommand { get; }
 
     public RelayCommand NextPageCommand { get; }
 
@@ -139,6 +150,8 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public string NavigationPaneToggleText => IsNavigationPaneVisible ? "Hide Panels" : "Show Panels";
 
+    public bool CanGoBack => _navigationHistory.CanGoBack && !IsLoading;
+
     public bool IsLoading
     {
         get => _isLoading;
@@ -203,6 +216,22 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         get => _readerStripTranslateX;
         private set => SetProperty(ref _readerStripTranslateX, value);
+    }
+
+    public int CurrentContentIndex
+    {
+        get => _currentContentIndex;
+        set
+        {
+            if (value == _currentContentIndex || value < 0 || value >= ContentItems.Count)
+            {
+                return;
+            }
+
+            _currentContentIndex = value;
+            OnPropertyChanged(nameof(CurrentContentIndex));
+            _ = ActivateContentItemAsync(ContentItems[value]);
+        }
     }
 
     public void SetReaderViewportSize(double width, double height)
@@ -277,24 +306,17 @@ public sealed class MainWindowViewModel : ViewModelBase
         IsLoading = true;
         HeaderTitle = Path.GetFileName(folderPath);
         ShowReader();
-        SetMessage("Loading bookshelf...");
+        SetMessage("Loading contents...");
 
         try
         {
-            var source = new FileSystemBookshelfSource(folderPath);
-            var bookshelf = await Task.Run(() => source.LoadAsync(CancellationToken.None));
-            var autoOpenBook = LoadBookshelf(bookshelf);
-
-            if (autoOpenBook is not null)
-            {
-                await OpenBookAsync(autoOpenBook);
-            }
+            await StartAtContentFolderAsync(folderPath);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             BookItems.Clear();
-            LoadPages(Array.Empty<PageEntry>());
-            SetMessage("ComicPlate could not read this bookshelf folder.");
+            LoadPages(Array.Empty<PageEntry>(), rebuildContentItems: true);
+            SetMessage("ComicPlate could not read this folder.");
         }
         finally
         {
@@ -302,7 +324,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private BookEntry? LoadBookshelf(Bookshelf bookshelf)
+    private void LoadBookshelf(Bookshelf bookshelf)
     {
         BookItems.Clear();
 
@@ -314,36 +336,61 @@ public sealed class MainWindowViewModel : ViewModelBase
         _currentBookIndex = -1;
         OnPropertyChanged(nameof(CurrentBookIndex));
         HeaderTitle = Path.GetFileName(bookshelf.RootPath);
-        LoadPages(Array.Empty<PageEntry>());
-
-        if (BookItems.Count == 0)
-        {
-            SetMessage("This folder has no readable contents.");
-            return null;
-        }
-
-        if (BookItems.Count == 1 &&
-            BookItems[0].Book.SourceKind == BookSourceKind.Folder &&
-            Path.GetFullPath(BookItems[0].Book.Path) == Path.GetFullPath(bookshelf.RootPath))
-        {
-            _currentBookIndex = 0;
-            OnPropertyChanged(nameof(CurrentBookIndex));
-            return BookItems[0].Book;
-        }
-
-        SetMessage("Select an item from the current folder.");
-        return null;
     }
 
     private async Task ActivateBookItemAsync(BookEntry book)
     {
         if (book.SourceKind == BookSourceKind.Collection)
         {
-            await OpenContentFolderAsync(book.Path);
+            await NavigateToContentFolderAsync(book.Path);
             return;
         }
 
-        await OpenBookAsync(book);
+        await NavigateToBookAsync(book);
+    }
+
+    private async Task ActivateContentItemAsync(ContentListItemViewModel item)
+    {
+        if (item.Page is not null)
+        {
+            CurrentPageIndex = item.Page.Index;
+            return;
+        }
+
+        if (item.Book is not null)
+        {
+            await ActivateBookItemAsync(item.Book);
+        }
+    }
+
+    private async Task LoadContentFolderAsync(string folderPath)
+    {
+        var bookshelfSource = new FileSystemBookshelfSource(folderPath);
+        var directPageSource = new FolderBookSource(folderPath, recursive: false);
+
+        var bookshelfTask = Task.Run(() => bookshelfSource.LoadAsync(CancellationToken.None));
+        var pagesTask = Task.Run(() => directPageSource.LoadPagesAsync(CancellationToken.None));
+        await Task.WhenAll(bookshelfTask, pagesTask);
+
+        var bookshelf = await bookshelfTask;
+        var pages = await pagesTask;
+
+        LoadBookshelf(bookshelf);
+        LoadPages(pages, rebuildContentItems: false);
+        ReplaceContentItems(BookItems.Select(item => item.Book), PageItems);
+
+        if (ContentItems.Count == 0)
+        {
+            SetMessage("This folder has no readable contents.");
+            return;
+        }
+
+        if (pages.Count == 0)
+        {
+            SetMessage("Select an item from the current folder.");
+        }
+
+        _ = LoadSidebarThumbnailsAsync();
     }
 
     private async Task OpenContentFolderAsync(string folderPath)
@@ -354,19 +401,12 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         try
         {
-            var source = new FileSystemBookshelfSource(folderPath);
-            var bookshelf = await Task.Run(() => source.LoadAsync(CancellationToken.None));
-            var autoOpenBook = LoadBookshelf(bookshelf);
-
-            if (autoOpenBook is not null)
-            {
-                await OpenBookAsync(autoOpenBook);
-            }
+            await LoadContentFolderAsync(folderPath);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             BookItems.Clear();
-            LoadPages(Array.Empty<PageEntry>());
+            LoadPages(Array.Empty<PageEntry>(), rebuildContentItems: true);
             SetMessage("ComicPlate could not read this folder.");
         }
         finally
@@ -388,7 +428,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                 : new FolderBookSource(book.Path, recursive: false);
 
             var pages = await Task.Run(() => source.LoadPagesAsync(CancellationToken.None));
-            LoadPages(pages);
+            LoadPages(pages, rebuildContentItems: true);
 
             if (pages.Count == 0)
             {
@@ -397,7 +437,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
         {
-            LoadPages(Array.Empty<PageEntry>());
+            LoadPages(Array.Empty<PageEntry>(), rebuildContentItems: true);
             SetMessage("ComicPlate could not read this comic.");
         }
         finally
@@ -406,7 +446,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private void LoadPages(IReadOnlyList<PageEntry> pages)
+    private void LoadPages(IReadOnlyList<PageEntry> pages, bool rebuildContentItems)
     {
         ClearImageCache();
         _readerState.LoadPages(pages);
@@ -418,6 +458,12 @@ public sealed class MainWindowViewModel : ViewModelBase
             PageItems.Add(new PageListItemViewModel(index, pages[index]));
         }
 
+        if (rebuildContentItems)
+        {
+            ReplaceContentItems(Array.Empty<BookEntry>(), PageItems);
+            _ = LoadSidebarThumbnailsAsync();
+        }
+
         if (pages.Count == 0)
         {
             UpdatePageStatus();
@@ -426,6 +472,83 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
 
         _ = RefreshReaderStripAsync();
+    }
+
+    private async Task StartAtContentFolderAsync(string folderPath)
+    {
+        _navigationHistory.StartAt(CreateNavigationEntry(folderPath, BookSourceKind.Collection));
+        RaiseCommandStates();
+        await OpenContentFolderAsync(folderPath);
+    }
+
+    private async Task NavigateToContentFolderAsync(string folderPath)
+    {
+        _navigationHistory.NavigateTo(CreateNavigationEntry(folderPath, BookSourceKind.Collection));
+        RaiseCommandStates();
+        await OpenContentFolderAsync(folderPath);
+    }
+
+    private async Task NavigateToBookAsync(BookEntry book)
+    {
+        _navigationHistory.NavigateTo(CreateNavigationEntry(book));
+        RaiseCommandStates();
+        await OpenBookAsync(book);
+    }
+
+    private static NavigationEntry CreateNavigationEntry(BookEntry book)
+    {
+        return new NavigationEntry(book.Path, book.DisplayName, book.SourceKind);
+    }
+
+    private static NavigationEntry CreateNavigationEntry(string path, BookSourceKind sourceKind)
+    {
+        var displayName = Path.GetFileName(path);
+        return new NavigationEntry(path, string.IsNullOrWhiteSpace(displayName) ? path : displayName, sourceKind);
+    }
+
+    private void ReplaceContentItems(IEnumerable<BookEntry> books, IEnumerable<PageListItemViewModel> pages)
+    {
+        _sidebarThumbnailCancellationTokenSource.Cancel();
+        _sidebarThumbnailCancellationTokenSource.Dispose();
+        _sidebarThumbnailCancellationTokenSource = new CancellationTokenSource();
+        _sidebarThumbnailLoader.Clear();
+        ContentItems.Clear();
+
+        foreach (var book in books)
+        {
+            ContentItems.Add(ContentListItemViewModel.FromBook(book));
+        }
+
+        foreach (var page in pages)
+        {
+            ContentItems.Add(ContentListItemViewModel.FromPage(page));
+        }
+
+        SetCurrentContentIndexSilently(-1);
+    }
+
+    private async Task LoadSidebarThumbnailsAsync()
+    {
+        var cancellationToken = _sidebarThumbnailCancellationTokenSource.Token;
+
+        try
+        {
+            await _sidebarThumbnailLoader.LoadInitialThumbnailsAsync(ContentItems.ToArray(), cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void SetCurrentContentIndexSilently(int index)
+    {
+        if (_currentContentIndex == index)
+        {
+            return;
+        }
+
+        _currentContentIndex = index;
+        OnPropertyChanged(nameof(CurrentContentIndex));
     }
 
     private async Task RefreshReaderStripAsync(ReaderStripPlacement? placement = null)
@@ -442,6 +565,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         var page = _readerState.Pages[_readerState.CurrentPageIndex];
         _currentPageIndex = _readerState.CurrentPageIndex;
         OnPropertyChanged(nameof(CurrentPageIndex));
+        var contentIndex = ContentItems
+            .Select((item, index) => new { item, index })
+            .FirstOrDefault(pair => pair.item.Page?.Index == _readerState.CurrentPageIndex)
+            ?.index ?? -1;
+        SetCurrentContentIndexSilently(contentIndex);
 
         CurrentLogicalPath = page.LogicalPath;
         SetMessage("");
@@ -597,6 +725,29 @@ public sealed class MainWindowViewModel : ViewModelBase
         IsNavigationPaneVisible = !IsNavigationPaneVisible;
     }
 
+    private void GoBack()
+    {
+        var entry = _navigationHistory.Back();
+        if (entry is null)
+        {
+            return;
+        }
+
+        RaiseCommandStates();
+        _ = OpenNavigationEntryAsync(entry);
+    }
+
+    private async Task OpenNavigationEntryAsync(NavigationEntry entry)
+    {
+        if (entry.SourceKind == BookSourceKind.Collection)
+        {
+            await OpenContentFolderAsync(entry.Path);
+            return;
+        }
+
+        await OpenBookAsync(new BookEntry(entry.Path, entry.DisplayName, entry.SourceKind, entry.Path));
+    }
+
     private void SetMessage(string message)
     {
         StatusMessage = message;
@@ -736,6 +887,8 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void RaiseCommandStates()
     {
+        OnPropertyChanged(nameof(CanGoBack));
+
         if (OpenFolderCommand is AsyncRelayCommand openFolderCommand)
         {
             openFolderCommand.RaiseCanExecuteChanged();
@@ -743,6 +896,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         NextPageCommand.RaiseCanExecuteChanged();
         PreviousPageCommand.RaiseCanExecuteChanged();
+        BackCommand.RaiseCanExecuteChanged();
         VisualLeftCommand.RaiseCanExecuteChanged();
         VisualRightCommand.RaiseCanExecuteChanged();
         FirstPageCommand.RaiseCanExecuteChanged();

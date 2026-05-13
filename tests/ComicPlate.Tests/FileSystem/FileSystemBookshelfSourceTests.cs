@@ -13,7 +13,7 @@ public sealed class FileSystemBookshelfSourceTests : IDisposable
     }
 
     [Fact]
-    public async Task LoadsRootFolderAsBookWhenItHasDirectImages()
+    public async Task LoadsCurrentFolderOpenableItemsOnly()
     {
         var book10 = Directory.CreateDirectory(Path.Combine(_tempDirectory, "Shelf", "Book 10"));
         var book2 = Directory.CreateDirectory(Path.Combine(_tempDirectory, "Book 2"));
@@ -32,21 +32,19 @@ public sealed class FileSystemBookshelfSourceTests : IDisposable
         var bookshelf = await source.LoadAsync(CancellationToken.None);
 
         Assert.Equal(
-            new[] { Path.GetFileName(_tempDirectory) },
+            new[] { "Book 1.cbz", "Book 2", "Shelf" },
             bookshelf.Books.Select(book => book.DisplayName));
         Assert.Equal(
-            new[] { BookSourceKind.Folder },
+            new[] { BookSourceKind.Zip, BookSourceKind.Folder, BookSourceKind.Collection },
             bookshelf.Books.Select(book => book.SourceKind));
     }
 
     [Fact]
-    public async Task LoadsOnlyCurrentFolderContents()
+    public async Task SkipsEmptyChildFolders()
     {
-        var book10 = Directory.CreateDirectory(Path.Combine(_tempDirectory, "Shelf", "Book 10"));
         var book2 = Directory.CreateDirectory(Path.Combine(_tempDirectory, "Book 2"));
         Directory.CreateDirectory(Path.Combine(_tempDirectory, "Empty"));
 
-        File.WriteAllText(Path.Combine(book10.FullName, "001.jpg"), "");
         File.WriteAllText(Path.Combine(book2.FullName, "001.jpg"), "");
         File.WriteAllText(Path.Combine(_tempDirectory, "Book 1.cbz"), "");
         File.WriteAllText(Path.Combine(_tempDirectory, "notes.txt"), "");
@@ -56,10 +54,10 @@ public sealed class FileSystemBookshelfSourceTests : IDisposable
         var bookshelf = await source.LoadAsync(CancellationToken.None);
 
         Assert.Equal(
-            new[] { "Book 1.cbz", "Book 2", "Shelf" },
+            new[] { "Book 1.cbz", "Book 2" },
             bookshelf.Books.Select(book => book.DisplayName));
         Assert.Equal(
-            new[] { BookSourceKind.Zip, BookSourceKind.Folder, BookSourceKind.Collection },
+            new[] { BookSourceKind.Zip, BookSourceKind.Folder },
             bookshelf.Books.Select(book => book.SourceKind));
     }
 

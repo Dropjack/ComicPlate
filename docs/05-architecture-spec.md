@@ -194,6 +194,42 @@ MVP 策略：
 - 不直接解码图片。
 - 可单元测试。
 
+### NavigationHistory
+
+责任：
+
+- 保存当前阅读流的轻量导航栈。
+- 记录用户从哪个容器进入当前内容。
+- 支持 Back 回到上一个容器或上一本书所在的上层上下文。
+- 区分“打开容器/打开 Book”和“跳转 Page”：前者进入导航历史，后者只更新阅读进度。
+- 可单元测试。
+
+规则：
+
+- NavigationHistory 不是书架，不保存扫描结果，不保存缩略图，不保存目录内容。
+- 空启动 Continue 可以恢复少量历史 entry，让用户读完当前内容后继续 Back 回上层。
+- 手动 Open 新内容时重置当前窗口的导航栈。
+- 导航栈应设置上限，例如 8 层，避免长期积累成文件浏览器历史。
+- MVP 只做 Back；Forward 留到确认真实需求后再评估。
+
+建议模型：
+
+```csharp
+public sealed record NavigationEntry(
+    string Path,
+    string DisplayName,
+    BookSourceKind SourceKind);
+
+public sealed class NavigationHistory
+{
+    public NavigationEntry? Current { get; }
+    public bool CanGoBack { get; }
+    public void StartAt(NavigationEntry entry);
+    public void NavigateTo(NavigationEntry entry);
+    public NavigationEntry? Back();
+}
+```
+
 ### Persistence
 
 责任：
@@ -201,6 +237,7 @@ MVP 策略：
 - 保存配置。
 - 保存最近打开。
 - 保存阅读进度。
+- 保存上次阅读会话的轻量恢复状态。
 - 只写 ComicPlate 自己的数据文件。
 
 禁止：
@@ -213,6 +250,7 @@ MVP 策略：
 
 - `settings.json`
 - `library.json`
+- `session.json`
 
 位置：
 
@@ -257,10 +295,36 @@ MVP 策略：
 }
 ```
 
+`session.json` 草案：
+
+```json
+{
+  "version": 1,
+  "lastSession": {
+    "current": {
+      "path": "D:\\Comics\\Series\\Vol03",
+      "displayName": "Vol03",
+      "sourceKind": "Folder",
+      "lastPageIndex": 207
+    },
+    "backStack": [
+      {
+        "path": "D:\\Comics\\Series",
+        "displayName": "Series",
+        "sourceKind": "Collection"
+      }
+    ],
+    "savedAt": "2026-05-13T10:30:00Z"
+  }
+}
+```
+
 说明：
 
 - 配置文件格式当前仍按 JSON 草案记录。
 - 不为书架排序、分组、过滤预留配置；ComicPlate 不做漫画库管理。
+- `session.json` 只保存路径、类型、页码和少量 Back 栈；不保存容器扫描结果、缩略图缓存、全库索引或 UI 展开状态。
+- Continue 只读取 `session.json` 的当前内容并打开；只有用户触发 Back 时才重新读取上层路径。
 - 如果后续决定使用 TOML，应先作为单独决策记录，不和当前结构草案混用。
 
 ## 5. 错误处理

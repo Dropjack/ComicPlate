@@ -28,16 +28,6 @@ public sealed class FileSystemBookshelfSource : IBookshelfSource
 
     private IEnumerable<BookEntry> EnumerateBookEntries(CancellationToken cancellationToken)
     {
-        if (ContainsDirectPageFiles(_rootPath, cancellationToken))
-        {
-            yield return new BookEntry(
-                _rootPath,
-                Path.GetFileName(_rootPath),
-                BookSourceKind.Folder,
-                _rootPath);
-            yield break;
-        }
-
         foreach (var archive in EnumerateArchiveFiles(_rootPath, cancellationToken))
         {
             var fullPath = Path.GetFullPath(archive);
