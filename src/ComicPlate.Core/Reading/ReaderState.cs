@@ -26,6 +26,34 @@ public sealed class ReaderState
 
     public ReadingDirection ReadingDirection { get; private set; } = ReadingDirection.RightToLeft;
 
+    public IReadOnlyList<int> CurrentReadingGroupPageIndexes
+    {
+        get
+        {
+            if (!HasPages)
+            {
+                return Array.Empty<int>();
+            }
+
+            if (ViewMode == ViewMode.SinglePage || CurrentPageIndex == 0)
+            {
+                return new[] { CurrentPageIndex };
+            }
+
+            var group = Enumerable.Range(
+                    CurrentPageIndex,
+                    Math.Min(2, PageCount - CurrentPageIndex))
+                .ToArray();
+
+            if (ReadingDirection == ReadingDirection.RightToLeft)
+            {
+                Array.Reverse(group);
+            }
+
+            return group;
+        }
+    }
+
     public void LoadPages(IReadOnlyList<PageEntry> pages, int initialPageIndex = 0)
     {
         _pages = pages;
