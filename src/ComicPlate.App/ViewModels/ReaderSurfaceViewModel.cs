@@ -760,9 +760,10 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(PageCount));
         OnPropertyChanged(nameof(HasPages));
 
-        PageText = _readerState.HasPages
-            ? $"{CurrentPageNumber} / {PageCount}"
-            : "0 / 0";
+        PageText = ReaderFramePageTextFormatter.Format(
+            _readerFrames.FirstOrDefault(frame => frame.IsCurrent),
+            _readerState.CurrentPageIndex,
+            _readerState.PageCount);
     }
 
     private void RaiseCommandStates()
