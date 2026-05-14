@@ -15,7 +15,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly ReaderImageCache _readerImageCache;
     private readonly ReadingSessionController _readingSession;
     private BookEntry? _currentBook;
-    private string _headerTitle = "ComicPlate";
+    private string _readerTitle = "";
+    private string _shelfTitle = "";
     private bool _isNavigationPaneVisible = true;
     private bool _isReaderVisible;
     private bool _isStartVisible = true;
@@ -70,10 +71,16 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool HasMessage => !string.IsNullOrWhiteSpace(StatusMessage) && Reader.ReaderStripItems.Count == 0;
 
-    public string HeaderTitle
+    public string ReaderTitle
     {
-        get => _headerTitle;
-        private set => SetProperty(ref _headerTitle, value);
+        get => _readerTitle;
+        private set => SetProperty(ref _readerTitle, value);
+    }
+
+    public string ShelfTitle
+    {
+        get => _shelfTitle;
+        private set => SetProperty(ref _shelfTitle, value);
     }
 
     public bool IsStartVisible
@@ -140,7 +147,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         IsLoading = true;
-        HeaderTitle = Path.GetFileName(folderPath);
+        ReaderTitle = "";
+        ShelfTitle = Path.GetFileName(folderPath);
         ShowReader();
         SetMessage("Loading contents...");
 
@@ -191,7 +199,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void LoadContextShelfEntries(string rootPath, IReadOnlyList<BookEntry> books)
     {
-        HeaderTitle = Path.GetFileName(rootPath);
+        ShelfTitle = Path.GetFileName(rootPath);
         ContextShelf.ReplaceItems(books);
     }
 
@@ -225,6 +233,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         {
             var progress = _readingSession.FindProgress(result.DirectFolderBook.Path);
             _currentBook = result.DirectPages.Count > 0 ? result.DirectFolderBook : null;
+            ReaderTitle = _currentBook?.DisplayName ?? "";
             await Reader.LoadPagesAsync(result.DirectPages, progress?.LastPageIndex ?? 0);
         }
 
@@ -245,7 +254,12 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private async Task OpenContentFolderAsync(string folderPath, bool updateReaderFromDirectPages = true)
     {
         IsLoading = true;
-        HeaderTitle = Path.GetFileName(folderPath);
+        if (updateReaderFromDirectPages)
+        {
+            ReaderTitle = "";
+        }
+
+        ShelfTitle = Path.GetFileName(folderPath);
         SetMessage("Loading contents...");
 
         try
@@ -273,7 +287,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         PersistCurrentReadingState(deleteCompletedProgress: true);
 
         IsLoading = true;
-        HeaderTitle = book.DisplayName;
+        ReaderTitle = book.DisplayName;
         SetMessage("Loading pages...");
 
         try
@@ -293,6 +307,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         {
             _currentBook = null;
             Reader.ClearPages();
+            ReaderTitle = "";
             SetMessage("ComicPlate could not read this comic.");
         }
         finally
@@ -372,7 +387,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     {
         IsStartVisible = true;
         IsReaderVisible = false;
-        HeaderTitle = "ComicPlate";
+        ReaderTitle = "";
     }
 
     private void ShowReader()

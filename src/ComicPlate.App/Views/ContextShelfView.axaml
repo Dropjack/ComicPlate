@@ -18,7 +18,7 @@
                             Padding="10,3"
                         CornerRadius="4" />
                     <TextBlock Grid.Column="1"
-                               Text="{Binding HeaderTitle}"
+                               Text="{Binding ShelfTitle}"
                                Foreground="{StaticResource TextBrush}"
                                FontWeight="SemiBold"
                                TextTrimming="CharacterEllipsis"

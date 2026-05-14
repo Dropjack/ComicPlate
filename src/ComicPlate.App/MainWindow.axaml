@@ -101,7 +101,7 @@
                         Background="{StaticResource PanelBrush}"
                         BorderBrush="{StaticResource BorderBrushSoft}"
                         BorderThickness="0,0,0,1">
-                    <TextBlock Text="{Binding HeaderTitle}"
+                    <TextBlock Text="{Binding ReaderTitle}"
                                Foreground="{StaticResource TextBrush}"
                                FontSize="14"
                                FontWeight="SemiBold"
