@@ -75,12 +75,13 @@
                             ToolTip.Tip="Reading direction"
                             IsVisible="{Binding IsReaderVisible}" />
                     <Button Content="Set"
+                            Click="OnSettingsClick"
                             Width="52"
                             MinHeight="44"
                             Padding="0"
                             CornerRadius="6"
                             ToolTip.Tip="Settings"
-                            IsEnabled="False" />
+                            IsEnabled="True" />
                 </StackPanel>
             </Grid>
         </Border>

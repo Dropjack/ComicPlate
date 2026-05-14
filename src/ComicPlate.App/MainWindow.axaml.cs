@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using ComicPlate.App.Services;
 using ComicPlate.App.ViewModels;
+using ComicPlate.App.Views;
 
 namespace ComicPlate.App;
 
@@ -11,6 +12,7 @@ public partial class MainWindow : Window
 {
     private readonly MainWindowViewModel _viewModel;
     private readonly string? _startupPath;
+    private SettingsWindow? _settingsWindow;
 
     public MainWindow()
         : this(null)
@@ -42,6 +44,8 @@ public partial class MainWindow : Window
 
     private void OnClosed(object? sender, EventArgs e)
     {
+        _settingsWindow?.Close();
+        _settingsWindow = null;
         _viewModel.SaveCurrentState();
         _viewModel.Dispose();
     }
@@ -75,7 +79,7 @@ public partial class MainWindow : Window
         }
         else if (e.Key == Key.OemComma && e.KeyModifiers.HasFlag(KeyModifiers.Control))
         {
-            // Reserved for Settings. The settings window will be implemented in its own step.
+            ShowSettingsWindow();
             e.Handled = true;
         }
         else if (e.Key == Key.Tab)
@@ -111,6 +115,34 @@ public partial class MainWindow : Window
         {
             _viewModel.Reader.WheelPreviousReadingGroup();
             e.Handled = true;
+        }
+    }
+
+    private void OnSettingsClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        ShowSettingsWindow();
+        e.Handled = true;
+    }
+
+    private void ShowSettingsWindow()
+    {
+        if (_settingsWindow is not null)
+        {
+            _settingsWindow.Activate();
+            return;
+        }
+
+        _settingsWindow = new SettingsWindow();
+        _settingsWindow.Closed += OnSettingsWindowClosed;
+        _settingsWindow.Show();
+    }
+
+    private void OnSettingsWindowClosed(object? sender, EventArgs e)
+    {
+        if (_settingsWindow is not null)
+        {
+            _settingsWindow.Closed -= OnSettingsWindowClosed;
+            _settingsWindow = null;
         }
     }
 }

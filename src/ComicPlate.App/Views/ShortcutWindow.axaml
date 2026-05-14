@@ -1,0 +1,164 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ComicPlate.App.Views.ShortcutWindow"
+        Title="快捷键"
+        Width="560"
+        Height="520"
+        MinWidth="460"
+        MinHeight="420"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F3F6">
+    <Window.Resources>
+        <SolidColorBrush x:Key="ShortcutCardBrush" Color="#FEFCFF" />
+        <SolidColorBrush x:Key="ShortcutBorderBrush" Color="#DDD7E0" />
+        <SolidColorBrush x:Key="ShortcutTextBrush" Color="#1F1F1F" />
+        <SolidColorBrush x:Key="ShortcutMutedTextBrush" Color="#66606A" />
+    </Window.Resources>
+
+    <ScrollViewer x:Name="ShortcutScrollViewer"
+                  Padding="28,24"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="24">
+            <StackPanel Spacing="4">
+                <TextBlock Text="快捷键"
+                           FontSize="28"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource ShortcutTextBrush}" />
+                <TextBlock Text="当前阶段仅展示 Windows 版本固定快捷键，不提供编辑。"
+                           Foreground="{StaticResource ShortcutMutedTextBrush}"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+
+            <StackPanel Spacing="10">
+                <TextBlock Text="翻页与定位"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource ShortcutTextBrush}" />
+                <Border Background="{StaticResource ShortcutCardBrush}"
+                        BorderBrush="{StaticResource ShortcutBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4">
+                    <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto"
+                              Margin="16,14"
+                              ColumnSpacing="16">
+                            <TextBlock Text="下一页"
+                                       Foreground="{StaticResource ShortcutTextBrush}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="Right"
+                                       Foreground="{StaticResource ShortcutMutedTextBrush}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource ShortcutBorderBrush}" />
+                        <Grid ColumnDefinitions="*,Auto"
+                              Margin="16,14"
+                              ColumnSpacing="16">
+                            <TextBlock Text="上一页"
+                                       Foreground="{StaticResource ShortcutTextBrush}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="Left"
+                                       Foreground="{StaticResource ShortcutMutedTextBrush}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource ShortcutBorderBrush}" />
+                        <Grid ColumnDefinitions="*,Auto"
+                              Margin="16,14"
+                              ColumnSpacing="16">
+                            <TextBlock Text="第一页"
+                                       Foreground="{StaticResource ShortcutTextBrush}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="Home"
+                                       Foreground="{StaticResource ShortcutMutedTextBrush}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource ShortcutBorderBrush}" />
+                        <Grid ColumnDefinitions="*,Auto"
+                              Margin="16,14"
+                              ColumnSpacing="16">
+                            <TextBlock Text="最后一页"
+                                       Foreground="{StaticResource ShortcutTextBrush}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="End"
+                                       Foreground="{StaticResource ShortcutMutedTextBrush}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="10">
+                <TextBlock Text="功能操作"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource ShortcutTextBrush}" />
+                <Border Background="{StaticResource ShortcutCardBrush}"
+                        BorderBrush="{StaticResource ShortcutBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4">
+                    <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto"
+                              Margin="16,14"
+                              ColumnSpacing="16">
+                            <TextBlock Text="打开漫画"
+                                       Foreground="{StaticResource ShortcutTextBrush}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="Ctrl + O"
+                                       Foreground="{StaticResource ShortcutMutedTextBrush}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource ShortcutBorderBrush}" />
+                        <Grid ColumnDefinitions="*,Auto"
+                              Margin="16,14"
+                              ColumnSpacing="16">
+                            <TextBlock Text="显示/隐藏 Shelf"
+                                       Foreground="{StaticResource ShortcutTextBrush}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="Tab"
+                                       Foreground="{StaticResource ShortcutMutedTextBrush}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource ShortcutBorderBrush}" />
+                        <Grid ColumnDefinitions="*,Auto"
+                              Margin="16,14"
+                              ColumnSpacing="16">
+                            <TextBlock Text="单页/双页切换"
+                                       Foreground="{StaticResource ShortcutTextBrush}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="Q"
+                                       Foreground="{StaticResource ShortcutMutedTextBrush}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource ShortcutBorderBrush}" />
+                        <Grid ColumnDefinitions="*,Auto"
+                              Margin="16,14"
+                              ColumnSpacing="16">
+                            <TextBlock Text="阅读方向"
+                                       Foreground="{StaticResource ShortcutTextBrush}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="R"
+                                       Foreground="{StaticResource ShortcutMutedTextBrush}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource ShortcutBorderBrush}" />
+                        <Grid ColumnDefinitions="*,Auto"
+                              Margin="16,14"
+                              ColumnSpacing="16">
+                            <TextBlock Text="全屏"
+                                       Foreground="{StaticResource ShortcutTextBrush}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="F"
+                                       Foreground="{StaticResource ShortcutMutedTextBrush}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource ShortcutBorderBrush}" />
+                        <Grid ColumnDefinitions="*,Auto"
+                              Margin="16,14"
+                              ColumnSpacing="16">
+                            <TextBlock Text="设置"
+                                       Foreground="{StaticResource ShortcutTextBrush}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="Ctrl + ,"
+                                       Foreground="{StaticResource ShortcutMutedTextBrush}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <Border x:Name="BottomScrollSpacer"
+                    Height="0"
+                    Background="Transparent" />
+        </StackPanel>
+    </ScrollViewer>
+</Window>

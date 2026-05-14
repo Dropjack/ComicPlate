@@ -1,0 +1,318 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ComicPlate.App.Views.SettingsWindow"
+        Title="设置"
+        Width="840"
+        Height="620"
+        MinWidth="700"
+        MinHeight="500"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F3F6">
+    <Window.Resources>
+        <SolidColorBrush x:Key="SettingsNavBrush" Color="#F1EEF3" />
+        <SolidColorBrush x:Key="SettingsContentBrush" Color="#F7F5F8" />
+        <SolidColorBrush x:Key="SettingsCardBrush" Color="#FEFCFF" />
+        <SolidColorBrush x:Key="SettingsBorderBrush" Color="#DDD7E0" />
+        <SolidColorBrush x:Key="SettingsTextBrush" Color="#1F1F1F" />
+        <SolidColorBrush x:Key="SettingsMutedTextBrush" Color="#66606A" />
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector="Button.settings-nav">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="12,9" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Foreground" Value="{StaticResource SettingsTextBrush}" />
+        </Style>
+
+        <Style Selector="Button.settings-nav.selected">
+            <Setter Property="Background" Value="#E8E3EC" />
+        </Style>
+    </Window.Styles>
+
+    <Grid ColumnDefinitions="220,*"
+          Background="{StaticResource SettingsContentBrush}">
+        <Border Grid.Column="0"
+                Background="{StaticResource SettingsNavBrush}"
+                BorderBrush="{StaticResource SettingsBorderBrush}"
+                BorderThickness="0,0,1,0">
+            <Grid RowDefinitions="Auto,*"
+                  Margin="18,18,12,18">
+                <TextBlock Text="设置"
+                           FontSize="24"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource SettingsTextBrush}"
+                           Margin="0,0,0,20" />
+
+                <StackPanel Grid.Row="1"
+                            Spacing="4">
+                    <Button x:Name="StartupNavButton"
+                            Classes="settings-nav selected"
+                            Content="启动与窗口"
+                            Click="OnStartupNavClick" />
+                    <Button x:Name="AppearanceNavButton"
+                            Classes="settings-nav"
+                            Content="外观"
+                            Click="OnAppearanceNavClick" />
+                    <Button x:Name="DataNavButton"
+                            Classes="settings-nav"
+                            Content="数据与缓存"
+                            Click="OnDataNavClick" />
+                    <Button x:Name="AssociationNavButton"
+                            Classes="settings-nav"
+                            Content="文件关联"
+                            Click="OnAssociationNavClick" />
+                    <Button x:Name="ShortcutsNavButton"
+                            Classes="settings-nav"
+                            Content="快捷键"
+                            Click="OnShortcutsNavClick" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <ScrollViewer x:Name="ContentScrollViewer"
+                      Grid.Column="1"
+                      Padding="28,24"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="ContentStack"
+                        Spacing="24"
+                        HorizontalAlignment="Stretch">
+                <TextBlock Text="ComicPlate 设置"
+                           FontSize="28"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource SettingsTextBrush}" />
+
+                <StackPanel x:Name="StartupSection"
+                            Spacing="10">
+                    <TextBlock Text="启动与窗口"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource SettingsTextBrush}" />
+                    <Border Background="{StaticResource SettingsCardBrush}"
+                            BorderBrush="{StaticResource SettingsBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <StackPanel>
+                            <Grid x:Name="MultiWindowRow"
+                                  ColumnDefinitions="*,Auto"
+                                  Margin="16,14"
+                                  ColumnSpacing="16">
+                                <StackPanel Spacing="3"
+                                            MinWidth="0">
+                                    <TextBlock Text="允许多开窗口"
+                                               Foreground="{StaticResource SettingsTextBrush}"
+                                               FontSize="15" />
+                                    <TextBlock Text="允许同时打开多个 ComicPlate 窗口。"
+                                               Foreground="{StaticResource SettingsMutedTextBrush}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1"
+                                              IsEnabled="False"
+                                              VerticalAlignment="Center" />
+                            </Grid>
+                            <Border Height="1"
+                                    Background="{StaticResource SettingsBorderBrush}" />
+                            <Grid x:Name="RestoreWindowRow"
+                                  ColumnDefinitions="*,Auto"
+                                  Margin="16,14"
+                                  ColumnSpacing="16">
+                                <StackPanel Spacing="3"
+                                            MinWidth="0">
+                                    <TextBlock Text="恢复窗口大小和位置"
+                                               Foreground="{StaticResource SettingsTextBrush}"
+                                               FontSize="15" />
+                                    <TextBlock Text="下次启动时恢复上次关闭时的窗口大小和位置。"
+                                               Foreground="{StaticResource SettingsMutedTextBrush}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1"
+                                              IsEnabled="False"
+                                              VerticalAlignment="Center" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel x:Name="AppearanceSection"
+                            Spacing="10">
+                    <TextBlock Text="外观"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource SettingsTextBrush}" />
+                    <Border Background="{StaticResource SettingsCardBrush}"
+                            BorderBrush="{StaticResource SettingsBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <Grid x:Name="PaletteRow"
+                              ColumnDefinitions="*,Auto"
+                              Margin="16,14"
+                              ColumnSpacing="16">
+                            <StackPanel Spacing="3"
+                                        MinWidth="0">
+                                <TextBlock Text="配色方案"
+                                           Foreground="{StaticResource SettingsTextBrush}"
+                                           FontSize="15" />
+                                <TextBlock Text="影响左侧命令栏、Context Shelf、阅读区域、书名条和进度区。具体方案在 UI polish 阶段确定。"
+                                           Foreground="{StaticResource SettingsMutedTextBrush}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ComboBox Grid.Column="1"
+                                      IsEnabled="False"
+                                      SelectedIndex="0"
+                                      Width="180"
+                                      VerticalAlignment="Center">
+                                <ComboBoxItem Content="默认浅灰" />
+                            </ComboBox>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel x:Name="DataSection"
+                            Spacing="10">
+                    <TextBlock Text="数据与缓存"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource SettingsTextBrush}" />
+                    <Border Background="{StaticResource SettingsCardBrush}"
+                            BorderBrush="{StaticResource SettingsBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <StackPanel>
+                            <Grid x:Name="DataFolderRow"
+                                  ColumnDefinitions="*,Auto"
+                                  Margin="16,14"
+                                  ColumnSpacing="16">
+                                <StackPanel Spacing="3"
+                                            MinWidth="0">
+                                    <TextBlock Text="数据目录"
+                                               Foreground="{StaticResource SettingsTextBrush}"
+                                               FontSize="15" />
+                                    <TextBlock Text="ComicPlate 的设置、会话和阅读进度保存在应用数据目录，不会写入漫画文件夹或压缩包。"
+                                               Foreground="{StaticResource SettingsMutedTextBrush}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                                <Button Grid.Column="1"
+                                        Content="打开"
+                                        Width="86"
+                                        IsEnabled="False"
+                                        VerticalAlignment="Center" />
+                            </Grid>
+                            <Border Height="1"
+                                    Background="{StaticResource SettingsBorderBrush}" />
+                            <Grid x:Name="ThumbnailCacheRow"
+                                  ColumnDefinitions="*,Auto"
+                                  Margin="16,14"
+                                  ColumnSpacing="16">
+                                <StackPanel Spacing="3"
+                                            MinWidth="0">
+                                    <TextBlock Text="缩略图缓存"
+                                               Foreground="{StaticResource SettingsTextBrush}"
+                                               FontSize="15" />
+                                    <TextBlock Text="清理 Context Shelf 的封面缩略图缓存。"
+                                               Foreground="{StaticResource SettingsMutedTextBrush}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                                <Button Grid.Column="1"
+                                        Content="清理"
+                                        Width="86"
+                                        IsEnabled="False"
+                                        VerticalAlignment="Center" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel x:Name="AssociationSection"
+                            Spacing="10">
+                    <TextBlock Text="文件关联"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource SettingsTextBrush}" />
+                    <Border Background="{StaticResource SettingsCardBrush}"
+                            BorderBrush="{StaticResource SettingsBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <StackPanel>
+                            <Grid x:Name="CbzAssociationRow"
+                                  ColumnDefinitions="*,Auto"
+                                  Margin="16,14"
+                                  ColumnSpacing="16">
+                                <StackPanel Spacing="3"
+                                            MinWidth="0">
+                                    <TextBlock Text="CBZ 文件"
+                                               Foreground="{StaticResource SettingsTextBrush}"
+                                               FontSize="15" />
+                                    <TextBlock Text="允许从资源管理器直接用 ComicPlate 打开 .cbz 文件。"
+                                               Foreground="{StaticResource SettingsMutedTextBrush}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1"
+                                              IsEnabled="False"
+                                              VerticalAlignment="Center" />
+                            </Grid>
+                            <Border Height="1"
+                                    Background="{StaticResource SettingsBorderBrush}" />
+                            <Grid x:Name="ZipAssociationRow"
+                                  ColumnDefinitions="*,Auto"
+                                  Margin="16,14"
+                                  ColumnSpacing="16">
+                                <StackPanel Spacing="3"
+                                            MinWidth="0">
+                                    <TextBlock Text="ZIP 文件"
+                                               Foreground="{StaticResource SettingsTextBrush}"
+                                               FontSize="15" />
+                                    <TextBlock Text="允许从资源管理器直接用 ComicPlate 打开 .zip 漫画压缩包。图片格式暂不进入文件关联设置。"
+                                               Foreground="{StaticResource SettingsMutedTextBrush}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1"
+                                              IsEnabled="False"
+                                              VerticalAlignment="Center" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel x:Name="ShortcutsSection"
+                            Spacing="10">
+                    <TextBlock Text="快捷键"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource SettingsTextBrush}" />
+                    <Border Background="{StaticResource SettingsCardBrush}"
+                            BorderBrush="{StaticResource SettingsBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <Grid x:Name="ShortcutsRow"
+                              ColumnDefinitions="*,Auto"
+                              Margin="16,14"
+                              ColumnSpacing="16">
+                            <StackPanel Spacing="3"
+                                        MinWidth="0">
+                                <TextBlock Text="快捷键列表"
+                                           Foreground="{StaticResource SettingsTextBrush}"
+                                           FontSize="15" />
+                                <TextBlock Text="快捷键会使用独立窗口显示。当前阶段先保留入口，不做编辑。"
+                                           Foreground="{StaticResource SettingsMutedTextBrush}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Button Grid.Column="1"
+                                    Content="打开"
+                                    Width="86"
+                                    Click="OnOpenShortcutsClick"
+                                    VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <Border x:Name="BottomScrollSpacer"
+                        Height="360"
+                        Background="Transparent" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>
