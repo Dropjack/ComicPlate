@@ -31,8 +31,8 @@ Windows 主窗口区域职责：
 - Command Rail：固定窄栏，参考 Teams / Obsidian 一类 Windows 工具应用的侧边命令区。第一轮按图标化窄栏预留，最终图标、文字和 logo 后续 polish。
 - Context Shelf：当前容器列表。由 Command Rail 的 Shelf 按钮显示或隐藏；隐藏后 Reader Stage 占据剩余空间。
 - Reader Stage：漫画阅读主区域。它包含顶部书名条、中央横向阅读带、底部页码和进度条。
-- Reader Title Bar：显示当前阅读内容名称或轻量状态，不放回完整工具栏。
-- Reader Progress Bar：显示页码和阅读进度，后续可以承接拖动定位等交互。
+- Reader Title Bar：只显示当前正在阅读的 Book 名称，不随 Context Shelf 浏览层级变化。没有正在阅读的 Book 时为空，不显示当前容器名。
+- Reader Progress Bar：只显示页码和阅读进度，后续可以承接拖动定位等交互。
 
 macOS 版可以复用信息结构，但视觉和平台习惯单独评估。除非后续明确决定，否则不要因为 Windows 的 Command Rail 方案强制 macOS 使用同样的外观。
 
@@ -90,6 +90,7 @@ Context Shelf MVP 项：
 - 点击 Shelf entry 打开该项或进入该容器。
 - 当前层图片不进入左侧栏；它们显示在主阅读/预览面板。
 - Shelf 顶部暂定只放导航上下文：Back、当前容器名、当前层可打开项数量。
+- Shelf 顶部的当前容器名只属于 Context Shelf，不负责 Reader Stage 标题。
 - Shelf 顶部不放 Reveal、搜索、排序或视图设置，避免变成文件管理器工具栏。
 - 当前阶段不做右键 action 菜单；右键不应改变当前阅读项，也不应触发打开。
 - Shelf entry 只通过左键点击进入。
@@ -156,6 +157,7 @@ Context Shelf 缩略图视觉规则：
 - 当前页码：`12 / 96`。
 - 显示型进度条。
 - 视觉方向翻页控制：`Left` / 当前页码 / `Right`。
+- 不常驻显示当前页文件名、压缩包内路径或完整文件路径。
 
 底部控制本次已完成：
 
@@ -198,23 +200,11 @@ Context Shelf 缩略图视觉规则：
 
 ## 5. 右键菜单
 
-状态：MVP 必须有约束，具体菜单项可随 UI 实现逐步补齐。
+状态：当前阶段不做右键 action 菜单。
 
-主阅读区：
-
-- Next Page。
-- Previous Page。
-- Single Page / Double Page。
-- Fit to Window。
-- Reading Direction。
-- Reveal in Finder/Explorer。
-- Copy Current File Path。
-
-Context Shelf：
-
-- Open。
-- Reveal in Finder/Explorer。
-- Copy Path。
+- 主阅读区右键不触发阅读 action。
+- Context Shelf 右键不打开、不选中、不 Reveal。
+- Reveal in Explorer、Copy Path 等对象操作保留未来入口评估，但不进入当前右键菜单。
 
 Page 导航以后交给底部进度条/缩略图条，不放在左侧栏作为主导航。
 
@@ -229,29 +219,55 @@ Page 导航以后交给底部进度条/缩略图条，不放在左侧栏作为�
 
 状态：V1。
 
-设置页分组：
+设置窗口使用单页快速链接结构，不做多分页窗口：
 
-- Reading：阅读方向、单页/双页、封面单独显示。
-- Display：适配窗口、背景色、图片插值质量。
-- Progress：是否自动恢复进度、进度记录上限。
-- File Associations：是否关联 ZIP/CBZ、后续 CBR/CB7，以及是否作为图片查看器。
-- Shortcuts：V1 做快捷键预设或少量自定义；MVP 不做快捷键设置页。
+- 左侧是设置链接列表。
+- 右侧是同一页面内的设置内容区，从启动与窗口、数据与缓存、文件关联一直排列到快捷键入口。
+- 点击左侧链接只滚动/定位右侧对应内容，不切换成独立分页。
+- 快捷键是例外：右侧只提供入口，打开独立快捷键窗口。
+- 设置窗口本身可以拖动和缩放。
+- 设置内容使用中文文案；Core、中间态和内部类型名可以继续使用英文。
 
-MVP 不做设置页，但内部配置结构要能支持这些未来项。
+设置分组：
+
+- 启动与窗口：允许多开窗口、恢复窗口大小和位置。
+- 外观：提供少量预设配色方案，作用范围限于 Command Rail、Context Shelf、Reader Stage、书名条和进度区。
+- 数据与缓存：显示数据目录、打开数据目录、清理缩略图缓存；后续可以显示缓存大小。
+- 文件关联：允许用户选择是否关联 CBZ、ZIP；后续支持 CBR、CB7 后再出现。图片格式不进入文件关联设置。
+- 快捷键：显示快捷键入口，进入独立快捷键窗口。
+
+不进入设置：
+
+- Continue Reading 行为开关。Continue Reading 是启动入口逻辑，不是用户偏好。
+- 阅读方向和单页/双页默认值。它们由 Command Rail 暴露，并按上次阅读状态保存。
+- Fit 模式。Windows MVP 强制 AutoFit，不暴露适配模式切换。
+- 主题编辑器、自定义颜色输入、主题文件、图标包。
+- 语言、日期时间格式、文件访问策略、搜索、环境配置。
+- 压缩包处理方式自定义、字体、面板布局、滚动条、页面标题格式、命令系统、上下文菜单编辑、脚本。
+
+MVP 不做设置窗口；V1 进入设置实现。内部配置结构可以先为以上项目预留，但不要为了未来设置引入复杂架构。
+
+外观设置原则：
+
+- 只提供少量由 ComicPlate 预设好的配色方案。
+- 配色方案影响 Command Rail、Context Shelf、Reader Stage、Reader Title Bar 和 Reader Progress Bar 的背景、边框和基础文字对比。
+- 不允许用户自由编辑颜色、字体、圆角、间距、按钮样式或图标。
+- 具体色值和方案名称在 UI polish 阶段确定。
 
 ## 7. 快捷键
 
-MVP 不做快捷键设置界面，只保留固定核心快捷键。V1 再做快捷键预设或少量自定义。
+MVP 不做快捷键设置界面，只保留固定核心快捷键。V1 做独立快捷键窗口，可以先只显示固定快捷键，后续再做少量自定义。
 
 跨平台通用：
 
 - `Right Arrow`：下一页。
 - `Left Arrow`：上一页。
-- `Space`：下一页。
-- `Backspace`：上一页。
 - `Home`：第一页。
 - `End`：最后一页。
-- `F11`：全屏，Windows 优先。
+- `Tab`：显示/隐藏 Shelf。
+- `Q`：单页/双页切换。
+- `R`：阅读方向切换。
+- `F`：全屏。
 - `Esc`：退出全屏或返回普通状态。
 
 macOS 差异：
@@ -264,7 +280,7 @@ Windows 差异：
 
 - 打开：`Ctrl+O`。
 - 设置：`Ctrl+,`。
-- 全屏：`F11`。
+- 全屏：`F`。
 
 ## 7.1 多窗口
 
