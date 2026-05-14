@@ -16,6 +16,17 @@
 - 顶部：轻量工具栏。
 - 底部：页码/进度区。
 
+Windows 版主布局采用 WinUI 3-style layered layout。它是 Windows 工作区的优先方向，不默认约束 macOS 版：
+
+- 最左侧是固定 Command Rail，放当前窗口级的阅读操作入口。
+- 中左侧是可隐藏的 Context Shelf，只显示当前容器一层可打开项。
+- 右侧是 Reader Stage，尽量占据窗口剩余空间，接近窗口态下的专注阅读。
+- Reader Stage 顶部只保留当前阅读内容名称等轻量状态，不作为复杂工具栏。
+- Reader Stage 底部保留页码和进度条。
+- 图片区域永远是视觉主角；Command Rail 和 Context Shelf 是辅助层，不承担书架或文件管理器职责。
+
+macOS 版可以复用信息结构，但视觉和平台习惯单独评估。除非后续明确决定，否则不要因为 Windows 的 Command Rail 方案强制 macOS 使用同样的外观。
+
 不做：
 
 - 复杂多窗口管理。V1 允许多开窗口，但每个窗口独立阅读，不做跨窗口协调。
@@ -259,7 +270,7 @@ Windows 差异：
 - 阅读页不要有装饰性卡片。
 - 控件小而清楚。
 - Windows 版本优先。
-- 浅灰色工具应用风格优先，参考 OneCommander / WinUI 3 的克制、密集、清楚。
+- 浅灰色工具应用风格优先，采用 WinUI 3-style layered layout 的克制、密集、清楚。
 - 深色模式可以后续补，不作为当前第一目标。
 - 暂不追求 macOS 视觉方向。
 
@@ -271,9 +282,12 @@ macOS：
 
 Windows：
 
-- 接近 Win11 的简洁工具应用。
+- 接近 Win11 的简洁工具应用，优先做出 Command Rail / Context Shelf / Reader Stage 的三层关系。
 - 不在第一版追求 Mica。
-- 侧栏、工具栏、列表和状态区可以采用浅灰分区、细边框、小控件、低圆角。
+- Command Rail、Context Shelf、书名条和进度区可以采用浅灰分区、细边框、小控件、低圆角。
+- Command Rail 是当前窗口的显式阅读控制区，不是设置页，也不是书架导航。
+- Context Shelf 是当前容器上下文，可以隐藏和显示；隐藏后 Reader Stage 应继续扩展为主要阅读区域。
+- 顶部书名条保持轻量，不重新塞回完整工具栏。
 - 图片区域仍然是视觉主角，工具区不喧宾夺主。
 
 ## 9. 体验基准
