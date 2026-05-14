@@ -20,14 +20,12 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly ContentOpenService _contentOpenService = new();
     private readonly ReaderImageCache _readerImageCache;
     private readonly PageImageInfoLoader _pageImageInfoLoader = new();
-    private readonly JsonAppStateStore _stateStore;
-    private readonly NavigationHistory _navigationHistory = new();
+    private readonly ReadingSessionController _readingSession;
     private readonly ReaderState _readerState = new();
     private readonly ReaderFrameBuilder _readerFrameBuilder = new();
     private readonly ReaderStripController _readerStripController = new(NeighborPageLimit);
     private IReadOnlyList<PageImageInfo> _pageImageInfos = Array.Empty<PageImageInfo>();
     private IReadOnlyList<ReaderFrame> _readerFrames = Array.Empty<ReaderFrame>();
-    private SessionState _lastSession;
     private BookEntry? _currentBook;
     private string _currentLogicalPath = "";
     private int _currentBookIndex = -1;
@@ -49,8 +47,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     {
         _folderPickerService = folderPickerService;
         _readerImageCache = new ReaderImageCache(imagePageLoader);
-        _stateStore = stateStore ?? JsonAppStateStore.CreateDefault();
-        _lastSession = _stateStore.LoadSession();
+        _readingSession = new ReadingSessionController(stateStore ?? JsonAppStateStore.CreateDefault());
         Shelf = new ContextShelfViewModel(ActivateContentItemAsync);
 
         OpenFolderCommand = new AsyncRelayCommand(OpenFolderAsync, () => !IsLoading);
@@ -161,13 +158,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     public string NavigationPaneToggleText => IsNavigationPaneVisible ? "Hide Panels" : "Show Panels";
 
-    public bool CanGoBack => _navigationHistory.CanGoBack && !IsLoading;
+    public bool CanGoBack => _readingSession.CanGoBack && !IsLoading;
 
-    public bool CanOpenLastReadingPosition => _lastSession.Current is not null && !IsLoading;
+    public bool CanOpenLastReadingPosition => _readingSession.CanOpenLastReadingPosition && !IsLoading;
 
-    public string LastReadingPositionText => _lastSession.Current is null
-        ? "Continue Reading"
-        : $"Continue Reading \"{_lastSession.Current.DisplayName}\"";
+    public string LastReadingPositionText => _readingSession.LastReadingPositionText;
 
     public bool IsLoading
     {
@@ -388,7 +383,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
         if (updateReaderFromDirectPages)
         {
-            var progress = _stateStore.FindProgress(result.DirectFolderBook.Path);
+            var progress = _readingSession.FindProgress(result.DirectFolderBook.Path);
             _currentBook = result.DirectPages.Count > 0 ? result.DirectFolderBook : null;
             await LoadPagesAsync(result.DirectPages, progress?.LastPageIndex ?? 0);
         }
@@ -446,7 +441,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         {
             var result = await _contentOpenService.OpenBookAsync(book, CancellationToken.None);
             var pages = result.Pages;
-            var progress = initialPageIndex.HasValue ? null : _stateStore.FindProgress(book.Path);
+            var progress = initialPageIndex.HasValue ? null : _readingSession.FindProgress(book.Path);
             _currentBook = pages.Count > 0 ? result.Book : null;
             await LoadPagesAsync(pages, initialPageIndex ?? progress?.LastPageIndex ?? 0);
 
@@ -530,14 +525,14 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private async Task StartAtContentFolderAsync(string folderPath)
     {
-        _navigationHistory.StartAt(CreateNavigationEntry(folderPath, BookSourceKind.Collection));
+        _readingSession.StartAtContentFolder(folderPath);
         RaiseCommandStates();
         await OpenContentFolderAsync(folderPath, updateReaderFromDirectPages: true);
     }
 
     private async Task StartAtBookAsync(BookEntry book)
     {
-        _navigationHistory.StartAt(CreateNavigationEntry(book));
+        _readingSession.StartAtBook(book);
         Shelf.ReplaceItems(Array.Empty<BookEntry>());
         RaiseCommandStates();
         await OpenBookAsync(book);
@@ -545,36 +540,16 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private async Task NavigateToContentFolderAsync(string folderPath)
     {
-        _navigationHistory.NavigateTo(CreateNavigationEntry(folderPath, BookSourceKind.Collection));
+        _readingSession.NavigateToContentFolder(folderPath);
         RaiseCommandStates();
         await OpenContentFolderAsync(folderPath, updateReaderFromDirectPages: false);
     }
 
     private async Task NavigateToBookAsync(BookEntry book)
     {
-        var entry = CreateNavigationEntry(book);
-        if (_navigationHistory.Current?.SourceKind == BookSourceKind.Collection)
-        {
-            _navigationHistory.NavigateTo(entry);
-        }
-        else
-        {
-            _navigationHistory.ReplaceCurrent(entry);
-        }
-
+        _readingSession.NavigateToBook(book);
         RaiseCommandStates();
         await OpenBookAsync(book);
-    }
-
-    private static NavigationEntry CreateNavigationEntry(BookEntry book)
-    {
-        return new NavigationEntry(book.Path, book.DisplayName, book.SourceKind);
-    }
-
-    private static NavigationEntry CreateNavigationEntry(string path, BookSourceKind sourceKind)
-    {
-        var displayName = Path.GetFileName(path);
-        return new NavigationEntry(path, string.IsNullOrWhiteSpace(displayName) ? path : displayName, sourceKind);
     }
 
     private async Task OpenPathAsSessionStartAsync(string path)
@@ -865,7 +840,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void GoBack()
     {
-        var entry = _navigationHistory.Back();
+        var entry = _readingSession.Back();
         if (entry is null)
         {
             return;
@@ -882,7 +857,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private async Task OpenLastReadingPositionAsync()
     {
-        var current = _lastSession.Current;
+        var current = _readingSession.PrepareOpenLastReadingPosition();
         if (current is null)
         {
             return;
@@ -891,10 +866,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         ShowReader();
         PersistCurrentReadingState(deleteCompletedProgress: true);
         _currentBook = null;
-        var entry = new NavigationEntry(current.Path, current.DisplayName, current.SourceKind);
-        _navigationHistory.Restore(entry, _lastSession.BackStack);
         RaiseCommandStates();
-        await OpenNavigationEntryAsync(entry, current.LastPageIndex);
+        await OpenNavigationEntryAsync(
+            new NavigationEntry(current.Path, current.DisplayName, current.SourceKind),
+            current.LastPageIndex);
     }
 
     private async Task OpenNavigationEntryAsync(NavigationEntry entry, int? initialPageIndex = null)
@@ -910,21 +885,15 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void PersistCurrentReadingState(bool deleteCompletedProgress)
     {
-        if (_currentBook is null || !_readerState.HasPages)
-        {
-            return;
-        }
-
-        _stateStore.SaveReadingState(
+        _readingSession.SaveReadingState(
             _currentBook,
+            _readerState.HasPages,
             _readerState.CurrentPageIndex,
             _readerState.PageCount,
             _readerState.ReadingDirection,
             _readerState.ViewMode,
-            _navigationHistory,
             deleteCompletedProgress);
 
-        _lastSession = _stateStore.LoadSession();
         OnPropertyChanged(nameof(LastReadingPositionText));
         RaiseCommandStates();
     }
