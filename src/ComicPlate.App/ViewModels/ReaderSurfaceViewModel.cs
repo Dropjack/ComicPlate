@@ -159,6 +159,12 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        if (!UpdateVisibleReaderStripItemSizes())
+        {
+            _ = RefreshReaderStripAsync(placement);
+            return;
+        }
+
         UpdateReaderStripOffset(placement);
         QueueReaderViewportRefresh(placement);
     }
@@ -381,6 +387,34 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         return imageInfo.IsValid
             ? new PageDisplaySize(imageInfo.PixelWidth, imageInfo.PixelHeight)
             : new PageDisplaySize(720, 1080);
+    }
+
+    private bool UpdateVisibleReaderStripItemSizes()
+    {
+        var currentFrame = _readerFrames.FirstOrDefault(frame => frame.IsCurrent);
+        if (currentFrame is null || ReaderStripItems.Count == 0)
+        {
+            return false;
+        }
+
+        var visibleItems = ReaderStripItems.ToDictionary(item => item.PageIndex);
+        foreach (var frame in CreateFrameWindow(currentFrame.FrameIndex))
+        {
+            var displaySizes = CalculateFrameDisplaySizes(frame);
+            for (var framePageIndex = 0; framePageIndex < frame.Pages.Count; framePageIndex++)
+            {
+                var framePage = frame.Pages[framePageIndex];
+                if (!visibleItems.TryGetValue(framePage.PageIndex, out var item))
+                {
+                    return false;
+                }
+
+                item.SetViewportSize(_readerStripController.ViewportWidth, _readerStripController.ViewportHeight);
+                item.SetDisplaySize(displaySizes[framePageIndex].Width, displaySizes[framePageIndex].Height);
+            }
+        }
+
+        return true;
     }
 
     private void NextPage()
