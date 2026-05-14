@@ -1,27 +1,36 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ComicPlate.App.Views.ContextShelfView">
-    <Border Width="300"
+    <Border MinWidth="220"
             Background="{StaticResource PanelBrush}"
             BorderBrush="{StaticResource BorderBrushSoft}"
             BorderThickness="0,0,1,0">
-        <Grid RowDefinitions="36,36,*">
-            <TextBlock Text="Shelf"
-                       Margin="12,0"
-                       Foreground="{StaticResource TextBrush}"
-                       FontWeight="SemiBold"
-                       VerticalAlignment="Center" />
-            <Border Grid.Row="1"
+        <Grid RowDefinitions="40,*">
+            <Border Grid.Row="0"
                     BorderBrush="{StaticResource BorderBrushSoft}"
-                    BorderThickness="0,1,0,1"
-                    Padding="8,4">
+                    BorderThickness="0,0,0,1">
+                <Grid ColumnDefinitions="Auto,*,Auto"
+                      Margin="8,0"
+                      ColumnSpacing="8"
+                      VerticalAlignment="Center">
                 <Button Command="{Binding BackCommand}"
-                        Content="Back"
-                        HorizontalAlignment="Left"
-                        Padding="10,3"
+                            Content="Back"
+                            Padding="10,3"
                         CornerRadius="4" />
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding HeaderTitle}"
+                               Foreground="{StaticResource TextBrush}"
+                               FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding ContextShelf.ItemCount}"
+                               Foreground="{StaticResource MutedTextBrush}"
+                               VerticalAlignment="Center" />
+                </Grid>
             </Border>
-            <ListBox Grid.Row="2"
+
+            <ListBox Grid.Row="1"
                      ItemsSource="{Binding ContextShelf.Items}"
                      SelectedIndex="{Binding ContextShelf.CurrentIndex, Mode=TwoWay}"
                      Background="{StaticResource PanelBrush}"

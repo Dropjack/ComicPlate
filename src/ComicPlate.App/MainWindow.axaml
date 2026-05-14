@@ -25,66 +25,92 @@
         <SolidColorBrush x:Key="AccentBrush" Color="#0078D4" />
     </Window.Resources>
 
-    <Grid RowDefinitions="44,*"
+    <Grid ColumnDefinitions="64,*"
           Background="#F4F4F4">
-        <Border Grid.Row="0"
-                Background="{StaticResource PanelBrush}"
+        <Border Grid.Column="0"
+                Background="#ECEFF3"
                 BorderBrush="{StaticResource BorderBrushSoft}"
-                BorderThickness="0,0,0,1">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto"
-                  Margin="10,0"
-                  ColumnSpacing="8"
-                  VerticalAlignment="Center">
-                <Button Grid.Column="0"
-                        Command="{Binding ShowStartCommand}"
-                        Content="Home"
-                        Padding="12,5"
-                        CornerRadius="4" />
-                <Button Grid.Column="1"
-                        Command="{Binding OpenContentCommand}"
-                        Content="Open Folder"
-                        Padding="12,5"
-                        CornerRadius="4" />
-                <Button Grid.Column="2"
-                        Command="{Binding ToggleNavigationPaneCommand}"
-                        Content="{Binding NavigationPaneToggleText}"
-                        Padding="12,5"
-                        CornerRadius="4"
-                        IsVisible="{Binding IsReaderVisible}" />
-                <Button Grid.Column="3"
-                        Command="{Binding Reader.ToggleViewModeCommand}"
-                        Content="{Binding Reader.ViewModeText}"
-                        Padding="12,5"
-                        CornerRadius="4"
-                        IsVisible="{Binding IsReaderVisible}" />
-                <Button Grid.Column="4"
-                        Command="{Binding Reader.ToggleReadingDirectionCommand}"
-                        Content="{Binding Reader.ReadingDirectionText}"
-                        Padding="12,5"
-                        CornerRadius="4"
-                        IsVisible="{Binding IsReaderVisible}" />
-                <TextBlock Grid.Column="5"
-                           Text="{Binding HeaderTitle}"
+                BorderThickness="0,0,1,0">
+            <Grid RowDefinitions="Auto,*"
+                  Margin="0,10">
+                <TextBlock Grid.Row="0"
+                           Text="CP"
                            Foreground="{StaticResource TextBrush}"
-                           FontSize="15"
-                           VerticalAlignment="Center"
-                           TextTrimming="CharacterEllipsis" />
-                <TextBlock Grid.Column="6"
-                           Text="AutoFit"
-                           Foreground="{StaticResource MutedTextBrush}"
-                           VerticalAlignment="Center" />
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,14" />
+
+                <StackPanel Grid.Row="1"
+                            Spacing="8"
+                            HorizontalAlignment="Center">
+                    <Button Command="{Binding OpenContentCommand}"
+                            Content="Open"
+                            Width="52"
+                            MinHeight="44"
+                            Padding="0"
+                            CornerRadius="6"
+                            ToolTip.Tip="Open comics" />
+                    <Button Command="{Binding ToggleNavigationPaneCommand}"
+                            Content="Shelf"
+                            Width="52"
+                            MinHeight="44"
+                            Padding="0"
+                            CornerRadius="6"
+                            ToolTip.Tip="{Binding NavigationPaneToggleText}"
+                            IsVisible="{Binding IsReaderVisible}" />
+                    <Button Command="{Binding Reader.ToggleViewModeCommand}"
+                            Content="{Binding Reader.ViewModeText}"
+                            Width="52"
+                            MinHeight="44"
+                            Padding="0"
+                            CornerRadius="6"
+                            ToolTip.Tip="Single / Double page"
+                            IsVisible="{Binding IsReaderVisible}" />
+                    <Button Command="{Binding Reader.ToggleReadingDirectionCommand}"
+                            Content="{Binding Reader.ReadingDirectionText}"
+                            Width="52"
+                            MinHeight="44"
+                            Padding="0"
+                            CornerRadius="6"
+                            ToolTip.Tip="Reading direction"
+                            IsVisible="{Binding IsReaderVisible}" />
+                    <Button Content="Set"
+                            Width="52"
+                            MinHeight="44"
+                            Padding="0"
+                            CornerRadius="6"
+                            ToolTip.Tip="Settings"
+                            IsEnabled="False" />
+                </StackPanel>
             </Grid>
         </Border>
 
-        <views:StartView Grid.Row="1"
+        <views:StartView Grid.Column="1"
                          IsVisible="{Binding IsStartVisible}" />
 
-        <Grid Grid.Row="1"
+        <Grid Grid.Column="1"
               IsVisible="{Binding IsReaderVisible}"
               ColumnDefinitions="Auto,*">
             <views:ContextShelfView Grid.Column="0"
+                                    Width="300"
+                                    MinWidth="220"
                                     IsVisible="{Binding IsNavigationPaneVisible}" />
-            <views:ReaderSurfaceView Grid.Column="1" />
+            <Grid Grid.Column="1"
+                  RowDefinitions="40,*">
+                <Border Grid.Row="0"
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="0,0,0,1">
+                    <TextBlock Text="{Binding HeaderTitle}"
+                               Foreground="{StaticResource TextBrush}"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Margin="14,0"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                </Border>
+                <views:ReaderSurfaceView Grid.Row="1" />
+            </Grid>
         </Grid>
     </Grid>
 </Window>

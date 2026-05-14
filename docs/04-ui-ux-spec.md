@@ -25,6 +25,15 @@ Windows 版主布局采用 WinUI 3-style layered layout。它是 Windows 工作�
 - Reader Stage 底部保留页码和进度条。
 - 图片区域永远是视觉主角；Command Rail 和 Context Shelf 是辅助层，不承担书架或文件管理器职责。
 
+Windows 主窗口区域职责：
+
+- Window Shell：只负责承载窗口级布局，不把业务逻辑塞进窗口壳。
+- Command Rail：固定窄栏，参考 Teams / Obsidian 一类 Windows 工具应用的侧边命令区。第一轮按图标化窄栏预留，最终图标、文字和 logo 后续 polish。
+- Context Shelf：当前容器列表。由 Command Rail 的 Shelf 按钮显示或隐藏；隐藏后 Reader Stage 占据剩余空间。
+- Reader Stage：漫画阅读主区域。它包含顶部书名条、中央横向阅读带、底部页码和进度条。
+- Reader Title Bar：显示当前阅读内容名称或轻量状态，不放回完整工具栏。
+- Reader Progress Bar：显示页码和阅读进度，后续可以承接拖动定位等交互。
+
 macOS 版可以复用信息结构，但视觉和平台习惯单独评估。除非后续明确决定，否则不要因为 Windows 的 Command Rail 方案强制 macOS 使用同样的外观。
 
 不做：
@@ -80,6 +89,12 @@ Context Shelf MVP 项：
 - ZIP/CBZ 和文件夹 Shelf entry 展示封面缩略图，并叠加类型遮罩或角标。
 - 点击 Shelf entry 打开该项或进入该容器。
 - 当前层图片不进入左侧栏；它们显示在主阅读/预览面板。
+- Shelf 顶部暂定只放导航上下文：Back、当前容器名、当前层可打开项数量。
+- Shelf 顶部不放 Reveal、搜索、排序或视图设置，避免变成文件管理器工具栏。
+- 当前阶段不做右键 action 菜单；右键不应改变当前阅读项，也不应触发打开。
+- Shelf entry 只通过左键点击进入。
+- Reveal in Explorer 保留为未来对象操作，但当前不放在 Shelf 顶部，也不做右键菜单入口。
+- Shelf 宽度暂定固定。可拖拽宽度和 Cover/Compact 视图切换后续再评估。
 
 左侧栏关系：
 

@@ -36,6 +36,8 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
 
     public bool IsEmpty => Items.Count == 0;
 
+    public int ItemCount => Items.Count;
+
     public void ReplaceItems(IEnumerable<BookEntry> books)
     {
         _thumbnailCancellationTokenSource.Cancel();
@@ -51,6 +53,7 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
 
         SetCurrentIndexSilently(-1);
         OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(ItemCount));
     }
 
     public async Task LoadThumbnailsAsync()
