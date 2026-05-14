@@ -111,9 +111,17 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _pageText, value);
     }
 
-    public string ViewModeText => _readerState.ViewMode == ViewMode.DoublePage ? "Double" : "Single";
+    public string ViewModeText => _readerState.ViewMode == ViewMode.DoublePage ? "双页" : "单页";
+
+    public bool IsSinglePageMode => _readerState.ViewMode == ViewMode.SinglePage;
+
+    public bool IsDoublePageMode => _readerState.ViewMode == ViewMode.DoublePage;
 
     public string ReadingDirectionText => _readerState.ReadingDirection == ReadingDirection.RightToLeft ? "RTL" : "LTR";
+
+    public bool IsLeftToRightReading => _readerState.ReadingDirection == ReadingDirection.LeftToRight;
+
+    public bool IsRightToLeftReading => _readerState.ReadingDirection == ReadingDirection.RightToLeft;
 
     public string CurrentLogicalPath
     {
@@ -553,6 +561,8 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             : ViewMode.SinglePage;
         _readerState.SetViewMode(nextViewMode);
         OnPropertyChanged(nameof(ViewModeText));
+        OnPropertyChanged(nameof(IsSinglePageMode));
+        OnPropertyChanged(nameof(IsDoublePageMode));
         _ = RefreshReaderStripAsync();
     }
 
@@ -564,6 +574,8 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         _readerState.SetReadingDirection(nextReadingDirection);
         OnPropertyChanged(nameof(ReadingDirection));
         OnPropertyChanged(nameof(ReadingDirectionText));
+        OnPropertyChanged(nameof(IsLeftToRightReading));
+        OnPropertyChanged(nameof(IsRightToLeftReading));
         _ = RefreshReaderStripAsync();
     }
 

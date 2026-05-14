@@ -103,11 +103,14 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             if (SetProperty(ref _isNavigationPaneVisible, value))
             {
                 OnPropertyChanged(nameof(NavigationPaneToggleText));
+                OnPropertyChanged(nameof(IsNavigationPaneHidden));
             }
         }
     }
 
-    public string NavigationPaneToggleText => IsNavigationPaneVisible ? "Hide Panels" : "Show Panels";
+    public string NavigationPaneToggleText => IsNavigationPaneVisible ? "隐藏 Shelf" : "显示 Shelf";
+
+    public bool IsNavigationPaneHidden => !IsNavigationPaneVisible;
 
     public bool CanGoBack => _readingSession.CanGoBack && !IsLoading;
 

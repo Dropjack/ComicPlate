@@ -386,7 +386,43 @@ MVP 不做复杂日志系统，但错误对象要带 message 和 exception。
 
 如果未来确实需要，再从真实需求抽象。
 
-## 8. 最小垂直切片
+## 8. 资源和图标规范
+
+ComicPlate 的窗口级图标使用“源文件清楚、运行时轻量”的规则。
+
+源文件规则：
+
+- 图标源文件放在 `src/ComicPlate.App/Assets/Icons/`。
+- 每个图标一个独立 SVG 文件，不使用一整张 PNG sprite。
+- SVG 使用 `viewBox="0 0 24 24"`。
+- SVG 使用 `stroke="currentColor"`、`fill="none"`。
+- SVG 不包含文字、渐变、阴影、背景或位图。
+- 图标应是单色线性图标，视觉上靠近 Fluent / Obsidian / VS Code 的桌面工具风格。
+
+运行时规则：
+
+- Avalonia 默认不直接渲染 SVG 文件；除非明确引入 SVG 渲染包，否则不要在 XAML 中直接引用 SVG 作为图片控件来源。
+- 当前实现把 SVG 线条转换为 `StreamGeometry`，再用 `PathIcon` 显示。
+- `PathIcon` 的颜色跟随按钮 `Foreground`，因此可以配合主题、hover 和 disabled 状态。
+- 状态型按钮不换命令，只换图标可见性。例如单页/双页、LTR/RTL、Shelf show/hide。
+- PNG 只适合临时预览或复杂插画，不作为 Command Rail 图标首选格式。
+
+命名规则：
+
+- 打开入口：`open-book.svg`。
+- Shelf 状态：`shelf-show.svg`、`shelf-hide.svg`。
+- 阅读模式：`single-page.svg`、`double-page.svg`。
+- 阅读方向：`read-ltr.svg`、`read-rtl.svg`。
+- 设置入口：`user-settings.svg`，优先使用 sliders，不使用齿轮。
+- 阅读帧导航：`nav-left.svg`、`nav-right.svg`。
+
+替换规则：
+
+- 美术替换图标时，优先保持文件名和语义不变。
+- 如果只改线条外观，不应改 ViewModel 或命令逻辑。
+- 如果新增图标状态，先讨论语义，再新增资源和绑定。
+
+## 9. 最小垂直切片
 
 第一段代码只追求：
 
@@ -408,7 +444,7 @@ MVP 不做复杂日志系统，但错误对象要带 message 和 exception。
 4. 阅读进度保存。
 5. 多窗口：每个窗口是一套完整独立阅读器。
 
-## 9. Action 和右键菜单
+## 10. Action 和右键菜单
 
 ComicPlate 不做 NeeView 式复杂命令系统，但需要一组简单固定 Action。
 

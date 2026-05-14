@@ -84,18 +84,26 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Spacing="8">
-                <Button Content="Left"
-                        Click="OnVisualLeftClick"
+                <Button Click="OnVisualLeftClick"
                         Padding="12,3"
-                        CornerRadius="4" />
+                        CornerRadius="4"
+                        ToolTip.Tip="上一阅读帧">
+                    <PathIcon Data="{StaticResource NavLeftIcon}"
+                              Width="18"
+                              Height="18" />
+                </Button>
                 <Button Content="{Binding Reader.PageText}"
                         IsEnabled="False"
                         Padding="14,3"
                         CornerRadius="4" />
-                <Button Content="Right"
-                        Click="OnVisualRightClick"
+                <Button Click="OnVisualRightClick"
                         Padding="12,3"
-                        CornerRadius="4" />
+                        CornerRadius="4"
+                        ToolTip.Tip="下一阅读帧">
+                    <PathIcon Data="{StaticResource NavRightIcon}"
+                              Width="18"
+                              Height="18" />
+                </Button>
             </StackPanel>
         </Border>
 
