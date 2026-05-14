@@ -184,6 +184,20 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         MoveReaderStripFreely(-GetNextReadingDirectionOffsetDelta());
     }
 
+    public void GoToProgressRatio(double visualRatio)
+    {
+        if (!_readerState.HasPages)
+        {
+            return;
+        }
+
+        var targetPageIndex = ReaderProgressMapper.RatioToPageIndex(
+            visualRatio,
+            _readerState.PageCount,
+            _readerState.ReadingDirection);
+        GoToProgressPage(targetPageIndex);
+    }
+
     public void BeginReaderStripDrag()
     {
         _readerStripController.BeginDrag();
@@ -459,6 +473,21 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         }
 
         _readerState.GoToFrameStartPage(_readerFrames[nextFrameIndex].PageIndexes.Min());
+        _ = RefreshReaderStripAsync();
+    }
+
+    private void GoToProgressPage(int pageIndex)
+    {
+        var targetFrame = _readerFrames.FirstOrDefault(frame => frame.PageIndexes.Contains(pageIndex));
+        if (targetFrame is null)
+        {
+            _readerState.GoToPage(pageIndex);
+        }
+        else
+        {
+            _readerState.GoToFrameStartPage(targetFrame.PageIndexes.Min());
+        }
+
         _ = RefreshReaderStripAsync();
     }
 

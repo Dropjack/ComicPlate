@@ -110,13 +110,19 @@
                            Text="{Binding Reader.PageText}"
                            Foreground="{StaticResource TextBrush}"
                            VerticalAlignment="Center" />
-                <ProgressBar Grid.Column="1"
-                             Margin="14,0"
-                             Minimum="0"
-                             Maximum="{Binding Reader.LastPageProgressIndex}"
-                             Value="{Binding Reader.CurrentPageProgressIndex}"
-                             Height="4"
-                             VerticalAlignment="Center" />
+                <Grid Grid.Column="1"
+                      Margin="14,0"
+                      Background="Transparent"
+                      PointerPressed="OnProgressPointerPressed"
+                      PointerReleased="OnProgressPointerReleased"
+                      PointerCaptureLost="OnProgressPointerCaptureLost">
+                    <ProgressBar Minimum="0"
+                                 Maximum="{Binding Reader.LastPageProgressIndex}"
+                                 Value="{Binding Reader.CurrentPageProgressIndex}"
+                                 Height="4"
+                                 VerticalAlignment="Center"
+                                 IsHitTestVisible="False" />
+                </Grid>
                 <TextBlock Grid.Column="2"
                            Text="{Binding Reader.CurrentLogicalPath}"
                            Foreground="{StaticResource MutedTextBrush}"
