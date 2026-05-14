@@ -48,30 +48,14 @@ public partial class MainWindow : Window
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Right || e.Key == Key.Space)
+        if (e.Key == Key.Right)
         {
-            if (e.Key == Key.Right)
-            {
-                _viewModel.Reader.VisualRightCommand.Execute(null);
-            }
-            else
-            {
-                _viewModel.Reader.NextPageCommand.Execute(null);
-            }
-
+            _viewModel.Reader.VisualRightCommand.Execute(null);
             e.Handled = true;
         }
-        else if (e.Key == Key.Left || e.Key == Key.Back)
+        else if (e.Key == Key.Left)
         {
-            if (e.Key == Key.Left)
-            {
-                _viewModel.Reader.VisualLeftCommand.Execute(null);
-            }
-            else
-            {
-                _viewModel.Reader.PreviousPageCommand.Execute(null);
-            }
-
+            _viewModel.Reader.VisualLeftCommand.Execute(null);
             e.Handled = true;
         }
         else if (e.Key == Key.Home)
@@ -87,6 +71,31 @@ public partial class MainWindow : Window
         else if (e.Key == Key.O && e.KeyModifiers.HasFlag(KeyModifiers.Control))
         {
             _viewModel.OpenContentCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.OemComma && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            // Reserved for Settings. The settings window will be implemented in its own step.
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Tab)
+        {
+            _viewModel.ToggleNavigationPaneCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Q)
+        {
+            _viewModel.Reader.ToggleViewModeCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.R)
+        {
+            _viewModel.Reader.ToggleReadingDirectionCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.F)
+        {
+            // Reserved for fullscreen. Fullscreen UI behavior will be implemented in its own step.
             e.Handled = true;
         }
     }
