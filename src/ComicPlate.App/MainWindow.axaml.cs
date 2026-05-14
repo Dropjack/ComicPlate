@@ -89,7 +89,7 @@ public partial class MainWindow : Window
         }
         else if (e.Key == Key.O && e.KeyModifiers.HasFlag(KeyModifiers.Control))
         {
-            _viewModel.OpenFolderCommand.Execute(null);
+            _viewModel.OpenContentCommand.Execute(null);
             e.Handled = true;
         }
     }

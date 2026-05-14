@@ -40,7 +40,7 @@
                         Padding="12,5"
                         CornerRadius="4" />
                 <Button Grid.Column="1"
-                        Command="{Binding OpenFolderCommand}"
+                        Command="{Binding OpenContentCommand}"
                         Content="Open Folder"
                         Padding="12,5"
                         CornerRadius="4" />
@@ -97,7 +97,7 @@
                             HorizontalAlignment="Stretch"
                             Padding="12,9"
                             CornerRadius="4" />
-                    <Button Command="{Binding OpenFolderCommand}"
+                    <Button Command="{Binding OpenContentCommand}"
                             Content="Open Comics"
                             HorizontalAlignment="Stretch"
                             Padding="12,9"
@@ -134,8 +134,8 @@
                                 CornerRadius="4" />
                     </Border>
                     <ListBox Grid.Row="2"
-                             ItemsSource="{Binding Shelf.Items}"
-                             SelectedIndex="{Binding Shelf.CurrentIndex, Mode=TwoWay}"
+                             ItemsSource="{Binding ContextShelf.Items}"
+                             SelectedIndex="{Binding ContextShelf.CurrentIndex, Mode=TwoWay}"
                              Background="{StaticResource PanelBrush}"
                              BorderThickness="0">
                         <ListBox.ItemTemplate>

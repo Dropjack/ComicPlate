@@ -875,7 +875,7 @@
 
 ## ComicPlate MVP Action 示例
 
-* `OpenFolder`
+* `OpenContent`
 * `OpenArchive`
 * `NextPage`
 * `PreviousPage`

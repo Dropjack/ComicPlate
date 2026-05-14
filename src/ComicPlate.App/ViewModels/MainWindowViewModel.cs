@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Input;
 using ComicPlate.App.Controllers;
@@ -16,7 +15,6 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly ReaderImageCache _readerImageCache;
     private readonly ReadingSessionController _readingSession;
     private BookEntry? _currentBook;
-    private int _currentBookIndex = -1;
     private string _headerTitle = "ComicPlate";
     private bool _isNavigationPaneVisible = true;
     private bool _isReaderVisible;
@@ -35,22 +33,20 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         Reader = new ReaderSurfaceViewModel(_readerImageCache);
         Reader.PropertyChanged += OnReaderPropertyChanged;
         Reader.ReadingStateChanged += OnReaderReadingStateChanged;
-        Shelf = new ContextShelfViewModel(ActivateContentItemAsync);
+        ContextShelf = new ContextShelfViewModel(ActivateContentItemAsync);
 
-        OpenFolderCommand = new AsyncRelayCommand(OpenFolderAsync, () => !IsLoading);
+        OpenContentCommand = new AsyncRelayCommand(OpenContentAsync, () => !IsLoading);
         OpenLastReadingPositionCommand = new RelayCommand(OpenLastReadingPosition, () => CanOpenLastReadingPosition);
         ShowStartCommand = new RelayCommand(ShowStart);
         ToggleNavigationPaneCommand = new RelayCommand(ToggleNavigationPane);
         BackCommand = new RelayCommand(GoBack, () => CanGoBack);
     }
 
-    public ObservableCollection<BookListItemViewModel> BookItems { get; } = new();
-
-    public ContextShelfViewModel Shelf { get; }
+    public ContextShelfViewModel ContextShelf { get; }
 
     public ReaderSurfaceViewModel Reader { get; }
 
-    public ICommand OpenFolderCommand { get; }
+    public ICommand OpenContentCommand { get; }
 
     public RelayCommand OpenLastReadingPositionCommand { get; }
 
@@ -59,22 +55,6 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     public ICommand ToggleNavigationPaneCommand { get; }
 
     public RelayCommand BackCommand { get; }
-
-    public int CurrentBookIndex
-    {
-        get => _currentBookIndex;
-        set
-        {
-            if (value == _currentBookIndex || value < 0 || value >= BookItems.Count)
-            {
-                return;
-            }
-
-            _currentBookIndex = value;
-            OnPropertyChanged(nameof(CurrentBookIndex));
-            _ = ActivateBookItemAsync(BookItems[value].Book);
-        }
-    }
 
     public string StatusMessage
     {
@@ -151,7 +131,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         await OpenPathAsSessionStartAsync(path);
     }
 
-    private async Task OpenFolderAsync()
+    private async Task OpenContentAsync()
     {
         var folderPath = await _folderPickerService.PickFolderAsync();
         if (string.IsNullOrWhiteSpace(folderPath))
@@ -170,9 +150,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            BookItems.Clear();
             Reader.ClearPages();
-            Shelf.ReplaceItems(Array.Empty<BookEntry>());
+            ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
             SetMessage("ComicPlate could not read this folder.");
         }
         finally
@@ -192,7 +171,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         Reader.ReadingStateChanged -= OnReaderReadingStateChanged;
         Reader.Dispose();
         _readerImageCache.Dispose();
-        Shelf.Dispose();
+        ContextShelf.Dispose();
     }
 
     private void OnReaderPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -205,24 +184,15 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void OnReaderReadingStateChanged()
     {
-        Shelf.SetCurrentIndexSilently(-1);
+        ContextShelf.SetCurrentIndexSilently(-1);
         SetMessage("");
         PersistCurrentReadingState(deleteCompletedProgress: false);
     }
 
-    private void LoadShelfEntries(string rootPath, IReadOnlyList<BookEntry> books)
+    private void LoadContextShelfEntries(string rootPath, IReadOnlyList<BookEntry> books)
     {
-        BookItems.Clear();
-
-        foreach (var book in books)
-        {
-            BookItems.Add(new BookListItemViewModel(book));
-        }
-
-        _currentBookIndex = -1;
-        OnPropertyChanged(nameof(CurrentBookIndex));
         HeaderTitle = Path.GetFileName(rootPath);
-        Shelf.ReplaceItems(books);
+        ContextShelf.ReplaceItems(books);
     }
 
     private async Task ActivateBookItemAsync(BookEntry book)
@@ -249,7 +219,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         var result = await _contentOpenService.OpenContentFolderAsync(folderPath, CancellationToken.None);
-        LoadShelfEntries(result.FolderPath, result.ShelfEntries);
+        LoadContextShelfEntries(result.FolderPath, result.ContextShelfEntries);
 
         if (updateReaderFromDirectPages)
         {
@@ -258,7 +228,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             await Reader.LoadPagesAsync(result.DirectPages, progress?.LastPageIndex ?? 0);
         }
 
-        if (Shelf.IsEmpty && result.DirectPages.Count == 0 && Reader.ReaderStripItems.Count == 0)
+        if (ContextShelf.IsEmpty && result.DirectPages.Count == 0 && Reader.ReaderStripItems.Count == 0)
         {
             SetMessage("This folder has no readable contents.");
             return;
@@ -269,7 +239,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             SetMessage("Select an item from the current folder.");
         }
 
-        _ = Shelf.LoadThumbnailsAsync();
+        _ = ContextShelf.LoadThumbnailsAsync();
     }
 
     private async Task OpenContentFolderAsync(string folderPath, bool updateReaderFromDirectPages = true)
@@ -284,13 +254,12 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            BookItems.Clear();
             if (updateReaderFromDirectPages)
             {
                 Reader.ClearPages();
             }
 
-            Shelf.ReplaceItems(Array.Empty<BookEntry>());
+            ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
             SetMessage("ComicPlate could not read this folder.");
         }
         finally
@@ -342,7 +311,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private async Task StartAtBookAsync(BookEntry book)
     {
         _readingSession.StartAtBook(book);
-        Shelf.ReplaceItems(Array.Empty<BookEntry>());
+        ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
         RaiseCommandStates();
         await OpenBookAsync(book);
     }
@@ -382,7 +351,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             }
 
             Reader.ClearPages();
-            Shelf.ReplaceItems(Array.Empty<BookEntry>());
+            ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
             SetMessage(result.Kind == OpenPathKind.Missing
                 ? "ComicPlate could not find this path."
                 : "ComicPlate cannot open this file type yet.");
@@ -390,7 +359,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
         {
             Reader.ClearPages();
-            Shelf.ReplaceItems(Array.Empty<BookEntry>());
+            ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
             SetMessage("ComicPlate could not open this path.");
         }
         finally
@@ -487,9 +456,9 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(CanGoBack));
         OnPropertyChanged(nameof(CanOpenLastReadingPosition));
 
-        if (OpenFolderCommand is AsyncRelayCommand openFolderCommand)
+        if (OpenContentCommand is AsyncRelayCommand openContentCommand)
         {
-            openFolderCommand.RaiseCanExecuteChanged();
+            openContentCommand.RaiseCanExecuteChanged();
         }
 
         OpenLastReadingPositionCommand.RaiseCanExecuteChanged();

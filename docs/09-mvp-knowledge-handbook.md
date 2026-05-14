@@ -16,7 +16,7 @@
 截至当前阶段，ComicPlate 已经能作为 MVP 阅读漫画：
 
 - 能启动 Avalonia 桌面应用。
-- 能通过 `Open Folder` 选择书架根目录。
+- 能通过 `Open Comics` 选择当前内容入口。
 - 书架能递归发现可阅读的 Book。
 - 文件夹漫画可以作为 Book 打开。
 - ZIP/CBZ 漫画可以作为 Book 打开。
@@ -25,7 +25,7 @@
 - ZIP/CBZ Book 会读取压缩包内部子目录图片。
 - 非图片文件会被忽略。
 - 压缩包套压缩包不做。
-- 左侧有 Bookshelf 和 Pages 两个面板。
+- 左侧有 Context Shelf 面板。
 - 默认阅读方向是 RightToLeft。
 - 默认缩放方向已经从固定小槽位改为 AutoFit。
 - 有基础翻页按钮、页面列表和进度条。
@@ -379,7 +379,7 @@ Action 是应用内部固定动作。
 
 例如：
 
-- `OpenFolder`
+- `OpenContent`
 - `NextPage`
 - `PreviousPage`
 - `GoToPage`

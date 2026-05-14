@@ -3,18 +3,18 @@ using ComicPlate.Core.Sorting;
 
 namespace ComicPlate.Infrastructure.FileSystem;
 
-public sealed class FileSystemBookshelfSource : IBookshelfSource
+public sealed class FileSystemContextShelfSource : IContextShelfSource
 {
     private readonly string _rootPath;
 
-    public FileSystemBookshelfSource(string rootPath)
+    public FileSystemContextShelfSource(string rootPath)
     {
         _rootPath = Path.GetFullPath(rootPath);
     }
 
     public string RootPath => _rootPath;
 
-    public Task<Bookshelf> LoadAsync(CancellationToken cancellationToken)
+    public Task<ContextShelf> LoadAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -23,7 +23,7 @@ public sealed class FileSystemBookshelfSource : IBookshelfSource
             .ThenBy(book => book.Path, NaturalPathComparer.Instance)
             .ToArray();
 
-        return Task.FromResult(new Bookshelf(_rootPath, books));
+        return Task.FromResult(new ContextShelf(_rootPath, books));
     }
 
     private IEnumerable<BookEntry> EnumerateBookEntries(CancellationToken cancellationToken)

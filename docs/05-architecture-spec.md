@@ -414,7 +414,7 @@ ComicPlate 不做 NeeView 式复杂命令系统，但需要一组简单固定 Ac
 
 示例：
 
-- `OpenFolder`
+- `OpenContent`
 - `OpenArchive`
 - `NextPage`
 - `PreviousPage`

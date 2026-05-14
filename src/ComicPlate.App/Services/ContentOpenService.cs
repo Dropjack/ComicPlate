@@ -42,18 +42,18 @@ public sealed class ContentOpenService
         CancellationToken cancellationToken)
     {
         var fullPath = Path.GetFullPath(folderPath);
-        var bookshelfSource = new FileSystemBookshelfSource(fullPath);
+        var contextShelfSource = new FileSystemContextShelfSource(fullPath);
         var directPageSource = new FolderBookSource(fullPath, recursive: false);
 
-        var bookshelfTask = Task.Run(() => bookshelfSource.LoadAsync(cancellationToken), cancellationToken);
+        var contextShelfTask = Task.Run(() => contextShelfSource.LoadAsync(cancellationToken), cancellationToken);
         var pagesTask = Task.Run(() => directPageSource.LoadPagesAsync(cancellationToken), cancellationToken);
-        await Task.WhenAll(bookshelfTask, pagesTask);
+        await Task.WhenAll(contextShelfTask, pagesTask);
 
-        var bookshelf = await bookshelfTask;
+        var contextShelf = await contextShelfTask;
         var pages = await pagesTask;
         return new ContentFolderOpenResult(
             fullPath,
-            bookshelf.Books,
+            contextShelf.Entries,
             CreateBookEntry(fullPath, BookSourceKind.Folder),
             pages);
     }

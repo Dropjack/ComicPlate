@@ -4,9 +4,9 @@ This file records visible UX and rendering polish issues that are confirmed but 
 
 ## Reader Frame Flicker During Window Resize
 
-Status: confirmed, deferred.
+Status: mitigated in R8.1, needs manual feel-test.
 
-When the application window is freely resized, the visible comic frame can flicker repeatedly while the reader surface recalculates layout and image resources. The current behavior is usable, but it feels less stable than NeeView, which keeps the visible page visually steady during continuous resize.
+When the application window is freely resized, the visible comic frame can flicker repeatedly while the reader surface recalculates layout and image resources. The R8 mitigation keeps the existing strip visible during continuous resize and commits the full layout refresh after a short delay. R8.1 also updates the existing strip item sizes immediately so the frame follows the window while reusing the already-loaded bitmap.
 
 Likely area:
 
@@ -14,7 +14,7 @@ Likely area:
 - reader strip layout recalculation;
 - image item replacement during refresh;
 - decode request changes caused by continuously changing display size;
-- lack of resize debounce or stable temporary bitmap reuse.
+- lack of stable temporary bitmap reuse during resize.
 
 Boundary:
 
@@ -22,3 +22,10 @@ Boundary:
 - Do not make resize wait for full image decode before showing the current frame.
 - Keep the reader image cache size-aware and disposable.
 - Treat this as reader layout lifecycle polish, separate from the R7 decode strategy.
+
+R8 change:
+
+- first valid viewport size commits immediately;
+- repeated `SizeChanged` events update the viewport and visible item geometry but delay full strip replacement;
+- the current strip offset is updated immediately to preserve the current page position;
+- full layout recalculation and decode request changes are committed after resize quiets for a short interval.
