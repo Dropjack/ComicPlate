@@ -1,0 +1,56 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Default warm study palette. Future color schemes should replace these tokens, not View layout. -->
+    <Color x:Key="BackgroundBaseColor">#141210</Color>
+    <Color x:Key="SurfacePanelColor">#25211C</Color>
+    <Color x:Key="SurfaceMutedColor">#1D1A16</Color>
+    <Color x:Key="SurfaceElevatedColor">#2D2822</Color>
+    <Color x:Key="SurfaceInputColor">#332D26</Color>
+    <Color x:Key="ReaderStageColor">#141210</Color>
+    <Color x:Key="ReaderPageSurfaceColor">#F4EFE6</Color>
+    <Color x:Key="TextPrimaryColor">#F3ECE2</Color>
+    <Color x:Key="TextSecondaryColor">#B9AA9A</Color>
+    <Color x:Key="TextOnAccentColor">#141210</Color>
+    <Color x:Key="TextInverseColor">#FFFFFF</Color>
+    <Color x:Key="BorderSubtleColor">#3B352D</Color>
+    <Color x:Key="AccentColor">#D6A86C</Color>
+    <Color x:Key="AccentHoverColor">#E4BC83</Color>
+    <Color x:Key="OverlayDarkColor">#CC1F1F1F</Color>
+
+    <SolidColorBrush x:Key="BackgroundBase" Color="{StaticResource BackgroundBaseColor}" />
+    <SolidColorBrush x:Key="SurfacePanel" Color="{StaticResource SurfacePanelColor}" />
+    <SolidColorBrush x:Key="SurfaceMuted" Color="{StaticResource SurfaceMutedColor}" />
+    <SolidColorBrush x:Key="SurfaceElevated" Color="{StaticResource SurfaceElevatedColor}" />
+    <SolidColorBrush x:Key="SurfaceInput" Color="{StaticResource SurfaceInputColor}" />
+    <SolidColorBrush x:Key="ReaderStage" Color="{StaticResource ReaderStageColor}" />
+    <SolidColorBrush x:Key="ReaderPageSurface" Color="{StaticResource ReaderPageSurfaceColor}" />
+    <SolidColorBrush x:Key="TextPrimary" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="TextSecondary" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="TextOnAccent" Color="{StaticResource TextOnAccentColor}" />
+    <SolidColorBrush x:Key="TextInverse" Color="{StaticResource TextInverseColor}" />
+    <SolidColorBrush x:Key="BorderSubtle" Color="{StaticResource BorderSubtleColor}" />
+    <SolidColorBrush x:Key="Accent" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="AccentHover" Color="{StaticResource AccentHoverColor}" />
+    <SolidColorBrush x:Key="OverlayDark" Color="{StaticResource OverlayDarkColor}" />
+
+    <!-- Compatibility keys used by current XAML. Keep these until the Views are fully renamed to token terms. -->
+    <SolidColorBrush x:Key="PanelBrush" Color="{StaticResource SurfacePanelColor}" />
+    <SolidColorBrush x:Key="SubtlePanelBrush" Color="{StaticResource SurfaceMutedColor}" />
+    <SolidColorBrush x:Key="BorderBrushSoft" Color="{StaticResource BorderSubtleColor}" />
+    <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="MutedTextBrush" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+
+    <SolidColorBrush x:Key="SettingsNavBrush" Color="{StaticResource SurfaceMutedColor}" />
+    <SolidColorBrush x:Key="SettingsContentBrush" Color="{StaticResource BackgroundBaseColor}" />
+    <SolidColorBrush x:Key="SettingsCardBrush" Color="{StaticResource SurfacePanelColor}" />
+    <SolidColorBrush x:Key="SettingsSelectedBrush" Color="{StaticResource SurfaceInputColor}" />
+    <SolidColorBrush x:Key="SettingsBorderBrush" Color="{StaticResource BorderSubtleColor}" />
+    <SolidColorBrush x:Key="SettingsTextBrush" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="SettingsMutedTextBrush" Color="{StaticResource TextSecondaryColor}" />
+
+    <SolidColorBrush x:Key="ShortcutCardBrush" Color="{StaticResource SurfacePanelColor}" />
+    <SolidColorBrush x:Key="ShortcutBorderBrush" Color="{StaticResource BorderSubtleColor}" />
+    <SolidColorBrush x:Key="ShortcutTextBrush" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="ShortcutMutedTextBrush" Color="{StaticResource TextSecondaryColor}" />
+</ResourceDictionary>

@@ -7,13 +7,7 @@
         MinWidth="460"
         MinHeight="420"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F3F6">
-    <Window.Resources>
-        <SolidColorBrush x:Key="ShortcutCardBrush" Color="#FEFCFF" />
-        <SolidColorBrush x:Key="ShortcutBorderBrush" Color="#DDD7E0" />
-        <SolidColorBrush x:Key="ShortcutTextBrush" Color="#1F1F1F" />
-        <SolidColorBrush x:Key="ShortcutMutedTextBrush" Color="#66606A" />
-    </Window.Resources>
+        Background="{StaticResource BackgroundBase}">
 
     <ScrollViewer x:Name="ShortcutScrollViewer"
                   Padding="28,24"

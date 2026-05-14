@@ -3,7 +3,7 @@
              x:Class="ComicPlate.App.Views.ReaderSurfaceView">
     <Grid RowDefinitions="*,34,34">
         <Border Grid.Row="0"
-                Background="#EDEDED"
+                Background="{StaticResource ReaderStage}"
                 ClipToBounds="True"
                 SizeChanged="OnReaderViewportSizeChanged"
                 PointerPressed="OnReaderPointerPressed"
@@ -26,7 +26,7 @@
                                       Height="{Binding DisplayHeight}"
                                       Margin="8,12"
                                       Opacity="{Binding SlotOpacity}">
-                                    <Border Background="#FFFFFF"
+                                    <Border Background="{StaticResource ReaderPageSurface}"
                                             BorderBrush="{StaticResource BorderBrushSoft}"
                                             BorderThickness="1"
                                             HorizontalAlignment="Stretch"
@@ -47,7 +47,7 @@
                                                    Foreground="{StaticResource MutedTextBrush}"
                                                    TextAlignment="Center" />
                                     </Border>
-                                    <Border Background="#CCFFFFFF"
+                                    <Border Background="{StaticResource SurfacePanel}"
                                             HorizontalAlignment="Left"
                                             VerticalAlignment="Top"
                                             Padding="6,2">

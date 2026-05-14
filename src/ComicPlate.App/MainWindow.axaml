@@ -12,17 +12,11 @@
         Height="800"
         MinWidth="900"
         MinHeight="620"
-        Background="#F4F4F4"
+        Background="{StaticResource BackgroundBase}"
         KeyDown="OnKeyDown"
         PointerWheelChanged="OnPointerWheelChanged">
 
     <Window.Resources>
-        <SolidColorBrush x:Key="PanelBrush" Color="#FAFAFA" />
-        <SolidColorBrush x:Key="SubtlePanelBrush" Color="#F0F0F0" />
-        <SolidColorBrush x:Key="BorderBrushSoft" Color="#D8D8D8" />
-        <SolidColorBrush x:Key="TextBrush" Color="#1F1F1F" />
-        <SolidColorBrush x:Key="MutedTextBrush" Color="#666666" />
-        <SolidColorBrush x:Key="AccentBrush" Color="#0078D4" />
         <StreamGeometry x:Key="OpenBookIcon">M4 5.5 C6.7 4.9 9.2 5.4 12 7.1 L12 19.1 C9.2 17.4 6.7 16.9 4 17.5 Z M12 7.1 C14.8 5.4 17.3 4.9 20 5.5 L20 17.5 C17.3 16.9 14.8 17.4 12 19.1 Z M7 9.2 L9.4 9.2 M7 12 L9.1 12 M15.2 9.4 C16.1 9.1 17 8.9 18 8.9</StreamGeometry>
         <StreamGeometry x:Key="ShelfHideIcon">M4 5 L20 5 L20 19 L4 19 Z M8.5 5 L8.5 19 M16 12 L10.8 12 M13 9.2 L10.2 12 L13 14.8</StreamGeometry>
         <StreamGeometry x:Key="ShelfShowIcon">M4 5 L20 5 L20 19 L4 19 Z M7 5 L7 19 M8.5 12 L13.7 12 M11.5 9.2 L14.3 12 L11.5 14.8</StreamGeometry>
@@ -36,9 +30,9 @@
     </Window.Resources>
 
     <Grid ColumnDefinitions="64,*"
-          Background="#F4F4F4">
+          Background="{StaticResource BackgroundBase}">
         <Border Grid.Column="0"
-                Background="#ECEFF3"
+                Background="{StaticResource SurfaceMuted}"
                 BorderBrush="{StaticResource BorderBrushSoft}"
                 BorderThickness="0,0,1,0">
             <Grid RowDefinitions="Auto,*"

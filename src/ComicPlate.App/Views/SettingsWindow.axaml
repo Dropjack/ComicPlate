@@ -7,16 +7,7 @@
         MinWidth="700"
         MinHeight="500"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F3F6">
-    <Window.Resources>
-        <SolidColorBrush x:Key="SettingsNavBrush" Color="#F1EEF3" />
-        <SolidColorBrush x:Key="SettingsContentBrush" Color="#F7F5F8" />
-        <SolidColorBrush x:Key="SettingsCardBrush" Color="#FEFCFF" />
-        <SolidColorBrush x:Key="SettingsBorderBrush" Color="#DDD7E0" />
-        <SolidColorBrush x:Key="SettingsTextBrush" Color="#1F1F1F" />
-        <SolidColorBrush x:Key="SettingsMutedTextBrush" Color="#66606A" />
-    </Window.Resources>
-
+        Background="{StaticResource BackgroundBase}">
     <Window.Styles>
         <Style Selector="Button.settings-nav">
             <Setter Property="Background" Value="Transparent" />
@@ -29,7 +20,7 @@
         </Style>
 
         <Style Selector="Button.settings-nav.selected">
-            <Setter Property="Background" Value="#E8E3EC" />
+            <Setter Property="Background" Value="{StaticResource SettingsSelectedBrush}" />
         </Style>
     </Window.Styles>
 

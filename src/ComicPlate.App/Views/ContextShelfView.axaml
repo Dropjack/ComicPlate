@@ -58,7 +58,7 @@
                                                HorizontalAlignment="Center"
                                                VerticalAlignment="Center"
                                                IsVisible="{Binding HasPlaceholder}" />
-                                    <Border Background="#CC1F1F1F"
+                                    <Border Background="{StaticResource OverlayDark}"
                                             CornerRadius="3"
                                             Padding="4,1"
                                             HorizontalAlignment="Right"
@@ -66,7 +66,7 @@
                                             Margin="3"
                                             IsVisible="{Binding HasKindOverlay}">
                                         <TextBlock Text="{Binding KindLabel}"
-                                                   Foreground="#FFFFFF"
+                                                   Foreground="{StaticResource TextInverse}"
                                                    FontSize="10" />
                                     </Border>
                                 </Grid>
