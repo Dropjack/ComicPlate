@@ -6,12 +6,14 @@ using ComicPlate.Core.Reading;
 
 namespace ComicPlate.App.ViewModels;
 
-public sealed class ReaderSurfaceViewModel : ViewModelBase
+public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 {
     private const int NeighborPageLimit = 5;
+    private const int ReaderViewportResizeCommitDelayMilliseconds = 140;
     private const double ReaderStripItemHorizontalMargin = 8;
     private const double ReaderFrameHorizontalPadding = 28;
     private const double ReaderFrameVerticalPadding = 24;
+    private const double ReaderViewportSizeEpsilon = 0.5;
 
     private readonly PageImageInfoLoader _pageImageInfoLoader = new();
     private readonly ReaderFrameBuilder _readerFrameBuilder = new();
@@ -24,8 +26,10 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase
     private string _currentLogicalPath = "";
     private int _pageInfoLoadVersion;
     private string _pageText = "";
+    private bool _hasReaderViewportSize;
     private CancellationTokenSource? _readerStripImageLoadCts;
     private int _readerStripRefreshVersion;
+    private CancellationTokenSource? _readerViewportRefreshCts;
 
     public ReaderSurfaceViewModel(ReaderImageCache readerImageCache)
     {
@@ -125,6 +129,22 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase
             return;
         }
 
+        var hadReaderViewportSize = _hasReaderViewportSize;
+        var isSizeChanged =
+            Math.Abs(_readerStripController.ViewportWidth - width) > ReaderViewportSizeEpsilon
+            || Math.Abs(_readerStripController.ViewportHeight - height) > ReaderViewportSizeEpsilon;
+        if (!isSizeChanged && hadReaderViewportSize)
+        {
+            return;
+        }
+
+        var placement = _readerState.HasPages
+            ? new ReaderStripPlacement(
+                _readerState.CurrentPageIndex,
+                _readerStripController.GetPageScreenCenter(_readerState.CurrentPageIndex, ReaderStripTranslateX))
+            : null;
+
+        _hasReaderViewportSize = true;
         _readerStripController.SetViewportSize(width, height);
 
         if (!_readerState.HasPages)
@@ -133,9 +153,14 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase
             return;
         }
 
-        _ = RefreshReaderStripAsync(new ReaderStripPlacement(
-            _readerState.CurrentPageIndex,
-            _readerStripController.GetPageScreenCenter(_readerState.CurrentPageIndex, ReaderStripTranslateX)));
+        if (!hadReaderViewportSize || ReaderStripItems.Count == 0)
+        {
+            _ = RefreshReaderStripAsync(placement);
+            return;
+        }
+
+        UpdateReaderStripOffset(placement);
+        QueueReaderViewportRefresh(placement);
     }
 
     public void WheelNextReadingGroup()
@@ -183,6 +208,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase
 
     public async Task LoadPagesAsync(IReadOnlyList<PageEntry> pages, int initialPageIndex = 0)
     {
+        CancelReaderViewportRefresh();
         CancelReaderStripImageLoads();
         _readerImageCache.Clear();
         var pageInfoLoadVersion = ++_pageInfoLoadVersion;
@@ -209,6 +235,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase
 
     public void ClearPages()
     {
+        CancelReaderViewportRefresh();
         CancelReaderStripImageLoads();
         _readerImageCache.Clear();
         _pageInfoLoadVersion++;
@@ -480,6 +507,33 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase
         _ = LoadReaderStripImagesAsync(items.ToArray(), refreshVersion, cancellationTokenSource.Token);
     }
 
+    private void QueueReaderViewportRefresh(ReaderStripPlacement? placement)
+    {
+        CancelReaderViewportRefresh();
+        var cancellationTokenSource = new CancellationTokenSource();
+        _readerViewportRefreshCts = cancellationTokenSource;
+        _ = CommitReaderViewportRefreshAsync(placement, cancellationTokenSource.Token);
+    }
+
+    private async Task CommitReaderViewportRefreshAsync(
+        ReaderStripPlacement? placement,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(ReaderViewportResizeCommitDelayMilliseconds, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            await RefreshReaderStripAsync(placement);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
     private async Task LoadReaderStripImagesAsync(
         IReadOnlyList<ReaderStripItemViewModel> items,
         int refreshVersion,
@@ -532,6 +586,19 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase
         _readerStripImageLoadCts?.Cancel();
         _readerStripImageLoadCts?.Dispose();
         _readerStripImageLoadCts = null;
+    }
+
+    private void CancelReaderViewportRefresh()
+    {
+        _readerViewportRefreshCts?.Cancel();
+        _readerViewportRefreshCts?.Dispose();
+        _readerViewportRefreshCts = null;
+    }
+
+    public void Dispose()
+    {
+        CancelReaderViewportRefresh();
+        CancelReaderStripImageLoads();
     }
 
     private void UpdateReaderStripOffset(ReaderStripPlacement? placement = null)

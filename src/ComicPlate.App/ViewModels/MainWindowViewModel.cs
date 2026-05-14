@@ -190,6 +190,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     {
         Reader.PropertyChanged -= OnReaderPropertyChanged;
         Reader.ReadingStateChanged -= OnReaderReadingStateChanged;
+        Reader.Dispose();
         _readerImageCache.Dispose();
         Shelf.Dispose();
     }
