@@ -51,8 +51,8 @@
                         CornerRadius="4"
                         IsVisible="{Binding IsReaderVisible}" />
                 <Button Grid.Column="3"
-                        Command="{Binding ToggleViewModeCommand}"
-                        Content="{Binding ViewModeText}"
+                        Command="{Binding Reader.ToggleViewModeCommand}"
+                        Content="{Binding Reader.ViewModeText}"
                         Padding="12,5"
                         CornerRadius="4"
                         IsVisible="{Binding IsReaderVisible}" />
@@ -206,8 +206,8 @@
                     PointerCaptureLost="OnReaderPointerCaptureLost">
                 <Grid>
                     <Canvas ClipToBounds="False">
-                        <ItemsControl ItemsSource="{Binding ReaderStripItems}"
-                                      Canvas.Left="{Binding ReaderStripTranslateX}"
+                        <ItemsControl ItemsSource="{Binding Reader.ReaderStripItems}"
+                                      Canvas.Left="{Binding Reader.ReaderStripTranslateX}"
                                       Canvas.Top="0">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -284,7 +284,7 @@
                             Click="OnVisualLeftClick"
                             Padding="12,3"
                             CornerRadius="4" />
-                    <Button Content="{Binding PageText}"
+                    <Button Content="{Binding Reader.PageText}"
                             IsEnabled="False"
                             Padding="14,3"
                             CornerRadius="4" />
@@ -305,18 +305,18 @@
                       Margin="12,0"
                       VerticalAlignment="Center">
                     <TextBlock Grid.Column="0"
-                               Text="{Binding PageText}"
+                               Text="{Binding Reader.PageText}"
                                Foreground="{StaticResource TextBrush}"
                                VerticalAlignment="Center" />
                     <ProgressBar Grid.Column="1"
                                  Margin="14,0"
                                  Minimum="0"
-                                 Maximum="{Binding LastPageProgressIndex}"
-                                 Value="{Binding CurrentPageProgressIndex}"
+                                 Maximum="{Binding Reader.LastPageProgressIndex}"
+                                 Value="{Binding Reader.CurrentPageProgressIndex}"
                                  Height="4"
                                  VerticalAlignment="Center" />
                     <TextBlock Grid.Column="2"
-                               Text="{Binding CurrentLogicalPath}"
+                               Text="{Binding Reader.CurrentLogicalPath}"
                                Foreground="{StaticResource MutedTextBrush}"
                                TextTrimming="CharacterEllipsis"
                                MaxWidth="460"

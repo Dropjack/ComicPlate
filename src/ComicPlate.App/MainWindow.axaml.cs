@@ -55,11 +55,11 @@ public partial class MainWindow : Window
         {
             if (e.Key == Key.Right)
             {
-                _viewModel.VisualRightCommand.Execute(null);
+                _viewModel.Reader.VisualRightCommand.Execute(null);
             }
             else
             {
-                _viewModel.NextPageCommand.Execute(null);
+                _viewModel.Reader.NextPageCommand.Execute(null);
             }
 
             e.Handled = true;
@@ -68,23 +68,23 @@ public partial class MainWindow : Window
         {
             if (e.Key == Key.Left)
             {
-                _viewModel.VisualLeftCommand.Execute(null);
+                _viewModel.Reader.VisualLeftCommand.Execute(null);
             }
             else
             {
-                _viewModel.PreviousPageCommand.Execute(null);
+                _viewModel.Reader.PreviousPageCommand.Execute(null);
             }
 
             e.Handled = true;
         }
         else if (e.Key == Key.Home)
         {
-            _viewModel.FirstPageCommand.Execute(null);
+            _viewModel.Reader.FirstPageCommand.Execute(null);
             e.Handled = true;
         }
         else if (e.Key == Key.End)
         {
-            _viewModel.LastPageCommand.Execute(null);
+            _viewModel.Reader.LastPageCommand.Execute(null);
             e.Handled = true;
         }
         else if (e.Key == Key.O && e.KeyModifiers.HasFlag(KeyModifiers.Control))
@@ -96,19 +96,19 @@ public partial class MainWindow : Window
 
     private void OnReaderViewportSizeChanged(object? sender, SizeChangedEventArgs e)
     {
-        _viewModel.SetReaderViewportSize(e.NewSize.Width, e.NewSize.Height);
+        _viewModel.Reader.SetReaderViewportSize(e.NewSize.Width, e.NewSize.Height);
     }
 
     private void OnVisualLeftClick(object? sender, RoutedEventArgs e)
     {
-        _viewModel.VisualLeftCommand.Execute(null);
+        _viewModel.Reader.VisualLeftCommand.Execute(null);
         Focus();
         e.Handled = true;
     }
 
     private void OnVisualRightClick(object? sender, RoutedEventArgs e)
     {
-        _viewModel.VisualRightCommand.Execute(null);
+        _viewModel.Reader.VisualRightCommand.Execute(null);
         Focus();
         e.Handled = true;
     }
@@ -117,12 +117,12 @@ public partial class MainWindow : Window
     {
         if (e.Delta.Y < 0)
         {
-            _viewModel.WheelNextReadingGroup();
+            _viewModel.Reader.WheelNextReadingGroup();
             e.Handled = true;
         }
         else if (e.Delta.Y > 0)
         {
-            _viewModel.WheelPreviousReadingGroup();
+            _viewModel.Reader.WheelPreviousReadingGroup();
             e.Handled = true;
         }
     }
@@ -142,7 +142,7 @@ public partial class MainWindow : Window
 
         _isReaderDragging = true;
         _readerDragStartPoint = point.Position;
-        _viewModel.BeginReaderStripDrag();
+        _viewModel.Reader.BeginReaderStripDrag();
         e.Pointer.Capture(readerSurface);
         e.Handled = true;
     }
@@ -155,7 +155,7 @@ public partial class MainWindow : Window
         }
 
         var position = e.GetPosition(readerSurface);
-        _viewModel.DragReaderStrip(position.X - _readerDragStartPoint.X);
+        _viewModel.Reader.DragReaderStrip(position.X - _readerDragStartPoint.X);
         e.Handled = true;
     }
 
@@ -168,7 +168,7 @@ public partial class MainWindow : Window
 
         _isReaderDragging = false;
         var position = e.GetPosition(readerSurface);
-        _viewModel.EndReaderStripDrag(position.X - _readerDragStartPoint.X);
+        _viewModel.Reader.EndReaderStripDrag();
         e.Pointer.Capture(null);
         e.Handled = true;
     }
@@ -181,6 +181,6 @@ public partial class MainWindow : Window
         }
 
         _isReaderDragging = false;
-        _viewModel.CancelReaderStripDrag();
+        _viewModel.Reader.CancelReaderStripDrag();
     }
 }

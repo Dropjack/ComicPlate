@@ -1,0 +1,576 @@
+using System.Collections.ObjectModel;
+using ComicPlate.App.Controllers;
+using ComicPlate.App.Services;
+using ComicPlate.Core.Books;
+using ComicPlate.Core.Reading;
+
+namespace ComicPlate.App.ViewModels;
+
+public sealed class ReaderSurfaceViewModel : ViewModelBase
+{
+    private const int NeighborPageLimit = 12;
+    private const double ReaderStripItemHorizontalMargin = 8;
+    private const double ReaderFrameHorizontalPadding = 28;
+    private const double ReaderFrameVerticalPadding = 24;
+
+    private readonly PageImageInfoLoader _pageImageInfoLoader = new();
+    private readonly ReaderFrameBuilder _readerFrameBuilder = new();
+    private readonly ReaderImageCache _readerImageCache;
+    private readonly ReaderState _readerState = new();
+    private readonly ReaderStripController _readerStripController = new(NeighborPageLimit);
+    private IReadOnlyList<PageImageInfo> _pageImageInfos = Array.Empty<PageImageInfo>();
+    private IReadOnlyList<ReaderFrame> _readerFrames = Array.Empty<ReaderFrame>();
+    private int _currentPageIndex;
+    private string _currentLogicalPath = "";
+    private int _pageInfoLoadVersion;
+    private string _pageText = "";
+    private int _readerStripRefreshVersion;
+
+    public ReaderSurfaceViewModel(ReaderImageCache readerImageCache)
+    {
+        _readerImageCache = readerImageCache;
+
+        NextPageCommand = new RelayCommand(NextPage, CanGoNextFrame);
+        PreviousPageCommand = new RelayCommand(PreviousPage, CanGoPreviousFrame);
+        VisualLeftCommand = new RelayCommand(VisualLeft);
+        VisualRightCommand = new RelayCommand(VisualRight);
+        FirstPageCommand = new RelayCommand(FirstPage, () => _readerState.HasPages);
+        LastPageCommand = new RelayCommand(LastPage, () => _readerState.HasPages);
+        ToggleViewModeCommand = new RelayCommand(ToggleViewMode);
+    }
+
+    public event Action? ReadingStateChanged;
+
+    public ObservableCollection<PageListItemViewModel> PageItems { get; } = new();
+
+    public ObservableCollection<ReaderStripItemViewModel> ReaderStripItems { get; private set; } = new();
+
+    public RelayCommand NextPageCommand { get; }
+
+    public RelayCommand PreviousPageCommand { get; }
+
+    public RelayCommand VisualLeftCommand { get; }
+
+    public RelayCommand VisualRightCommand { get; }
+
+    public RelayCommand FirstPageCommand { get; }
+
+    public RelayCommand LastPageCommand { get; }
+
+    public RelayCommand ToggleViewModeCommand { get; }
+
+    public bool HasPages => _readerState.HasPages;
+
+    public int CurrentPageIndex
+    {
+        get => _currentPageIndex;
+        set
+        {
+            if (value == _currentPageIndex || value < 0 || value >= _readerState.PageCount)
+            {
+                return;
+            }
+
+            _readerState.GoToPage(value);
+            _ = RefreshReaderStripAsync();
+        }
+    }
+
+    public int CurrentPageNumber => _readerState.HasPages ? _readerState.CurrentPageIndex + 1 : 0;
+
+    public int CurrentPageProgressIndex
+    {
+        get
+        {
+            if (!_readerState.HasPages)
+            {
+                return 0;
+            }
+
+            return _readerState.ReadingDirection == ReadingDirection.RightToLeft
+                ? LastPageProgressIndex - _readerState.CurrentPageIndex
+                : _readerState.CurrentPageIndex;
+        }
+    }
+
+    public int LastPageProgressIndex => _readerState.HasPages ? Math.Max(_readerState.PageCount - 1, 0) : 0;
+
+    public int PageCount => _readerState.PageCount;
+
+    public string PageText
+    {
+        get => _pageText;
+        private set => SetProperty(ref _pageText, value);
+    }
+
+    public string ViewModeText => _readerState.ViewMode == ViewMode.DoublePage ? "Double" : "Single";
+
+    public string CurrentLogicalPath
+    {
+        get => _currentLogicalPath;
+        private set => SetProperty(ref _currentLogicalPath, value);
+    }
+
+    public double ReaderStripTranslateX => _readerStripController.TranslateX;
+
+    public ReadingDirection ReadingDirection => _readerState.ReadingDirection;
+
+    public ViewMode ViewMode => _readerState.ViewMode;
+
+    public void SetReaderViewportSize(double width, double height)
+    {
+        if (width <= 0 || height <= 0)
+        {
+            return;
+        }
+
+        _readerStripController.SetViewportSize(width, height);
+
+        if (!_readerState.HasPages)
+        {
+            UpdateReaderStripOffset();
+            return;
+        }
+
+        _ = RefreshReaderStripAsync(new ReaderStripPlacement(
+            _readerState.CurrentPageIndex,
+            _readerStripController.GetPageScreenCenter(_readerState.CurrentPageIndex, ReaderStripTranslateX)));
+    }
+
+    public void WheelNextReadingGroup()
+    {
+        MoveReaderStripFreely(GetNextReadingDirectionOffsetDelta());
+    }
+
+    public void WheelPreviousReadingGroup()
+    {
+        MoveReaderStripFreely(-GetNextReadingDirectionOffsetDelta());
+    }
+
+    public void BeginReaderStripDrag()
+    {
+        _readerStripController.BeginDrag();
+        UpdateReaderStripTransform();
+    }
+
+    public void DragReaderStrip(double horizontalDelta)
+    {
+        if (!_readerState.HasPages)
+        {
+            return;
+        }
+
+        _readerStripController.Drag(horizontalDelta);
+        UpdateReaderStripTransform();
+    }
+
+    public void EndReaderStripDrag()
+    {
+        if (!_readerState.HasPages)
+        {
+            ResetReaderStripDrag();
+            return;
+        }
+
+        CommitReaderStripFreeOffset(ReaderStripTranslateX);
+    }
+
+    public void CancelReaderStripDrag()
+    {
+        ResetReaderStripDrag();
+    }
+
+    public async Task LoadPagesAsync(IReadOnlyList<PageEntry> pages, int initialPageIndex = 0)
+    {
+        _readerImageCache.Clear();
+        var pageInfoLoadVersion = ++_pageInfoLoadVersion;
+        _pageImageInfos = CreateUnknownPageImageInfos(pages.Count);
+        _readerState.LoadPages(pages, initialPageIndex);
+        PageItems.Clear();
+        ReplaceReaderStripItems(new ObservableCollection<ReaderStripItemViewModel>());
+
+        for (var index = 0; index < pages.Count; index++)
+        {
+            PageItems.Add(new PageListItemViewModel(index, pages[index]));
+        }
+
+        if (pages.Count == 0)
+        {
+            UpdatePageStatus();
+            RaiseCommandStates();
+            return;
+        }
+
+        await RefreshReaderStripAsync();
+        _ = LoadPageImageInfosInBackgroundAsync(pages, pageInfoLoadVersion);
+    }
+
+    public void ClearPages()
+    {
+        _readerImageCache.Clear();
+        _pageInfoLoadVersion++;
+        _pageImageInfos = Array.Empty<PageImageInfo>();
+        _readerFrames = Array.Empty<ReaderFrame>();
+        _readerState.LoadPages(Array.Empty<PageEntry>());
+        PageItems.Clear();
+        ReplaceReaderStripItems(new ObservableCollection<ReaderStripItemViewModel>());
+        UpdatePageStatus();
+        RaiseCommandStates();
+    }
+
+    private static IReadOnlyList<PageImageInfo> CreateUnknownPageImageInfos(int pageCount)
+    {
+        var infos = new PageImageInfo[pageCount];
+        Array.Fill(infos, PageImageInfo.Unknown);
+        return infos;
+    }
+
+    private async Task LoadPageImageInfosInBackgroundAsync(
+        IReadOnlyList<PageEntry> pages,
+        int pageInfoLoadVersion)
+    {
+        var infos = await Task.Run(() => _pageImageInfoLoader.LoadAsync(pages, CancellationToken.None));
+        if (pageInfoLoadVersion != _pageInfoLoadVersion || pages != _readerState.Pages)
+        {
+            return;
+        }
+
+        _pageImageInfos = infos;
+        await RefreshReaderStripAsync(new ReaderStripPlacement(
+            _readerState.CurrentPageIndex,
+            _readerStripController.GetPageScreenCenter(_readerState.CurrentPageIndex, ReaderStripTranslateX)));
+    }
+
+    private async Task RefreshReaderStripAsync(ReaderStripPlacement? placement = null)
+    {
+        var refreshVersion = ++_readerStripRefreshVersion;
+
+        if (!_readerState.HasPages)
+        {
+            ReplaceReaderStripItems(new ObservableCollection<ReaderStripItemViewModel>());
+            UpdatePageStatus();
+            return;
+        }
+
+        var page = _readerState.Pages[_readerState.CurrentPageIndex];
+        _currentPageIndex = _readerState.CurrentPageIndex;
+        OnPropertyChanged(nameof(CurrentPageIndex));
+
+        CurrentLogicalPath = page.LogicalPath;
+
+        _readerFrames = _readerFrameBuilder.Build(
+            _readerState.Pages,
+            _pageImageInfos,
+            _readerState.CurrentPageIndex,
+            _readerState.ViewMode,
+            _readerState.ReadingDirection);
+        var currentFrame = _readerFrames.FirstOrDefault(frame => frame.IsCurrent);
+        if (currentFrame is null)
+        {
+            ReplaceReaderStripItems(new ObservableCollection<ReaderStripItemViewModel>());
+            UpdatePageStatus();
+            return;
+        }
+
+        var currentGroupPageIndexes = currentFrame.PageIndexes;
+        var currentGroupPageSet = currentGroupPageIndexes.ToHashSet();
+        var windowFrames = CreateFrameWindow(currentFrame.FrameIndex);
+        var activeIndexes = windowFrames
+            .SelectMany(frame => frame.PageIndexes)
+            .ToHashSet();
+        var nextItems = new ObservableCollection<ReaderStripItemViewModel>();
+
+        foreach (var frame in windowFrames)
+        {
+            var displaySizes = CalculateFrameDisplaySizes(frame);
+            for (var framePageIndex = 0; framePageIndex < frame.Pages.Count; framePageIndex++)
+            {
+                var framePage = frame.Pages[framePageIndex];
+                var slot = new ReaderStripSlot(
+                    framePage.PageIndex,
+                    framePage.DisplayIndex,
+                    framePage.Page,
+                    currentGroupPageSet.Contains(framePage.PageIndex));
+                var item = new ReaderStripItemViewModel(slot);
+                item.SetViewportSize(_readerStripController.ViewportWidth, _readerStripController.ViewportHeight);
+                item.SetDisplaySize(displaySizes[framePageIndex].Width, displaySizes[framePageIndex].Height);
+
+                try
+                {
+                    item.Image = await _readerImageCache.GetOrLoadAsync(
+                        item.PageIndex,
+                        item.Slot.Page,
+                        item.DecodePixelWidth,
+                        item.DecodePixelHeight,
+                        CancellationToken.None);
+                }
+                catch (Exception)
+                {
+                    item.StatusMessage = $"Could not display{Environment.NewLine}{slot.Page.DisplayName}";
+                }
+
+                nextItems.Add(item);
+            }
+        }
+
+        if (refreshVersion != _readerStripRefreshVersion)
+        {
+            return;
+        }
+
+        ReplaceReaderStripItems(nextItems, placement);
+        _readerImageCache.TrimTo(activeIndexes);
+        UpdatePageStatus();
+        ReadingStateChanged?.Invoke();
+        RaiseCommandStates();
+    }
+
+    private IReadOnlyList<ReaderFrame> CreateFrameWindow(int currentFrameIndex)
+    {
+        return _readerStripController.CreateFrameWindow(
+            _readerFrames,
+            currentFrameIndex,
+            _readerState.ReadingDirection);
+    }
+
+    private IReadOnlyList<PageDisplaySize> CalculateFrameDisplaySizes(ReaderFrame frame)
+    {
+        if (frame.Pages.Count == 0)
+        {
+            return Array.Empty<PageDisplaySize>();
+        }
+
+        var rawSizes = frame.Pages
+            .Select(page => GetRawPageSize(page.ImageInfo))
+            .ToArray();
+        var availableWidth = Math.Max(160, _readerStripController.ViewportWidth - ReaderFrameHorizontalPadding);
+        var availableHeight = Math.Max(160, _readerStripController.ViewportHeight - ReaderFrameVerticalPadding);
+        var targetHeight = availableHeight;
+        var totalWidthAtTargetHeight = rawSizes.Sum(size => size.Width * (targetHeight / size.Height));
+        if (totalWidthAtTargetHeight > availableWidth)
+        {
+            targetHeight *= availableWidth / totalWidthAtTargetHeight;
+        }
+
+        return rawSizes
+            .Select(size => new PageDisplaySize(size.Width * (targetHeight / size.Height), targetHeight))
+            .ToArray();
+    }
+
+    private static PageDisplaySize GetRawPageSize(PageImageInfo imageInfo)
+    {
+        return imageInfo.IsValid
+            ? new PageDisplaySize(imageInfo.PixelWidth, imageInfo.PixelHeight)
+            : new PageDisplaySize(720, 1080);
+    }
+
+    private void NextPage()
+    {
+        MoveFrame(1);
+    }
+
+    private void PreviousPage()
+    {
+        MoveFrame(-1);
+    }
+
+    private bool CanGoNextFrame()
+    {
+        var currentFrame = _readerFrames.FirstOrDefault(frame => frame.IsCurrent);
+        return currentFrame is not null && currentFrame.FrameIndex < _readerFrames.Count - 1;
+    }
+
+    private bool CanGoPreviousFrame()
+    {
+        var currentFrame = _readerFrames.FirstOrDefault(frame => frame.IsCurrent);
+        return currentFrame is not null && currentFrame.FrameIndex > 0;
+    }
+
+    private void MoveFrame(int delta)
+    {
+        var currentFrame = _readerFrames.FirstOrDefault(frame => frame.IsCurrent);
+        if (currentFrame is null)
+        {
+            return;
+        }
+
+        var nextFrameIndex = currentFrame.FrameIndex + delta;
+        if (nextFrameIndex < 0 || nextFrameIndex >= _readerFrames.Count)
+        {
+            return;
+        }
+
+        _readerState.GoToFrameStartPage(_readerFrames[nextFrameIndex].PageIndexes.Min());
+        _ = RefreshReaderStripAsync();
+    }
+
+    private void VisualLeft()
+    {
+        if (!_readerState.HasPages)
+        {
+            return;
+        }
+
+        if (_readerState.ReadingDirection == ReadingDirection.RightToLeft)
+        {
+            NextPage();
+        }
+        else
+        {
+            PreviousPage();
+        }
+    }
+
+    private void VisualRight()
+    {
+        if (!_readerState.HasPages)
+        {
+            return;
+        }
+
+        if (_readerState.ReadingDirection == ReadingDirection.RightToLeft)
+        {
+            PreviousPage();
+        }
+        else
+        {
+            NextPage();
+        }
+    }
+
+    private void FirstPage()
+    {
+        _readerState.GoToFirstPage();
+        _ = RefreshReaderStripAsync();
+    }
+
+    private void LastPage()
+    {
+        var lastFrame = _readerFrames.LastOrDefault();
+        if (lastFrame is null)
+        {
+            _readerState.GoToLastPage();
+        }
+        else
+        {
+            _readerState.GoToFrameStartPage(lastFrame.PageIndexes.Min());
+        }
+
+        _ = RefreshReaderStripAsync();
+    }
+
+    private void ToggleViewMode()
+    {
+        var nextViewMode = _readerState.ViewMode == ViewMode.SinglePage
+            ? ViewMode.DoublePage
+            : ViewMode.SinglePage;
+        _readerState.SetViewMode(nextViewMode);
+        OnPropertyChanged(nameof(ViewModeText));
+        _ = RefreshReaderStripAsync();
+    }
+
+    private void ReplaceReaderStripItems(
+        ObservableCollection<ReaderStripItemViewModel> items,
+        ReaderStripPlacement? placement = null)
+    {
+        ReaderStripItems = items;
+        OnPropertyChanged(nameof(ReaderStripItems));
+        UpdateReaderStripOffset(placement);
+    }
+
+    private void UpdateReaderStripOffset(ReaderStripPlacement? placement = null)
+    {
+        if (ReaderStripItems.Count == 0)
+        {
+            _readerStripController.UpdateOffset(
+                Array.Empty<int>(),
+                new Dictionary<int, double>(),
+                Array.Empty<int>());
+            UpdateReaderStripTransform();
+            return;
+        }
+
+        var windowPageIndexes = ReaderStripItems
+            .Select(item => item.PageIndex)
+            .ToArray();
+        var pageExtents = ReaderStripItems.ToDictionary(
+            item => item.PageIndex,
+            item => item.DisplayWidth + (ReaderStripItemHorizontalMargin * 2));
+        var currentGroupPageIndexes = _readerFrames
+            .FirstOrDefault(frame => frame.IsCurrent)
+            ?.PageIndexes ?? _readerState.CurrentReadingGroupPageIndexes;
+        _readerStripController.UpdateOffset(
+            windowPageIndexes,
+            pageExtents,
+            currentGroupPageIndexes,
+            placement);
+        UpdateReaderStripTransform();
+    }
+
+    private void MoveReaderStripFreely(double horizontalDelta)
+    {
+        CommitReaderStripFreeOffset(ReaderStripTranslateX + horizontalDelta);
+    }
+
+    private void CommitReaderStripFreeOffset(double targetOffset)
+    {
+        if (!_readerState.HasPages)
+        {
+            return;
+        }
+
+        var result = _readerStripController.CommitFreeOffset(
+            targetOffset,
+            _readerState.CurrentPageIndex,
+            _readerFrames);
+        UpdateReaderStripTransform();
+
+        if (result is null || !result.CurrentFrameChanged)
+        {
+            return;
+        }
+
+        _readerState.GoToFrameStartPage(result.TargetFrameStartPageIndex);
+        _ = RefreshReaderStripAsync(result.Placement);
+    }
+
+    private double GetNextReadingDirectionOffsetDelta()
+    {
+        return _readerStripController.GetNextReadingDirectionOffsetDelta(_readerState.ReadingDirection);
+    }
+
+    private void ResetReaderStripDrag()
+    {
+        _readerStripController.CancelDrag();
+        UpdateReaderStripTransform();
+    }
+
+    private void UpdateReaderStripTransform()
+    {
+        OnPropertyChanged(nameof(ReaderStripTranslateX));
+    }
+
+    private void UpdatePageStatus()
+    {
+        OnPropertyChanged(nameof(CurrentPageNumber));
+        OnPropertyChanged(nameof(CurrentPageProgressIndex));
+        OnPropertyChanged(nameof(LastPageProgressIndex));
+        OnPropertyChanged(nameof(PageCount));
+        OnPropertyChanged(nameof(HasPages));
+
+        PageText = _readerState.HasPages
+            ? $"{CurrentPageNumber} / {PageCount}"
+            : "0 / 0";
+    }
+
+    private void RaiseCommandStates()
+    {
+        NextPageCommand.RaiseCanExecuteChanged();
+        PreviousPageCommand.RaiseCanExecuteChanged();
+        VisualLeftCommand.RaiseCanExecuteChanged();
+        VisualRightCommand.RaiseCanExecuteChanged();
+        FirstPageCommand.RaiseCanExecuteChanged();
+        LastPageCommand.RaiseCanExecuteChanged();
+        ToggleViewModeCommand.RaiseCanExecuteChanged();
+    }
+}
