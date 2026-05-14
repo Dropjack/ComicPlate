@@ -1,0 +1,85 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ComicPlate.App.Views.ContextShelfView">
+    <Border Width="300"
+            Background="{StaticResource PanelBrush}"
+            BorderBrush="{StaticResource BorderBrushSoft}"
+            BorderThickness="0,0,1,0">
+        <Grid RowDefinitions="36,36,*">
+            <TextBlock Text="Shelf"
+                       Margin="12,0"
+                       Foreground="{StaticResource TextBrush}"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center" />
+            <Border Grid.Row="1"
+                    BorderBrush="{StaticResource BorderBrushSoft}"
+                    BorderThickness="0,1,0,1"
+                    Padding="8,4">
+                <Button Command="{Binding BackCommand}"
+                        Content="Back"
+                        HorizontalAlignment="Left"
+                        Padding="10,3"
+                        CornerRadius="4" />
+            </Border>
+            <ListBox Grid.Row="2"
+                     ItemsSource="{Binding ContextShelf.Items}"
+                     SelectedIndex="{Binding ContextShelf.CurrentIndex, Mode=TwoWay}"
+                     Background="{StaticResource PanelBrush}"
+                     BorderThickness="0">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="56,*"
+                              MinHeight="62"
+                              Margin="6,4">
+                            <Border Grid.Column="0"
+                                    Width="48"
+                                    Height="56"
+                                    Background="{StaticResource SubtlePanelBrush}"
+                                    BorderBrush="{StaticResource BorderBrushSoft}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    ClipToBounds="True">
+                                <Grid>
+                                    <Image Source="{Binding Thumbnail}"
+                                           Stretch="Uniform"
+                                           IsVisible="{Binding HasThumbnail}" />
+                                    <TextBlock Text="{Binding KindLabel}"
+                                               Foreground="{StaticResource MutedTextBrush}"
+                                               FontSize="10"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               IsVisible="{Binding HasPlaceholder}" />
+                                    <Border Background="#CC1F1F1F"
+                                            CornerRadius="3"
+                                            Padding="4,1"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Bottom"
+                                            Margin="3"
+                                            IsVisible="{Binding HasKindOverlay}">
+                                        <TextBlock Text="{Binding KindLabel}"
+                                                   Foreground="#FFFFFF"
+                                                   FontSize="10" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+                            <Grid Grid.Column="1"
+                                  RowDefinitions="*,Auto"
+                                  Margin="8,0,0,0"
+                                  VerticalAlignment="Center">
+                                <TextBlock Text="{Binding DisplayName}"
+                                           Foreground="{StaticResource TextBrush}"
+                                           FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Row="1"
+                                           Text="{Binding Detail}"
+                                           Foreground="{StaticResource MutedTextBrush}"
+                                           FontSize="12"
+                                           TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+    </Border>
+</UserControl>

@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ComicPlate.App.Views.StartView">
+    <Grid ColumnDefinitions="260,*">
+        <Border Grid.Column="0"
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource BorderBrushSoft}"
+                BorderThickness="0,0,1,0">
+            <StackPanel Margin="14"
+                        Spacing="10">
+                <TextBlock Text="ComicPlate"
+                           FontSize="24"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextBrush}" />
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Column="1"
+              RowDefinitions="*,Auto,*"
+              Margin="24">
+            <StackPanel Grid.Row="1"
+                        Width="260"
+                        HorizontalAlignment="Center"
+                        Spacing="10">
+                <Button Command="{Binding OpenLastReadingPositionCommand}"
+                        Content="{Binding LastReadingPositionText}"
+                        HorizontalAlignment="Stretch"
+                        Padding="12,9"
+                        CornerRadius="4" />
+                <Button Command="{Binding OpenContentCommand}"
+                        Content="Open Comics"
+                        HorizontalAlignment="Stretch"
+                        Padding="12,9"
+                        CornerRadius="4" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

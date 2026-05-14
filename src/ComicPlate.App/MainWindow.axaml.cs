@@ -1,4 +1,3 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -12,8 +11,6 @@ public partial class MainWindow : Window
 {
     private readonly MainWindowViewModel _viewModel;
     private readonly string? _startupPath;
-    private bool _isReaderDragging;
-    private Point _readerDragStartPoint;
 
     public MainWindow()
         : this(null)
@@ -94,25 +91,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnReaderViewportSizeChanged(object? sender, SizeChangedEventArgs e)
-    {
-        _viewModel.Reader.SetReaderViewportSize(e.NewSize.Width, e.NewSize.Height);
-    }
-
-    private void OnVisualLeftClick(object? sender, RoutedEventArgs e)
-    {
-        _viewModel.Reader.VisualLeftCommand.Execute(null);
-        Focus();
-        e.Handled = true;
-    }
-
-    private void OnVisualRightClick(object? sender, RoutedEventArgs e)
-    {
-        _viewModel.Reader.VisualRightCommand.Execute(null);
-        Focus();
-        e.Handled = true;
-    }
-
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
         if (e.Delta.Y < 0)
@@ -125,62 +103,5 @@ public partial class MainWindow : Window
             _viewModel.Reader.WheelPreviousReadingGroup();
             e.Handled = true;
         }
-    }
-
-    private void OnReaderPointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (sender is not Control readerSurface)
-        {
-            return;
-        }
-
-        var point = e.GetCurrentPoint(readerSurface);
-        if (!point.Properties.IsLeftButtonPressed)
-        {
-            return;
-        }
-
-        _isReaderDragging = true;
-        _readerDragStartPoint = point.Position;
-        _viewModel.Reader.BeginReaderStripDrag();
-        e.Pointer.Capture(readerSurface);
-        e.Handled = true;
-    }
-
-    private void OnReaderPointerMoved(object? sender, PointerEventArgs e)
-    {
-        if (!_isReaderDragging || sender is not Control readerSurface)
-        {
-            return;
-        }
-
-        var position = e.GetPosition(readerSurface);
-        _viewModel.Reader.DragReaderStrip(position.X - _readerDragStartPoint.X);
-        e.Handled = true;
-    }
-
-    private void OnReaderPointerReleased(object? sender, PointerReleasedEventArgs e)
-    {
-        if (!_isReaderDragging || sender is not Control readerSurface)
-        {
-            return;
-        }
-
-        _isReaderDragging = false;
-        var position = e.GetPosition(readerSurface);
-        _viewModel.Reader.EndReaderStripDrag();
-        e.Pointer.Capture(null);
-        e.Handled = true;
-    }
-
-    private void OnReaderPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
-    {
-        if (!_isReaderDragging)
-        {
-            return;
-        }
-
-        _isReaderDragging = false;
-        _viewModel.Reader.CancelReaderStripDrag();
     }
 }
