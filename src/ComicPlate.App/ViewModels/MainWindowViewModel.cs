@@ -5,7 +5,6 @@ using ComicPlate.App.Services;
 using ComicPlate.Core.Books;
 using ComicPlate.Core.Navigation;
 using ComicPlate.Core.Reading;
-using ComicPlate.Infrastructure.FileSystem;
 using ComicPlate.Infrastructure.Persistence;
 
 namespace ComicPlate.App.ViewModels;
@@ -18,6 +17,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private const double ReaderFrameVerticalPadding = 24;
 
     private readonly IFolderPickerService _folderPickerService;
+    private readonly ContentOpenService _contentOpenService = new();
     private readonly ReaderImageCache _readerImageCache;
     private readonly PageImageInfoLoader _pageImageInfoLoader = new();
     private readonly JsonAppStateStore _stateStore;
@@ -345,18 +345,19 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         Shelf.Dispose();
     }
 
-    private void LoadBookshelf(Bookshelf bookshelf)
+    private void LoadShelfEntries(string rootPath, IReadOnlyList<BookEntry> books)
     {
         BookItems.Clear();
 
-        foreach (var book in bookshelf.Books)
+        foreach (var book in books)
         {
             BookItems.Add(new BookListItemViewModel(book));
         }
 
         _currentBookIndex = -1;
         OnPropertyChanged(nameof(CurrentBookIndex));
-        HeaderTitle = Path.GetFileName(bookshelf.RootPath);
+        HeaderTitle = Path.GetFileName(rootPath);
+        Shelf.ReplaceItems(books);
     }
 
     private async Task ActivateBookItemAsync(BookEntry book)
@@ -382,34 +383,23 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             PersistCurrentReadingState(deleteCompletedProgress: true);
         }
 
-        var bookshelfSource = new FileSystemBookshelfSource(folderPath);
-        var directPageSource = new FolderBookSource(folderPath, recursive: false);
-
-        var bookshelfTask = Task.Run(() => bookshelfSource.LoadAsync(CancellationToken.None));
-        var pagesTask = Task.Run(() => directPageSource.LoadPagesAsync(CancellationToken.None));
-        await Task.WhenAll(bookshelfTask, pagesTask);
-
-        var bookshelf = await bookshelfTask;
-        var pages = await pagesTask;
-
-        LoadBookshelf(bookshelf);
-        Shelf.ReplaceItems(BookItems.Select(item => item.Book));
+        var result = await _contentOpenService.OpenContentFolderAsync(folderPath, CancellationToken.None);
+        LoadShelfEntries(result.FolderPath, result.ShelfEntries);
 
         if (updateReaderFromDirectPages)
         {
-            var folderBook = CreateBookEntry(folderPath, BookSourceKind.Folder);
-            var progress = _stateStore.FindProgress(folderBook.Path);
-            _currentBook = pages.Count > 0 ? folderBook : null;
-            await LoadPagesAsync(pages, progress?.LastPageIndex ?? 0);
+            var progress = _stateStore.FindProgress(result.DirectFolderBook.Path);
+            _currentBook = result.DirectPages.Count > 0 ? result.DirectFolderBook : null;
+            await LoadPagesAsync(result.DirectPages, progress?.LastPageIndex ?? 0);
         }
 
-        if (Shelf.IsEmpty && pages.Count == 0 && ReaderStripItems.Count == 0)
+        if (Shelf.IsEmpty && result.DirectPages.Count == 0 && ReaderStripItems.Count == 0)
         {
             SetMessage("This folder has no readable contents.");
             return;
         }
 
-        if (updateReaderFromDirectPages && pages.Count == 0 && ReaderStripItems.Count == 0)
+        if (updateReaderFromDirectPages && result.DirectPages.Count == 0 && ReaderStripItems.Count == 0)
         {
             SetMessage("Select an item from the current folder.");
         }
@@ -454,16 +444,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
         try
         {
-            IBookSource source = book.SourceKind switch
-            {
-                BookSourceKind.Image => new SingleImageBookSource(book.Path),
-                BookSourceKind.Zip => new ZipBookSource(book.Path),
-                _ => new FolderBookSource(book.Path, recursive: false)
-            };
-
-            var pages = await Task.Run(() => source.LoadPagesAsync(CancellationToken.None));
+            var result = await _contentOpenService.OpenBookAsync(book, CancellationToken.None);
+            var pages = result.Pages;
             var progress = initialPageIndex.HasValue ? null : _stateStore.FindProgress(book.Path);
-            _currentBook = pages.Count > 0 ? NormalizeBookEntry(book) : null;
+            _currentBook = pages.Count > 0 ? result.Book : null;
             await LoadPagesAsync(pages, initialPageIndex ?? progress?.LastPageIndex ?? 0);
 
             if (pages.Count == 0)
@@ -600,36 +584,24 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
         try
         {
-            var fullPath = Path.GetFullPath(path);
-            if (Directory.Exists(fullPath))
+            var result = _contentOpenService.ClassifyPath(path);
+            if (result.Kind == OpenPathKind.ContentFolder)
             {
-                await StartAtContentFolderAsync(fullPath);
+                await StartAtContentFolderAsync(result.Path);
                 return;
             }
 
-            if (!File.Exists(fullPath))
+            if (result.Kind == OpenPathKind.Book && result.Book is not null)
             {
-                ClearPages();
-                Shelf.ReplaceItems(Array.Empty<BookEntry>());
-                SetMessage("ComicPlate could not find this path.");
-                return;
-            }
-
-            if (IsSupportedArchivePath(fullPath))
-            {
-                await StartAtBookAsync(CreateBookEntry(fullPath, BookSourceKind.Zip));
-                return;
-            }
-
-            if (SupportedPageFormats.IsSupportedExtension(Path.GetExtension(fullPath)))
-            {
-                await StartAtBookAsync(CreateBookEntry(fullPath, BookSourceKind.Image));
+                await StartAtBookAsync(result.Book);
                 return;
             }
 
             ClearPages();
             Shelf.ReplaceItems(Array.Empty<BookEntry>());
-            SetMessage("ComicPlate cannot open this file type yet.");
+            SetMessage(result.Kind == OpenPathKind.Missing
+                ? "ComicPlate could not find this path."
+                : "ComicPlate cannot open this file type yet.");
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
         {
@@ -641,25 +613,6 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         {
             IsLoading = false;
         }
-    }
-
-    private static BookEntry CreateBookEntry(string path, BookSourceKind sourceKind)
-    {
-        var fullPath = Path.GetFullPath(path);
-        return new BookEntry(fullPath, Path.GetFileName(fullPath), sourceKind, fullPath);
-    }
-
-    private static BookEntry NormalizeBookEntry(BookEntry book)
-    {
-        var fullPath = Path.GetFullPath(book.Path);
-        return book with { Id = fullPath, Path = fullPath };
-    }
-
-    private static bool IsSupportedArchivePath(string path)
-    {
-        var extension = Path.GetExtension(path);
-        return extension.Equals(".zip", StringComparison.OrdinalIgnoreCase) ||
-            extension.Equals(".cbz", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task RefreshReaderStripAsync(ReaderStripPlacement? placement = null)

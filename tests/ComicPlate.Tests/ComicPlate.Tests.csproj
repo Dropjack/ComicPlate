@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\ComicPlate.App\ComicPlate.App.csproj" />
     <ProjectReference Include="..\..\src\ComicPlate.Core\ComicPlate.Core.csproj" />
     <ProjectReference Include="..\..\src\ComicPlate.Infrastructure\ComicPlate.Infrastructure.csproj" />
   </ItemGroup>

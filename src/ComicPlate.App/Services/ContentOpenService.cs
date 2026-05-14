@@ -1,0 +1,95 @@
+using ComicPlate.Core.Books;
+using ComicPlate.Infrastructure.FileSystem;
+
+namespace ComicPlate.App.Services;
+
+public sealed class ContentOpenService
+{
+    public OpenPathResult ClassifyPath(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        if (Directory.Exists(fullPath))
+        {
+            return new OpenPathResult(OpenPathKind.ContentFolder, fullPath);
+        }
+
+        if (!File.Exists(fullPath))
+        {
+            return new OpenPathResult(OpenPathKind.Missing, fullPath);
+        }
+
+        if (IsSupportedArchivePath(fullPath))
+        {
+            return new OpenPathResult(
+                OpenPathKind.Book,
+                fullPath,
+                CreateBookEntry(fullPath, BookSourceKind.Zip));
+        }
+
+        if (SupportedPageFormats.IsSupportedExtension(Path.GetExtension(fullPath)))
+        {
+            return new OpenPathResult(
+                OpenPathKind.Book,
+                fullPath,
+                CreateBookEntry(fullPath, BookSourceKind.Image));
+        }
+
+        return new OpenPathResult(OpenPathKind.Unsupported, fullPath);
+    }
+
+    public async Task<ContentFolderOpenResult> OpenContentFolderAsync(
+        string folderPath,
+        CancellationToken cancellationToken)
+    {
+        var fullPath = Path.GetFullPath(folderPath);
+        var bookshelfSource = new FileSystemBookshelfSource(fullPath);
+        var directPageSource = new FolderBookSource(fullPath, recursive: false);
+
+        var bookshelfTask = Task.Run(() => bookshelfSource.LoadAsync(cancellationToken), cancellationToken);
+        var pagesTask = Task.Run(() => directPageSource.LoadPagesAsync(cancellationToken), cancellationToken);
+        await Task.WhenAll(bookshelfTask, pagesTask);
+
+        var bookshelf = await bookshelfTask;
+        var pages = await pagesTask;
+        return new ContentFolderOpenResult(
+            fullPath,
+            bookshelf.Books,
+            CreateBookEntry(fullPath, BookSourceKind.Folder),
+            pages);
+    }
+
+    public async Task<BookOpenResult> OpenBookAsync(
+        BookEntry book,
+        CancellationToken cancellationToken)
+    {
+        var normalizedBook = NormalizeBookEntry(book);
+        IBookSource source = normalizedBook.SourceKind switch
+        {
+            BookSourceKind.Image => new SingleImageBookSource(normalizedBook.Path),
+            BookSourceKind.Zip => new ZipBookSource(normalizedBook.Path),
+            _ => new FolderBookSource(normalizedBook.Path, recursive: false)
+        };
+
+        var pages = await Task.Run(() => source.LoadPagesAsync(cancellationToken), cancellationToken);
+        return new BookOpenResult(normalizedBook, pages);
+    }
+
+    public static BookEntry CreateBookEntry(string path, BookSourceKind sourceKind)
+    {
+        var fullPath = Path.GetFullPath(path);
+        return new BookEntry(fullPath, Path.GetFileName(fullPath), sourceKind, fullPath);
+    }
+
+    public static BookEntry NormalizeBookEntry(BookEntry book)
+    {
+        var fullPath = Path.GetFullPath(book.Path);
+        return book with { Id = fullPath, Path = fullPath };
+    }
+
+    private static bool IsSupportedArchivePath(string path)
+    {
+        var extension = Path.GetExtension(path);
+        return extension.Equals(".zip", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".cbz", StringComparison.OrdinalIgnoreCase);
+    }
+}
