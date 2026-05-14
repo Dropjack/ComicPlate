@@ -134,8 +134,8 @@
                                 CornerRadius="4" />
                     </Border>
                     <ListBox Grid.Row="2"
-                             ItemsSource="{Binding ContentItems}"
-                             SelectedIndex="{Binding CurrentContentIndex, Mode=TwoWay}"
+                             ItemsSource="{Binding Shelf.Items}"
+                             SelectedIndex="{Binding Shelf.CurrentIndex, Mode=TwoWay}"
                              Background="{StaticResource PanelBrush}"
                              BorderThickness="0">
                         <ListBox.ItemTemplate>

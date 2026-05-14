@@ -46,6 +46,7 @@ public partial class MainWindow : Window
     private void OnClosed(object? sender, EventArgs e)
     {
         _viewModel.SaveCurrentState();
+        _viewModel.Dispose();
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
