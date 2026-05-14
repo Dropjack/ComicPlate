@@ -7,13 +7,12 @@ public sealed class ImagePageLoader
 {
     public async Task<Bitmap> LoadAsync(
         PageEntry page,
-        int targetPixelWidth,
-        int targetPixelHeight,
+        ReaderImageDecodeRequest request,
         CancellationToken cancellationToken)
     {
         await using var stream = await page.OpenStreamAsync(cancellationToken);
-        var width = Math.Max(1, targetPixelWidth);
-        var height = Math.Max(1, targetPixelHeight);
+        var width = Math.Max(1, request.PixelWidth);
+        var height = Math.Max(1, request.PixelHeight);
 
         return width >= height
             ? Bitmap.DecodeToWidth(stream, width)

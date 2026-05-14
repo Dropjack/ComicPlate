@@ -5,7 +5,7 @@ namespace ComicPlate.App.Services;
 
 public sealed class ReaderImageCache : IDisposable
 {
-    private readonly Dictionary<int, Bitmap> _cache = new();
+    private readonly Dictionary<int, CacheEntry> _cache = new();
     private readonly ImagePageLoader _imagePageLoader;
 
     public ReaderImageCache(ImagePageLoader imagePageLoader)
@@ -16,19 +16,18 @@ public sealed class ReaderImageCache : IDisposable
     public async Task<Bitmap> GetOrLoadAsync(
         int pageIndex,
         PageEntry page,
-        int decodePixelWidth,
-        int decodePixelHeight,
+        ReaderImageDecodeRequest request,
         CancellationToken cancellationToken)
     {
-        if (_cache.TryGetValue(pageIndex, out var cachedImage))
+        if (_cache.TryGetValue(pageIndex, out var cachedEntry)
+            && cachedEntry.Request.CanReuseFor(request))
         {
-            return cachedImage;
+            return cachedEntry.Image;
         }
 
         var image = await _imagePageLoader.LoadAsync(
             page,
-            decodePixelWidth,
-            decodePixelHeight,
+            request,
             cancellationToken);
 
         if (cancellationToken.IsCancellationRequested)
@@ -37,7 +36,12 @@ public sealed class ReaderImageCache : IDisposable
             cancellationToken.ThrowIfCancellationRequested();
         }
 
-        _cache[pageIndex] = image;
+        if (_cache.TryGetValue(pageIndex, out var oldEntry))
+        {
+            oldEntry.Image.Dispose();
+        }
+
+        _cache[pageIndex] = new CacheEntry(image, request);
         return image;
     }
 
@@ -49,16 +53,16 @@ public sealed class ReaderImageCache : IDisposable
 
         foreach (var index in staleIndexes)
         {
-            _cache[index].Dispose();
+            _cache[index].Image.Dispose();
             _cache.Remove(index);
         }
     }
 
     public void Clear()
     {
-        foreach (var image in _cache.Values)
+        foreach (var entry in _cache.Values)
         {
-            image.Dispose();
+            entry.Image.Dispose();
         }
 
         _cache.Clear();
@@ -68,4 +72,6 @@ public sealed class ReaderImageCache : IDisposable
     {
         Clear();
     }
+
+    private sealed record CacheEntry(Bitmap Image, ReaderImageDecodeRequest Request);
 }

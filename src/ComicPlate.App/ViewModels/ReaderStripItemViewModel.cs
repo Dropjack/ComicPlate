@@ -1,12 +1,12 @@
 using Avalonia.Media.Imaging;
+using ComicPlate.App.Services;
+using ComicPlate.Core.Books;
 using ComicPlate.Core.Reading;
 
 namespace ComicPlate.App.ViewModels;
 
 public sealed class ReaderStripItemViewModel : ViewModelBase
 {
-    private const double DecodeScale = 2.0;
-
     private double _displayHeight = 320;
     private double _displayWidth = 240;
     private Bitmap? _image;
@@ -14,12 +14,15 @@ public sealed class ReaderStripItemViewModel : ViewModelBase
     private double _viewportHeight = 600;
     private double _viewportWidth = 800;
 
-    public ReaderStripItemViewModel(ReaderStripSlot slot)
+    public ReaderStripItemViewModel(ReaderStripSlot slot, PageImageInfo imageInfo)
     {
         Slot = slot;
+        ImageInfo = imageInfo;
     }
 
     public ReaderStripSlot Slot { get; }
+
+    public PageImageInfo ImageInfo { get; }
 
     public int PageIndex => Slot.PageIndex;
 
@@ -27,9 +30,8 @@ public sealed class ReaderStripItemViewModel : ViewModelBase
 
     public bool IsCurrent => Slot.IsCurrent;
 
-    public int DecodePixelWidth => Math.Max(1, (int)Math.Ceiling(DisplayWidth * DecodeScale));
-
-    public int DecodePixelHeight => Math.Max(1, (int)Math.Ceiling(DisplayHeight * DecodeScale));
+    public ReaderImageDecodeRequest DecodeRequest { get; private set; } =
+        ReaderImageDecodeRequest.Create(240, 320, ComicPlate.Core.Books.PageImageInfo.Unknown);
 
     public double DisplayWidth
     {
@@ -89,7 +91,7 @@ public sealed class ReaderStripItemViewModel : ViewModelBase
     {
         DisplayWidth = Math.Max(1, width);
         DisplayHeight = Math.Max(1, height);
-        OnPropertyChanged(nameof(DecodePixelWidth));
-        OnPropertyChanged(nameof(DecodePixelHeight));
+        DecodeRequest = ReaderImageDecodeRequest.Create(DisplayWidth, DisplayHeight, ImageInfo);
+        OnPropertyChanged(nameof(DecodeRequest));
     }
 }
