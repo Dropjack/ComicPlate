@@ -42,6 +42,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         FirstPageCommand = new RelayCommand(FirstPage, () => _readerState.HasPages);
         LastPageCommand = new RelayCommand(LastPage, () => _readerState.HasPages);
         ToggleViewModeCommand = new RelayCommand(ToggleViewMode);
+        ToggleReadingDirectionCommand = new RelayCommand(ToggleReadingDirection);
     }
 
     public event Action? ReadingStateChanged;
@@ -63,6 +64,8 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     public RelayCommand LastPageCommand { get; }
 
     public RelayCommand ToggleViewModeCommand { get; }
+
+    public RelayCommand ToggleReadingDirectionCommand { get; }
 
     public bool HasPages => _readerState.HasPages;
 
@@ -109,6 +112,8 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     }
 
     public string ViewModeText => _readerState.ViewMode == ViewMode.DoublePage ? "Double" : "Single";
+
+    public string ReadingDirectionText => _readerState.ReadingDirection == ReadingDirection.RightToLeft ? "RTL" : "LTR";
 
     public string CurrentLogicalPath
     {
@@ -522,6 +527,17 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         _ = RefreshReaderStripAsync();
     }
 
+    private void ToggleReadingDirection()
+    {
+        var nextReadingDirection = _readerState.ReadingDirection == ReadingDirection.RightToLeft
+            ? ReadingDirection.LeftToRight
+            : ReadingDirection.RightToLeft;
+        _readerState.SetReadingDirection(nextReadingDirection);
+        OnPropertyChanged(nameof(ReadingDirection));
+        OnPropertyChanged(nameof(ReadingDirectionText));
+        _ = RefreshReaderStripAsync();
+    }
+
     private void ReplaceReaderStripItems(
         ObservableCollection<ReaderStripItemViewModel> items,
         ReaderStripPlacement? placement = null)
@@ -729,5 +745,6 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         FirstPageCommand.RaiseCanExecuteChanged();
         LastPageCommand.RaiseCanExecuteChanged();
         ToggleViewModeCommand.RaiseCanExecuteChanged();
+        ToggleReadingDirectionCommand.RaiseCanExecuteChanged();
     }
 }
