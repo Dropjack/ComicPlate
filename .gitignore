@@ -4,6 +4,7 @@ obj/
 .vscode/
 *.user
 *.suo
+*.lscache
 debug.log
 artifacts/
 dist/
