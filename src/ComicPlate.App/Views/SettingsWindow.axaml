@@ -48,7 +48,8 @@
         </Style>
     </Window.Styles>
 
-    <Grid ColumnDefinitions="220,*"
+    <Grid x:Name="SettingsRootGrid"
+          ColumnDefinitions="220,*"
           Classes="settings-root"
           Background="{StaticResource SettingsContentBrush}">
         <Border Grid.Column="0"
@@ -218,7 +219,8 @@
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
-                                <Button Grid.Column="1"
+                                <Button x:Name="DataFolderOpenButton"
+                                        Grid.Column="1"
                                         Content="打开"
                                         Width="86"
                                         Click="OnOpenDataFolderClick"
@@ -270,7 +272,8 @@
                                     <TextBlock Text="CBZ 文件"
                                                Foreground="{StaticResource SettingsTextBrush}"
                                                FontSize="15" />
-                                    <TextBlock Text="允许从 Finder 直接用 ComicPlate 打开 .cbz 文件。"
+                                    <TextBlock x:Name="CbzAssociationDescription"
+                                               Text="允许从 Finder 直接用 ComicPlate 打开 .cbz 文件。"
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
@@ -289,7 +292,8 @@
                                     <TextBlock Text="ZIP 文件"
                                                Foreground="{StaticResource SettingsTextBrush}"
                                                FontSize="15" />
-                                    <TextBlock Text="允许从 Finder 直接用 ComicPlate 打开 .zip 漫画压缩包。图片格式暂不进入文件关联设置。"
+                                    <TextBlock x:Name="ZipAssociationDescription"
+                                               Text="允许从 Finder 直接用 ComicPlate 打开 .zip 漫画压缩包。图片格式暂不进入文件关联设置。"
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>

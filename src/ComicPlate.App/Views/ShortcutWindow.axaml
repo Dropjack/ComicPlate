@@ -19,7 +19,8 @@
                            FontSize="28"
                            FontWeight="SemiBold"
                            Foreground="{StaticResource ShortcutTextBrush}" />
-                <TextBlock Text="当前阶段仅展示 macOS 版本固定快捷键，不提供编辑。"
+                <TextBlock x:Name="ShortcutIntroText"
+                           Text="当前阶段仅展示 macOS 版本固定快捷键，不提供编辑。"
                            Foreground="{StaticResource ShortcutMutedTextBrush}"
                            TextWrapping="Wrap" />
             </StackPanel>
@@ -92,7 +93,8 @@
                               ColumnSpacing="16">
                             <TextBlock Text="打开漫画"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
-                            <TextBlock Grid.Column="1"
+                            <TextBlock x:Name="OpenContentShortcutText"
+                                       Grid.Column="1"
                                        Text="Cmd + O"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
@@ -142,7 +144,8 @@
                               ColumnSpacing="16">
                             <TextBlock Text="设置"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
-                            <TextBlock Grid.Column="1"
+                            <TextBlock x:Name="SettingsShortcutText"
+                                       Grid.Column="1"
                                        Text="Cmd + ,"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
@@ -152,8 +155,9 @@
                               ColumnSpacing="16">
                             <TextBlock Text="回到起始页"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
-                            <TextBlock Grid.Column="1"
-                                       Text="Cmd/Ctrl + W"
+                            <TextBlock x:Name="CloseShortcutText"
+                                       Grid.Column="1"
+                                       Text="Cmd + W"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
                     </StackPanel>

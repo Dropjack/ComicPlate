@@ -1,4 +1,5 @@
 using System.Text;
+using ComicPlate.Infrastructure.Persistence;
 
 namespace ComicPlate.App.Services;
 
@@ -8,10 +9,7 @@ public static class CrashReportWriter
     {
         try
         {
-            var directory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "ComicPlate",
-                "crash-reports");
+            var directory = Path.Combine(JsonAppStateStore.DefaultDirectoryPath, "crash-reports");
             Directory.CreateDirectory(directory);
 
             var timestamp = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss-fff");

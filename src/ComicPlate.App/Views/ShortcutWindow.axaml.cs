@@ -11,9 +11,27 @@ public partial class ShortcutWindow : Window
     public ShortcutWindow()
     {
         InitializeComponent();
+        ApplyPlatformShortcutText();
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         Opened += OnOpened;
         ShortcutScrollViewer.SizeChanged += OnShortcutScrollViewerSizeChanged;
+    }
+
+    private void ApplyPlatformShortcutText()
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            ShortcutIntroText.Text = "当前阶段仅展示 macOS 版本固定快捷键，不提供编辑。";
+            OpenContentShortcutText.Text = "Cmd + O";
+            SettingsShortcutText.Text = "Cmd + ,";
+            CloseShortcutText.Text = "Cmd + W";
+            return;
+        }
+
+        ShortcutIntroText.Text = "当前阶段仅展示 Windows 版本固定快捷键，不提供编辑。";
+        OpenContentShortcutText.Text = "Ctrl + O";
+        SettingsShortcutText.Text = "Ctrl + ,";
+        CloseShortcutText.Text = "Ctrl + W";
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)

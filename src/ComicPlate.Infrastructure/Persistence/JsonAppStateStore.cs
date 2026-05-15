@@ -37,6 +37,12 @@ public sealed class JsonAppStateStore
     {
         get
         {
+            if (OperatingSystem.IsMacOS())
+            {
+                var userProfilePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                return Path.Combine(userProfilePath, "Library", "Application Support", "ComicPlate");
+            }
+
             var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             return Path.Combine(appDataPath, "ComicPlate");
         }

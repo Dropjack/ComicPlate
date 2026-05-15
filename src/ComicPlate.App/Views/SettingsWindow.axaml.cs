@@ -25,7 +25,9 @@ public partial class SettingsWindow : Window
     {
         _platformLauncher = platformLauncher;
         InitializeComponent();
-        Classes.Add(OperatingSystem.IsMacOS() ? "mac-shell" : "windows-shell");
+        var isMacOS = OperatingSystem.IsMacOS();
+        Classes.Add(isMacOS ? "mac-shell" : "windows-shell");
+        ApplyPlatformChrome(isMacOS);
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         Opened += OnOpened;
         Closed += OnClosed;
@@ -33,6 +35,26 @@ public partial class SettingsWindow : Window
     }
 
     public string DataFolderPath => JsonAppStateStore.DefaultDirectoryPath;
+
+    private void ApplyPlatformChrome(bool isMacOS)
+    {
+        if (isMacOS)
+        {
+            Width = 780;
+            Height = 600;
+            MinWidth = 640;
+            MinHeight = 480;
+            SettingsRootGrid.ColumnDefinitions = new ColumnDefinitions("190,*");
+            DataFolderOpenButton.Content = "在 Finder 中打开";
+            CbzAssociationDescription.Text = "允许从 Finder 直接用 ComicPlate 打开 .cbz 文件。";
+            ZipAssociationDescription.Text = "允许从 Finder 直接用 ComicPlate 打开 .zip 漫画压缩包。图片格式暂不进入文件关联设置。";
+            return;
+        }
+
+        DataFolderOpenButton.Content = "在资源管理器中打开";
+        CbzAssociationDescription.Text = "允许从资源管理器直接用 ComicPlate 打开 .cbz 文件。";
+        ZipAssociationDescription.Text = "允许从资源管理器直接用 ComicPlate 打开 .zip 漫画压缩包。图片格式暂不进入文件关联设置。";
+    }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {

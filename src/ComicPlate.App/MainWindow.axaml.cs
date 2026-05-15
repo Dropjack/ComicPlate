@@ -23,7 +23,10 @@ public partial class MainWindow : Window
     public MainWindow(string? startupPath)
     {
         InitializeComponent();
-        Classes.Add(OperatingSystem.IsMacOS() ? "mac-shell" : "windows-shell");
+        var isMacOS = OperatingSystem.IsMacOS();
+        Classes.Add(isMacOS ? "mac-shell" : "windows-shell");
+        MainShell.ColumnDefinitions = new ColumnDefinitions(isMacOS ? "0,*" : "64,*");
+        ReaderStageGrid.RowDefinitions = new RowDefinitions(isMacOS ? "0,*" : "40,*");
         _startupPath = startupPath;
         _viewModel = new MainWindowViewModel(
             new FolderPickerService(this),

@@ -50,9 +50,21 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
         </Style>
+
+        <Style Selector="Border.mac-top-toolbar">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+
+        <Style Selector="Window.mac-shell Border.mac-top-toolbar">
+            <Setter Property="IsVisible" Value="True" />
+            <Setter Property="Background" Value="#F7F7F7" />
+            <Setter Property="BorderBrush" Value="#D9D9D9" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+        </Style>
     </Window.Styles>
 
-    <Grid ColumnDefinitions="64,*"
+    <Grid x:Name="MainShell"
+          ColumnDefinitions="64,*"
           Classes="main-shell"
           Background="{StaticResource BackgroundBase}">
         <Border Grid.Column="0"
@@ -171,12 +183,129 @@
 
         <Grid Grid.Column="1"
               IsVisible="{Binding IsReaderVisible}"
+              RowDefinitions="Auto,*"
               ColumnDefinitions="Auto,*">
+            <Border Grid.Row="0"
+                    Grid.ColumnSpan="2"
+                    Classes="mac-top-toolbar"
+                    Height="44">
+                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto"
+                      Margin="10,0"
+                      ColumnSpacing="6"
+                      VerticalAlignment="Center">
+                    <Button Command="{Binding OpenContentCommand}"
+                            Width="34"
+                            MinHeight="30"
+                            Padding="0"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="0"
+                            CornerRadius="6"
+                            Foreground="#242424"
+                            ToolTip.Tip="打开漫画">
+                        <PathIcon Data="{StaticResource OpenBookIcon}"
+                                  Width="18"
+                                  Height="18" />
+                    </Button>
+                    <Button Grid.Column="1"
+                            Command="{Binding ToggleNavigationPaneCommand}"
+                            Width="34"
+                            MinHeight="30"
+                            Padding="0"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="0"
+                            CornerRadius="6"
+                            Foreground="#242424"
+                            ToolTip.Tip="{Binding NavigationPaneToggleText}">
+                        <Grid>
+                            <PathIcon Data="{StaticResource ShelfHideIcon}"
+                                      Width="18"
+                                      Height="18"
+                                      IsVisible="{Binding IsNavigationPaneVisible}" />
+                            <PathIcon Data="{StaticResource ShelfShowIcon}"
+                                      Width="18"
+                                      Height="18"
+                                      IsVisible="{Binding IsNavigationPaneHidden}" />
+                        </Grid>
+                    </Button>
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding ReaderTitle}"
+                               Foreground="#242424"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Margin="8,0"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                    <Button Grid.Column="3"
+                            Command="{Binding Reader.ToggleViewModeCommand}"
+                            Width="34"
+                            MinHeight="30"
+                            Padding="0"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="0"
+                            CornerRadius="6"
+                            Foreground="#242424"
+                            ToolTip.Tip="{Binding Reader.ViewModeText}">
+                        <Grid>
+                            <PathIcon Data="{StaticResource SinglePageIcon}"
+                                      Width="18"
+                                      Height="18"
+                                      IsVisible="{Binding Reader.IsSinglePageMode}" />
+                            <PathIcon Data="{StaticResource DoublePageIcon}"
+                                      Width="18"
+                                      Height="18"
+                                      IsVisible="{Binding Reader.IsDoublePageMode}" />
+                        </Grid>
+                    </Button>
+                    <Button Grid.Column="4"
+                            Command="{Binding Reader.ToggleReadingDirectionCommand}"
+                            Width="34"
+                            MinHeight="30"
+                            Padding="0"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="0"
+                            CornerRadius="6"
+                            Foreground="#242424"
+                            ToolTip.Tip="{Binding Reader.ReadingDirectionText}">
+                        <Grid>
+                            <PathIcon Data="{StaticResource ReadLtrIcon}"
+                                      Width="18"
+                                      Height="18"
+                                      IsVisible="{Binding Reader.IsLeftToRightReading}" />
+                            <PathIcon Data="{StaticResource ReadRtlIcon}"
+                                      Width="18"
+                                      Height="18"
+                                      IsVisible="{Binding Reader.IsRightToLeftReading}" />
+                        </Grid>
+                    </Button>
+                    <Button Grid.Column="5"
+                            Click="OnSettingsClick"
+                            Width="34"
+                            MinHeight="30"
+                            Padding="0"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="0"
+                            CornerRadius="6"
+                            Foreground="#242424"
+                            ToolTip.Tip="设置">
+                        <PathIcon Data="{StaticResource UserSettingsIcon}"
+                                  Width="18"
+                                  Height="18" />
+                    </Button>
+                </Grid>
+            </Border>
             <views:ContextShelfView Grid.Column="0"
+                                    Grid.Row="1"
                                     Width="300"
                                     MinWidth="220"
                                     IsVisible="{Binding IsNavigationPaneVisible}" />
-            <Grid Grid.Column="1"
+            <Grid x:Name="ReaderStageGrid"
+                  Grid.Column="1"
+                  Grid.Row="1"
                   RowDefinitions="40,*">
                 <Border Grid.Row="0"
                         Classes="reader-title-bar"
