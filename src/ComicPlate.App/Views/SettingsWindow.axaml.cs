@@ -1,8 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
+using ComicPlate.App.Input;
 
 namespace ComicPlate.App.Views;
 
@@ -14,9 +16,19 @@ public partial class SettingsWindow : Window
     public SettingsWindow()
     {
         InitializeComponent();
+        AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         Opened += OnOpened;
         Closed += OnClosed;
         ContentScrollViewer.SizeChanged += OnContentScrollViewerSizeChanged;
+    }
+
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (PlatformShortcuts.IsCloseWindow(e))
+        {
+            Close();
+            e.Handled = true;
+        }
     }
 
     private void OnOpened(object? sender, EventArgs e)

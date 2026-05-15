@@ -25,7 +25,7 @@
                            FontSize="28"
                            FontWeight="SemiBold"
                            Foreground="{StaticResource ShortcutTextBrush}" />
-                <TextBlock Text="当前阶段仅展示 Windows 版本固定快捷键，不提供编辑。"
+                <TextBlock Text="当前阶段仅展示 macOS 版本固定快捷键，不提供编辑。"
                            Foreground="{StaticResource ShortcutMutedTextBrush}"
                            TextWrapping="Wrap" />
             </StackPanel>
@@ -99,7 +99,7 @@
                             <TextBlock Text="打开漫画"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock Grid.Column="1"
-                                       Text="Ctrl + O"
+                                       Text="Cmd + O"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
                         <Border Height="1" Background="{StaticResource ShortcutBorderBrush}" />
@@ -149,7 +149,17 @@
                             <TextBlock Text="设置"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock Grid.Column="1"
-                                       Text="Ctrl + ,"
+                                       Text="Cmd + ,"
+                                       Foreground="{StaticResource ShortcutMutedTextBrush}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource ShortcutBorderBrush}" />
+                        <Grid ColumnDefinitions="*,Auto"
+                              Margin="16,14"
+                              ColumnSpacing="16">
+                            <TextBlock Text="回到起始页"
+                                       Foreground="{StaticResource ShortcutTextBrush}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="Cmd/Ctrl + W"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
                     </StackPanel>
