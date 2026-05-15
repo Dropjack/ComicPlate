@@ -25,8 +25,16 @@ public partial class MainWindow : Window
         InitializeComponent();
         var isMacOS = OperatingSystem.IsMacOS();
         Classes.Add(isMacOS ? "mac-shell" : "windows-shell");
-        MainShell.ColumnDefinitions = new ColumnDefinitions(isMacOS ? "0,*" : "64,*");
-        ReaderStageGrid.RowDefinitions = new RowDefinitions(isMacOS ? "0,*" : "40,*");
+        if (isMacOS)
+        {
+            Grid.SetColumn(ReaderLayoutGrid, 0);
+            Grid.SetColumnSpan(ReaderLayoutGrid, 2);
+            ReaderLayoutGrid.SetValue(Panel.ZIndexProperty, 0);
+            CommandRail.SetValue(Panel.ZIndexProperty, 2);
+            ContextShelf.SetValue(Panel.ZIndexProperty, 2);
+            ReaderStageGrid.SetValue(Panel.ZIndexProperty, 0);
+            ReaderStageGrid.RowDefinitions = new RowDefinitions("0,*");
+        }
         _startupPath = startupPath;
         _viewModel = new MainWindowViewModel(
             new FolderPickerService(this),
