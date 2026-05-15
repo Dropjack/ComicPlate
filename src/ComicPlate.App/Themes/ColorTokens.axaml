@@ -1,20 +1,20 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Default warm study palette. Future color schemes should replace these tokens, not View layout. -->
-    <Color x:Key="BackgroundBaseColor">#141210</Color>
-    <Color x:Key="SurfacePanelColor">#25211C</Color>
-    <Color x:Key="SurfaceMutedColor">#1D1A16</Color>
-    <Color x:Key="SurfaceElevatedColor">#2D2822</Color>
-    <Color x:Key="SurfaceInputColor">#332D26</Color>
-    <Color x:Key="ReaderStageColor">#141210</Color>
-    <Color x:Key="ReaderPageSurfaceColor">#F4EFE6</Color>
-    <Color x:Key="TextPrimaryColor">#F3ECE2</Color>
-    <Color x:Key="TextSecondaryColor">#B9AA9A</Color>
-    <Color x:Key="TextOnAccentColor">#141210</Color>
+    <!-- Light mist palette. Future color schemes should replace these tokens, not View layout. -->
+    <Color x:Key="BackgroundBaseColor">#EEF4F7</Color>
+    <Color x:Key="SurfacePanelColor">#F3F5F2</Color>
+    <Color x:Key="SurfaceMutedColor">#E4EAE7</Color>
+    <Color x:Key="SurfaceElevatedColor">#FFFFFF</Color>
+    <Color x:Key="SurfaceInputColor">#DCE5E1</Color>
+    <Color x:Key="ReaderStageColor">#EEF4F7</Color>
+    <Color x:Key="ReaderPageSurfaceColor">#FFFFFF</Color>
+    <Color x:Key="TextPrimaryColor">#202725</Color>
+    <Color x:Key="TextSecondaryColor">#66736E</Color>
+    <Color x:Key="TextOnAccentColor">#FFFFFF</Color>
     <Color x:Key="TextInverseColor">#FFFFFF</Color>
-    <Color x:Key="BorderSubtleColor">#3B352D</Color>
-    <Color x:Key="AccentColor">#D6A86C</Color>
-    <Color x:Key="AccentHoverColor">#E4BC83</Color>
+    <Color x:Key="BorderSubtleColor">#C9D4D0</Color>
+    <Color x:Key="AccentColor">#4F7F6A</Color>
+    <Color x:Key="AccentHoverColor">#5F927B</Color>
     <Color x:Key="OverlayDarkColor">#CC1F1F1F</Color>
 
     <SolidColorBrush x:Key="BackgroundBase" Color="{StaticResource BackgroundBaseColor}" />
