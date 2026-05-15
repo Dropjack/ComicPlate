@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     public MainWindow(string? startupPath)
     {
         InitializeComponent();
+        Classes.Add(OperatingSystem.IsMacOS() ? "mac-shell" : "windows-shell");
         _startupPath = startupPath;
         _viewModel = new MainWindowViewModel(
             new FolderPickerService(this),

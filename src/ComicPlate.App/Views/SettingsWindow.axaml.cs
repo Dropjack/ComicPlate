@@ -25,6 +25,7 @@ public partial class SettingsWindow : Window
     {
         _platformLauncher = platformLauncher;
         InitializeComponent();
+        Classes.Add(OperatingSystem.IsMacOS() ? "mac-shell" : "windows-shell");
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         Opened += OnOpened;
         Closed += OnClosed;

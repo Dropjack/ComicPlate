@@ -18,6 +18,25 @@
     </Window.Resources>
 
     <Window.Styles>
+        <Style Selector="Window.mac-shell">
+            <Setter Property="Background" Value="#F7F7F7" />
+        </Style>
+
+        <Style Selector="Window.mac-shell Grid.settings-root">
+            <Setter Property="Background" Value="#F7F7F7" />
+        </Style>
+
+        <Style Selector="Window.mac-shell Border.settings-nav-panel">
+            <Setter Property="Background" Value="#F2F2F2" />
+            <Setter Property="BorderBrush" Value="#D8D8D8" />
+        </Style>
+
+        <Style Selector="Window.mac-shell Border.settings-card">
+            <Setter Property="Background" Value="#F1F1F1" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="14" />
+        </Style>
+
         <Style Selector="Button.settings-nav">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -31,11 +50,18 @@
         <Style Selector="Button.settings-nav.selected">
             <Setter Property="Background" Value="#E8E3EC" />
         </Style>
+
+        <Style Selector="Window.mac-shell Button.settings-nav.selected">
+            <Setter Property="Background" Value="#E5E5E5" />
+            <Setter Property="CornerRadius" Value="10" />
+        </Style>
     </Window.Styles>
 
     <Grid ColumnDefinitions="220,*"
+          Classes="settings-root"
           Background="{StaticResource SettingsContentBrush}">
         <Border Grid.Column="0"
+                Classes="settings-nav-panel"
                 Background="{StaticResource SettingsNavBrush}"
                 BorderBrush="{StaticResource SettingsBorderBrush}"
                 BorderThickness="0,0,1,0">
@@ -92,7 +118,8 @@
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
-                    <Border Background="{StaticResource SettingsCardBrush}"
+                    <Border Classes="settings-card"
+                            Background="{StaticResource SettingsCardBrush}"
                             BorderBrush="{StaticResource SettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4">
@@ -143,7 +170,8 @@
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
-                    <Border Background="{StaticResource SettingsCardBrush}"
+                    <Border Classes="settings-card"
+                            Background="{StaticResource SettingsCardBrush}"
                             BorderBrush="{StaticResource SettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4">
@@ -177,7 +205,8 @@
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
-                    <Border Background="{StaticResource SettingsCardBrush}"
+                    <Border Classes="settings-card"
+                            Background="{StaticResource SettingsCardBrush}"
                             BorderBrush="{StaticResource SettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4">
@@ -235,7 +264,8 @@
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
-                    <Border Background="{StaticResource SettingsCardBrush}"
+                    <Border Classes="settings-card"
+                            Background="{StaticResource SettingsCardBrush}"
                             BorderBrush="{StaticResource SettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4">
@@ -286,7 +316,8 @@
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
-                    <Border Background="{StaticResource SettingsCardBrush}"
+                    <Border Classes="settings-card"
+                            Background="{StaticResource SettingsCardBrush}"
                             BorderBrush="{StaticResource SettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4">

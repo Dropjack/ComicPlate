@@ -15,6 +15,7 @@ public partial class ReaderSurfaceView : UserControl
     public ReaderSurfaceView()
     {
         InitializeComponent();
+        Classes.Add(OperatingSystem.IsMacOS() ? "mac-shell" : "windows-shell");
     }
 
     private MainWindowViewModel? ViewModel => DataContext as MainWindowViewModel;

@@ -1,8 +1,24 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ComicPlate.App.Views.ReaderSurfaceView">
+    <UserControl.Styles>
+        <Style Selector="UserControl.mac-shell Border.reader-viewport">
+            <Setter Property="Background" Value="#F1F1F1" />
+        </Style>
+
+        <Style Selector="UserControl.mac-shell Border.bottom-bubble">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="UserControl.mac-shell Border.reader-bottom-row">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+    </UserControl.Styles>
+
     <Grid RowDefinitions="*,34,34">
         <Border Grid.Row="0"
+                Classes="reader-viewport"
                 Background="#EDEDED"
                 ClipToBounds="True"
                 SizeChanged="OnReaderViewportSizeChanged"
@@ -77,6 +93,17 @@
         </Border>
 
         <Border Grid.Row="1"
+                Grid.RowSpan="2"
+                Classes="bottom-bubble"
+                IsVisible="False"
+                Background="#EAF7F7F7"
+                BorderBrush="#DFFFFFFF"
+                BorderThickness="1"
+                CornerRadius="22"
+                Margin="8,0,8,8" />
+
+        <Border Grid.Row="1"
+                Classes="reader-bottom-row"
                 Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource BorderBrushSoft}"
                 BorderThickness="0,1,0,0">
@@ -108,6 +135,7 @@
         </Border>
 
         <Border Grid.Row="2"
+                Classes="reader-bottom-row"
                 Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource BorderBrushSoft}"
                 BorderThickness="0,1,0,0">
