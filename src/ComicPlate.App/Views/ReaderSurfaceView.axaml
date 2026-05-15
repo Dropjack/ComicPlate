@@ -99,8 +99,8 @@
                 Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource BorderBrushSoft}"
                 BorderThickness="1"
-                CornerRadius="22"
-                Margin="8,0,8,8" />
+                CornerRadius="18"
+                Margin="8,4,8,8" />
 
         <Border Grid.Row="1"
                 Classes="reader-bottom-row"

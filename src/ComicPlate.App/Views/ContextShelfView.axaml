@@ -2,16 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ComicPlate.App.Views.ContextShelfView">
     <UserControl.Styles>
-        <Style Selector="UserControl.mac-shell">
-            <Setter Property="Margin" Value="72,0,0,0" />
-        </Style>
-
         <Style Selector="UserControl.mac-shell Border.context-shelf-surface">
-            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
-            <Setter Property="BorderThickness" Value="0,1,1,1" />
-            <Setter Property="CornerRadius" Value="0,20,20,0" />
-            <Setter Property="Margin" Value="0,8,0,8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
         </Style>
 
         <Style Selector="UserControl.mac-shell ListBox.context-shelf-list">
@@ -21,9 +15,9 @@
 
     <Border MinWidth="220"
             Classes="context-shelf-surface"
-            Background="{StaticResource PanelBrush}"
+            Background="Transparent"
             BorderBrush="{StaticResource BorderBrushSoft}"
-            BorderThickness="0,0,1,0">
+            BorderThickness="0">
         <Grid RowDefinitions="40,*">
             <Border Grid.Row="0"
                     BorderBrush="{StaticResource BorderBrushSoft}"

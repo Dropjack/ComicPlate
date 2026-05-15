@@ -38,12 +38,18 @@
             <Setter Property="Background" Value="{StaticResource BackgroundBase}" />
         </Style>
 
-        <Style Selector="Window.mac-shell Border.command-rail">
-            <Setter Property="Background" Value="{StaticResource SurfaceMuted}" />
+        <Style Selector="Window.mac-shell Border.left-floating-panel">
+            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
-            <Setter Property="BorderThickness" Value="1,1,0,1" />
-            <Setter Property="CornerRadius" Value="20,0,0,20" />
-            <Setter Property="Margin" Value="8,8,0,8" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="28" />
+            <Setter Property="Margin" Value="8,8,8,8" />
+        </Style>
+
+        <Style Selector="Window.mac-shell Border.command-rail">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="28" />
         </Style>
 
         <Style Selector="Window.mac-shell Border.reader-title-bar">
@@ -55,13 +61,8 @@
             <Setter Property="Background" Value="Transparent" />
         </Style>
 
-        <Style Selector="Window.mac-shell UserControl.start-panel">
-            <Setter Property="Grid.Column" Value="0" />
-        </Style>
-
         <Style Selector="Window.mac-shell Grid.reader-stage">
-            <Setter Property="Grid.Column" Value="0" />
-            <Setter Property="Margin" Value="72,0,0,0" />
+            <Setter Property="Margin" Value="0,8,8,8" />
         </Style>
     </Window.Styles>
 
@@ -69,120 +70,139 @@
           ColumnDefinitions="64,*"
           Classes="main-shell"
           Background="{StaticResource BackgroundBase}">
-        <Border Grid.Column="0"
-                x:Name="CommandRail"
-                Classes="command-rail"
+        <Border x:Name="LeftFloatingPanel"
+                Grid.Column="0"
+                Classes="left-floating-panel"
                 Background="{StaticResource SurfaceMuted}"
                 BorderBrush="{StaticResource BorderBrushSoft}"
-                BorderThickness="0,0,1,0">
-            <Grid RowDefinitions="Auto,*"
-                  Margin="0,10">
-                <TextBlock Grid.Row="0"
-                           Text="CP"
-                           Foreground="{StaticResource TextBrush}"
-                           FontWeight="SemiBold"
-                           HorizontalAlignment="Center"
-                           Margin="0,0,0,14" />
+                BorderThickness="0,0,1,0"
+                ClipToBounds="True">
+            <Grid ColumnDefinitions="64,Auto,Auto">
+                <Border Grid.Column="0"
+                        x:Name="CommandRail"
+                        Classes="command-rail"
+                        Background="Transparent">
+                    <Grid RowDefinitions="Auto,*"
+                          Margin="0,12">
+                        <TextBlock Grid.Row="0"
+                                   Text="CP"
+                                   Foreground="{StaticResource TextBrush}"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,0,0,14" />
 
-                <StackPanel Grid.Row="1"
-                            Spacing="8"
-                            HorizontalAlignment="Center">
-                    <Button Command="{Binding OpenContentCommand}"
-                            Width="52"
-                            MinHeight="44"
-                            Padding="0"
-                            Background="Transparent"
-                            BorderBrush="Transparent"
-                            BorderThickness="0"
-                            CornerRadius="6"
-                            ToolTip.Tip="打开漫画">
-                        <PathIcon Data="{StaticResource OpenBookIcon}"
-                                  Width="24"
-                                  Height="24" />
-                    </Button>
-                    <Button Command="{Binding ToggleNavigationPaneCommand}"
-                            Width="52"
-                            MinHeight="44"
-                            Padding="0"
-                            Background="Transparent"
-                            BorderBrush="Transparent"
-                            BorderThickness="0"
-                            CornerRadius="6"
-                            ToolTip.Tip="{Binding NavigationPaneToggleText}"
-                            IsVisible="{Binding IsReaderVisible}">
-                        <Grid>
-                            <PathIcon Data="{StaticResource ShelfHideIcon}"
-                                      Width="24"
-                                      Height="24"
-                                      IsVisible="{Binding IsNavigationPaneVisible}" />
-                            <PathIcon Data="{StaticResource ShelfShowIcon}"
-                                      Width="24"
-                                      Height="24"
-                                      IsVisible="{Binding IsNavigationPaneHidden}" />
-                        </Grid>
-                    </Button>
-                    <Button Command="{Binding Reader.ToggleViewModeCommand}"
-                            Width="52"
-                            MinHeight="44"
-                            Padding="0"
-                            Background="Transparent"
-                            BorderBrush="Transparent"
-                            BorderThickness="0"
-                            CornerRadius="6"
-                            ToolTip.Tip="{Binding Reader.ViewModeText}"
-                            IsVisible="{Binding IsReaderVisible}">
-                        <Grid>
-                            <PathIcon Data="{StaticResource SinglePageIcon}"
-                                      Width="24"
-                                      Height="24"
-                                      IsVisible="{Binding Reader.IsSinglePageMode}" />
-                            <PathIcon Data="{StaticResource DoublePageIcon}"
-                                      Width="24"
-                                      Height="24"
-                                      IsVisible="{Binding Reader.IsDoublePageMode}" />
-                        </Grid>
-                    </Button>
-                    <Button Command="{Binding Reader.ToggleReadingDirectionCommand}"
-                            Width="52"
-                            MinHeight="44"
-                            Padding="0"
-                            Background="Transparent"
-                            BorderBrush="Transparent"
-                            BorderThickness="0"
-                            CornerRadius="6"
-                            ToolTip.Tip="{Binding Reader.ReadingDirectionText}"
-                            IsVisible="{Binding IsReaderVisible}">
-                        <Grid>
-                            <PathIcon Data="{StaticResource ReadLtrIcon}"
-                                      Width="24"
-                                      Height="24"
-                                      IsVisible="{Binding Reader.IsLeftToRightReading}" />
-                            <PathIcon Data="{StaticResource ReadRtlIcon}"
-                                      Width="24"
-                                      Height="24"
-                                      IsVisible="{Binding Reader.IsRightToLeftReading}" />
-                        </Grid>
-                    </Button>
-                    <Button Click="OnSettingsClick"
-                            Width="52"
-                            MinHeight="44"
-                            Padding="0"
-                            Background="Transparent"
-                            BorderBrush="Transparent"
-                            BorderThickness="0"
-                            CornerRadius="6"
-                            ToolTip.Tip="设置"
-                            IsEnabled="True">
-                        <PathIcon Data="{StaticResource UserSettingsIcon}"
-                                  Width="24"
-                                  Height="24" />
-                    </Button>
-                </StackPanel>
+                        <StackPanel Grid.Row="1"
+                                    Spacing="8"
+                                    HorizontalAlignment="Center">
+                            <Button Command="{Binding OpenContentCommand}"
+                                    Width="52"
+                                    MinHeight="44"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="0"
+                                    CornerRadius="18"
+                                    ToolTip.Tip="打开漫画">
+                                <PathIcon Data="{StaticResource OpenBookIcon}"
+                                          Width="24"
+                                          Height="24" />
+                            </Button>
+                            <Button Command="{Binding ToggleNavigationPaneCommand}"
+                                    Width="52"
+                                    MinHeight="44"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="0"
+                                    CornerRadius="18"
+                                    ToolTip.Tip="{Binding NavigationPaneToggleText}"
+                                    IsVisible="{Binding IsReaderVisible}">
+                                <Grid>
+                                    <PathIcon Data="{StaticResource ShelfHideIcon}"
+                                              Width="24"
+                                              Height="24"
+                                              IsVisible="{Binding IsNavigationPaneVisible}" />
+                                    <PathIcon Data="{StaticResource ShelfShowIcon}"
+                                              Width="24"
+                                              Height="24"
+                                              IsVisible="{Binding IsNavigationPaneHidden}" />
+                                </Grid>
+                            </Button>
+                            <Button Command="{Binding Reader.ToggleViewModeCommand}"
+                                    Width="52"
+                                    MinHeight="44"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="0"
+                                    CornerRadius="18"
+                                    ToolTip.Tip="{Binding Reader.ViewModeText}"
+                                    IsVisible="{Binding IsReaderVisible}">
+                                <Grid>
+                                    <PathIcon Data="{StaticResource SinglePageIcon}"
+                                              Width="24"
+                                              Height="24"
+                                              IsVisible="{Binding Reader.IsSinglePageMode}" />
+                                    <PathIcon Data="{StaticResource DoublePageIcon}"
+                                              Width="24"
+                                              Height="24"
+                                              IsVisible="{Binding Reader.IsDoublePageMode}" />
+                                </Grid>
+                            </Button>
+                            <Button Command="{Binding Reader.ToggleReadingDirectionCommand}"
+                                    Width="52"
+                                    MinHeight="44"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="0"
+                                    CornerRadius="18"
+                                    ToolTip.Tip="{Binding Reader.ReadingDirectionText}"
+                                    IsVisible="{Binding IsReaderVisible}">
+                                <Grid>
+                                    <PathIcon Data="{StaticResource ReadLtrIcon}"
+                                              Width="24"
+                                              Height="24"
+                                              IsVisible="{Binding Reader.IsLeftToRightReading}" />
+                                    <PathIcon Data="{StaticResource ReadRtlIcon}"
+                                              Width="24"
+                                              Height="24"
+                                              IsVisible="{Binding Reader.IsRightToLeftReading}" />
+                                </Grid>
+                            </Button>
+                            <Button Click="OnSettingsClick"
+                                    Width="52"
+                                    MinHeight="44"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="0"
+                                    CornerRadius="18"
+                                    ToolTip.Tip="设置"
+                                    IsEnabled="True">
+                                <PathIcon Data="{StaticResource UserSettingsIcon}"
+                                          Width="24"
+                                          Height="24" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border x:Name="MacShelfDivider"
+                        Grid.Column="1"
+                        Width="1"
+                        Background="{StaticResource BorderBrushSoft}"
+                        IsVisible="{Binding IsNavigationPaneVisible}" />
+
+                <views:ContextShelfView x:Name="MacContextShelf"
+                                        Grid.Column="2"
+                                        Width="300"
+                                        MinWidth="220"
+                                        IsVisible="{Binding IsNavigationPaneVisible}" />
             </Grid>
         </Border>
 
         <views:StartView Grid.Column="1"
-                         Classes="start-panel"
                          IsVisible="{Binding IsStartVisible}" />
 
         <Grid x:Name="ReaderLayoutGrid"
@@ -190,11 +210,13 @@
               Classes="reader-layout"
               IsVisible="{Binding IsReaderVisible}"
               ColumnDefinitions="Auto,*">
-            <views:ContextShelfView x:Name="ContextShelf"
-                                    Grid.Column="0"
-                                    Width="300"
-                                    MinWidth="220"
-                                    IsVisible="{Binding IsNavigationPaneVisible}" />
+            <Grid x:Name="WindowsShelfHost"
+                  Grid.Column="0">
+                <views:ContextShelfView x:Name="WindowsContextShelf"
+                                        Width="300"
+                                        MinWidth="220"
+                                        IsVisible="{Binding IsNavigationPaneVisible}" />
+            </Grid>
             <Grid x:Name="ReaderStageGrid"
                   Classes="reader-stage"
                   Grid.Column="1"

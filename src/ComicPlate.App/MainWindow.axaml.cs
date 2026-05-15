@@ -27,13 +27,16 @@ public partial class MainWindow : Window
         Classes.Add(isMacOS ? "mac-shell" : "windows-shell");
         if (isMacOS)
         {
-            Grid.SetColumn(ReaderLayoutGrid, 0);
-            Grid.SetColumnSpan(ReaderLayoutGrid, 2);
-            ReaderLayoutGrid.SetValue(Panel.ZIndexProperty, 0);
-            CommandRail.SetValue(Panel.ZIndexProperty, 2);
-            ContextShelf.SetValue(Panel.ZIndexProperty, 2);
-            ReaderStageGrid.SetValue(Panel.ZIndexProperty, 0);
+            MainShell.ColumnDefinitions = new ColumnDefinitions("Auto,*");
+            ReaderLayoutGrid.ColumnDefinitions = new ColumnDefinitions("*");
+            Grid.SetColumn(ReaderStageGrid, 0);
+            WindowsShelfHost.IsVisible = false;
             ReaderStageGrid.RowDefinitions = new RowDefinitions("0,*");
+        }
+        else
+        {
+            MacShelfDivider.IsVisible = false;
+            MacContextShelf.IsVisible = false;
         }
         _startupPath = startupPath;
         _viewModel = new MainWindowViewModel(
