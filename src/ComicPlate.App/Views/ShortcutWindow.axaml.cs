@@ -19,19 +19,18 @@ public partial class ShortcutWindow : Window
 
     private void ApplyPlatformShortcutText()
     {
-        if (OperatingSystem.IsMacOS())
-        {
-            ShortcutIntroText.Text = "当前阶段仅展示 macOS 版本固定快捷键，不提供编辑。";
-            OpenContentShortcutText.Text = "Cmd + O";
-            SettingsShortcutText.Text = "Cmd + ,";
-            CloseShortcutText.Text = "Cmd + W";
-            return;
-        }
-
-        ShortcutIntroText.Text = "当前阶段仅展示 Windows 版本固定快捷键，不提供编辑。";
-        OpenContentShortcutText.Text = "Ctrl + O";
-        SettingsShortcutText.Text = "Ctrl + ,";
-        CloseShortcutText.Text = "Ctrl + W";
+        ShortcutIntroText.Text = $"当前阶段仅展示 {ShortcutRegistry.PlatformName} 版本固定快捷键，不提供编辑。";
+        NextPageShortcutText.Text = ShortcutRegistry.GetDisplayText(ShortcutActionId.NextPage);
+        PreviousPageShortcutText.Text = ShortcutRegistry.GetDisplayText(ShortcutActionId.PreviousPage);
+        FirstPageShortcutText.Text = ShortcutRegistry.GetDisplayText(ShortcutActionId.FirstPage);
+        LastPageShortcutText.Text = ShortcutRegistry.GetDisplayText(ShortcutActionId.LastPage);
+        OpenContentShortcutText.Text = ShortcutRegistry.GetDisplayText(ShortcutActionId.OpenContent);
+        ToggleShelfShortcutText.Text = ShortcutRegistry.GetDisplayText(ShortcutActionId.ToggleNavigationPane);
+        ToggleViewModeShortcutText.Text = ShortcutRegistry.GetDisplayText(ShortcutActionId.ToggleViewMode);
+        ToggleReadingDirectionShortcutText.Text = ShortcutRegistry.GetDisplayText(ShortcutActionId.ToggleReadingDirection);
+        FullscreenShortcutText.Text = ShortcutRegistry.GetDisplayText(ShortcutActionId.ToggleFullscreen);
+        SettingsShortcutText.Text = ShortcutRegistry.GetDisplayText(ShortcutActionId.OpenSettings);
+        CloseShortcutText.Text = ShortcutRegistry.GetDisplayText(ShortcutActionId.CloseWindow);
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)

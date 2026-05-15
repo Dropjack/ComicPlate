@@ -14,27 +14,37 @@ public partial class SettingsWindow : Window
 {
     private const double CompactContentWidth = 640;
     private readonly IPlatformLauncher _platformLauncher;
+    private readonly SettingsService _settingsService;
+    private AppSettings _settings = AppSettings.Default;
+    private bool _isLoadingSettings;
     private ShortcutWindow? _shortcutWindow;
 
     public SettingsWindow()
-        : this(new PlatformLauncher())
+        : this(new PlatformLauncher(), null)
     {
     }
 
     public SettingsWindow(IPlatformLauncher platformLauncher)
+        : this(platformLauncher, null)
+    {
+    }
+
+    public SettingsWindow(IPlatformLauncher platformLauncher, SettingsService? settingsService)
     {
         _platformLauncher = platformLauncher;
+        _settingsService = settingsService ?? SettingsService.CreateDefault();
         InitializeComponent();
         var isMacOS = OperatingSystem.IsMacOS();
         Classes.Add(isMacOS ? "mac-shell" : "windows-shell");
         ApplyPlatformChrome(isMacOS);
+        LoadSettingsIntoControls();
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         Opened += OnOpened;
         Closed += OnClosed;
         ContentScrollViewer.SizeChanged += OnContentScrollViewerSizeChanged;
     }
 
-    public string DataFolderPath => JsonAppStateStore.DefaultDirectoryPath;
+    public string DataFolderPath => _settingsService.UserDataDirectory;
 
     private void ApplyPlatformChrome(bool isMacOS)
     {
@@ -115,6 +125,16 @@ public partial class SettingsWindow : Window
     {
         ShowShortcutWindow();
         e.Handled = true;
+    }
+
+    private void OnSettingToggleClick(object? sender, RoutedEventArgs e)
+    {
+        if (_isLoadingSettings)
+        {
+            return;
+        }
+
+        SaveSettingsFromControls();
     }
 
     private void OnOpenDataFolderClick(object? sender, RoutedEventArgs e)
@@ -231,5 +251,31 @@ public partial class SettingsWindow : Window
             _shortcutWindow.Closed -= OnShortcutWindowClosed;
             _shortcutWindow = null;
         }
+    }
+
+    private void LoadSettingsIntoControls()
+    {
+        _isLoadingSettings = true;
+        try
+        {
+            _settings = _settingsService.Load();
+            MultiWindowToggle.IsChecked = _settings.AllowMultipleWindows;
+            RestoreWindowToggle.IsChecked = _settings.RestoreWindowPlacement;
+        }
+        finally
+        {
+            _isLoadingSettings = false;
+        }
+    }
+
+    private void SaveSettingsFromControls()
+    {
+        _settings = _settings with
+        {
+            AllowMultipleWindows = MultiWindowToggle.IsChecked == true,
+            RestoreWindowPlacement = RestoreWindowToggle.IsChecked == true,
+        };
+
+        _settingsService.Save(_settings);
     }
 }

@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -6,23 +7,38 @@ using ComicPlate.App.Input;
 using ComicPlate.App.Services;
 using ComicPlate.App.ViewModels;
 using ComicPlate.App.Views;
+using ComicPlate.Infrastructure.Persistence;
 
 namespace ComicPlate.App;
 
 public partial class MainWindow : Window
 {
     private readonly MainWindowViewModel _viewModel;
+    private readonly SettingsService _settingsService;
+    private AppSettings _appSettings;
     private readonly string? _startupPath;
     private SettingsWindow? _settingsWindow;
 
     public MainWindow()
-        : this(null)
+        : this(null, null)
     {
     }
 
     public MainWindow(string? startupPath)
+        : this(startupPath, null)
+    {
+    }
+
+    public MainWindow(string? startupPath, SettingsService? settingsService)
     {
         InitializeComponent();
+        _settingsService = settingsService ?? SettingsService.CreateDefault();
+        _appSettings = _settingsService.Load();
+        if (_appSettings.RestoreWindowPlacement)
+        {
+            ApplyWindowPlacement(_appSettings.MainWindow);
+        }
+
         var isMacOS = OperatingSystem.IsMacOS();
         Classes.Add(isMacOS ? "mac-shell" : "windows-shell");
         if (isMacOS)
@@ -64,64 +80,122 @@ public partial class MainWindow : Window
         _settingsWindow = null;
         _viewModel.SaveCurrentState();
         _viewModel.Dispose();
+        _appSettings = _settingsService.Load();
+        _settingsService.Save(_appSettings with { MainWindow = CaptureWindowPlacement() });
+    }
+
+    private void ApplyWindowPlacement(WindowPlacementSettings placement)
+    {
+        Width = Math.Max(MinWidth, placement.Width);
+        Height = Math.Max(MinHeight, placement.Height);
+
+        if (TryGetValidPosition(placement, Width, Height, out var position))
+        {
+            WindowStartupLocation = WindowStartupLocation.Manual;
+            Position = position;
+        }
+        else
+        {
+            WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        }
+    }
+
+    private WindowPlacementSettings CaptureWindowPlacement()
+    {
+        return new WindowPlacementSettings
+        {
+            Width = Width,
+            Height = Height,
+            X = Position.X,
+            Y = Position.Y,
+        };
+    }
+
+    private bool TryGetValidPosition(
+        WindowPlacementSettings placement,
+        double width,
+        double height,
+        out PixelPoint position)
+    {
+        position = default;
+
+        if (!placement.HasPosition)
+        {
+            return false;
+        }
+
+        var x = placement.X!.Value;
+        var y = placement.Y!.Value;
+        var windowWidth = Math.Max(1, (int)Math.Ceiling(width));
+        var windowHeight = Math.Max(1, (int)Math.Ceiling(height));
+
+        foreach (var screen in Screens.All)
+        {
+            var area = screen.WorkingArea;
+            var hasVisibleTopLeft =
+                x >= area.X
+                && y >= area.Y
+                && x < area.X + area.Width - Math.Min(80, windowWidth)
+                && y < area.Y + area.Height - Math.Min(80, windowHeight);
+
+            if (hasVisibleTopLeft)
+            {
+                position = new PixelPoint(x, y);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Right)
+        switch (ShortcutRegistry.GetAction(e))
         {
-            _viewModel.Reader.VisualRightCommand.Execute(null);
-            e.Handled = true;
-        }
-        else if (e.Key == Key.Left)
-        {
-            _viewModel.Reader.VisualLeftCommand.Execute(null);
-            e.Handled = true;
-        }
-        else if (e.Key == Key.Home)
-        {
-            _viewModel.Reader.FirstPageCommand.Execute(null);
-            e.Handled = true;
-        }
-        else if (e.Key == Key.End)
-        {
-            _viewModel.Reader.LastPageCommand.Execute(null);
-            e.Handled = true;
-        }
-        else if (PlatformShortcuts.IsOpenContent(e))
-        {
-            _viewModel.OpenContentCommand.Execute(null);
-            e.Handled = true;
-        }
-        else if (PlatformShortcuts.IsOpenSettings(e))
-        {
-            ShowSettingsWindow();
-            e.Handled = true;
-        }
-        else if (PlatformShortcuts.IsCloseWindow(e))
-        {
-            CloseSettingsWindowsAndShowStart();
-            e.Handled = true;
-        }
-        else if (e.Key == Key.Tab)
-        {
-            _viewModel.ToggleNavigationPaneCommand.Execute(null);
-            e.Handled = true;
-        }
-        else if (e.Key == Key.Q)
-        {
-            _viewModel.Reader.ToggleViewModeCommand.Execute(null);
-            e.Handled = true;
-        }
-        else if (e.Key == Key.R)
-        {
-            _viewModel.Reader.ToggleReadingDirectionCommand.Execute(null);
-            e.Handled = true;
-        }
-        else if (e.Key == Key.F)
-        {
-            // Reserved for fullscreen. Fullscreen UI behavior will be implemented in its own step.
-            e.Handled = true;
+            case ShortcutActionId.NextPage:
+                _viewModel.Reader.VisualRightCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case ShortcutActionId.PreviousPage:
+                _viewModel.Reader.VisualLeftCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case ShortcutActionId.FirstPage:
+                _viewModel.Reader.FirstPageCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case ShortcutActionId.LastPage:
+                _viewModel.Reader.LastPageCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case ShortcutActionId.OpenContent:
+                _viewModel.OpenContentCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case ShortcutActionId.OpenSettings:
+                ShowSettingsWindow();
+                e.Handled = true;
+                break;
+            case ShortcutActionId.CloseWindow:
+                CloseSettingsWindowsAndShowStart();
+                e.Handled = true;
+                break;
+            case ShortcutActionId.ToggleNavigationPane:
+                _viewModel.ToggleNavigationPaneCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case ShortcutActionId.ToggleViewMode:
+                _viewModel.Reader.ToggleViewModeCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case ShortcutActionId.ToggleReadingDirection:
+                _viewModel.Reader.ToggleReadingDirectionCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case ShortcutActionId.ToggleFullscreen:
+                // Reserved for fullscreen. Fullscreen UI behavior will be implemented in its own step.
+                e.Handled = true;
+                break;
         }
     }
 
@@ -166,7 +240,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        _settingsWindow = new SettingsWindow();
+        _settingsWindow = new SettingsWindow(new PlatformLauncher(), _settingsService);
         _settingsWindow.Closed += OnSettingsWindowClosed;
         _settingsWindow.Show();
     }
@@ -184,6 +258,7 @@ public partial class MainWindow : Window
         {
             _settingsWindow.Closed -= OnSettingsWindowClosed;
             _settingsWindow = null;
+            _appSettings = _settingsService.Load();
         }
     }
 }

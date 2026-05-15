@@ -129,8 +129,9 @@
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
-                                <ToggleSwitch Grid.Column="1"
-                                              IsEnabled="False"
+                                <ToggleSwitch x:Name="MultiWindowToggle"
+                                              Grid.Column="1"
+                                              Click="OnSettingToggleClick"
                                               VerticalAlignment="Center" />
                             </Grid>
                             <Border Height="1"
@@ -148,8 +149,9 @@
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
-                                <ToggleSwitch Grid.Column="1"
-                                              IsEnabled="False"
+                                <ToggleSwitch x:Name="RestoreWindowToggle"
+                                              Grid.Column="1"
+                                              Click="OnSettingToggleClick"
                                               VerticalAlignment="Center" />
                             </Grid>
                         </StackPanel>

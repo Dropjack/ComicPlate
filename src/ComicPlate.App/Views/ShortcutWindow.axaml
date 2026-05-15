@@ -40,7 +40,8 @@
                               ColumnSpacing="16">
                             <TextBlock Text="下一页"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
-                            <TextBlock Grid.Column="1"
+                            <TextBlock x:Name="NextPageShortcutText"
+                                       Grid.Column="1"
                                        Text="Right"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
@@ -50,7 +51,8 @@
                               ColumnSpacing="16">
                             <TextBlock Text="上一页"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
-                            <TextBlock Grid.Column="1"
+                            <TextBlock x:Name="PreviousPageShortcutText"
+                                       Grid.Column="1"
                                        Text="Left"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
@@ -60,7 +62,8 @@
                               ColumnSpacing="16">
                             <TextBlock Text="第一页"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
-                            <TextBlock Grid.Column="1"
+                            <TextBlock x:Name="FirstPageShortcutText"
+                                       Grid.Column="1"
                                        Text="Home"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
@@ -70,7 +73,8 @@
                               ColumnSpacing="16">
                             <TextBlock Text="最后一页"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
-                            <TextBlock Grid.Column="1"
+                            <TextBlock x:Name="LastPageShortcutText"
+                                       Grid.Column="1"
                                        Text="End"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
@@ -95,7 +99,7 @@
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock x:Name="OpenContentShortcutText"
                                        Grid.Column="1"
-                                       Text="Cmd + O"
+                                       Text="O"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
                         <Border Height="1" Background="{StaticResource ShortcutBorderBrush}" />
@@ -104,7 +108,8 @@
                               ColumnSpacing="16">
                             <TextBlock Text="显示/隐藏 Shelf"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
-                            <TextBlock Grid.Column="1"
+                            <TextBlock x:Name="ToggleShelfShortcutText"
+                                       Grid.Column="1"
                                        Text="Tab"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
@@ -114,7 +119,8 @@
                               ColumnSpacing="16">
                             <TextBlock Text="单页/双页切换"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
-                            <TextBlock Grid.Column="1"
+                            <TextBlock x:Name="ToggleViewModeShortcutText"
+                                       Grid.Column="1"
                                        Text="Q"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
@@ -124,7 +130,8 @@
                               ColumnSpacing="16">
                             <TextBlock Text="阅读方向"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
-                            <TextBlock Grid.Column="1"
+                            <TextBlock x:Name="ToggleReadingDirectionShortcutText"
+                                       Grid.Column="1"
                                        Text="R"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
@@ -134,7 +141,8 @@
                               ColumnSpacing="16">
                             <TextBlock Text="全屏"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
-                            <TextBlock Grid.Column="1"
+                            <TextBlock x:Name="FullscreenShortcutText"
+                                       Grid.Column="1"
                                        Text="F"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
@@ -146,7 +154,7 @@
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock x:Name="SettingsShortcutText"
                                        Grid.Column="1"
-                                       Text="Cmd + ,"
+                                       Text=","
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
                         <Border Height="1" Background="{StaticResource ShortcutBorderBrush}" />
@@ -157,7 +165,7 @@
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock x:Name="CloseShortcutText"
                                        Grid.Column="1"
-                                       Text="Cmd + W"
+                                       Text="W"
                                        Foreground="{StaticResource ShortcutMutedTextBrush}" />
                         </Grid>
                     </StackPanel>
