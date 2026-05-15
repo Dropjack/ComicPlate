@@ -1,7 +1,22 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ComicPlate.App.Views.ContextShelfView">
+    <UserControl.Styles>
+        <Style Selector="UserControl.mac-shell Border.context-shelf-surface">
+            <Setter Property="Background" Value="#EEF4F4F4" />
+            <Setter Property="BorderBrush" Value="#DFFFFFFF" />
+            <Setter Property="BorderThickness" Value="0,1,1,1" />
+            <Setter Property="CornerRadius" Value="0,20,20,0" />
+            <Setter Property="Margin" Value="0,8,8,8" />
+        </Style>
+
+        <Style Selector="UserControl.mac-shell ListBox.context-shelf-list">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+    </UserControl.Styles>
+
     <Border MinWidth="220"
+            Classes="context-shelf-surface"
             Background="{StaticResource PanelBrush}"
             BorderBrush="{StaticResource BorderBrushSoft}"
             BorderThickness="0,0,1,0">
@@ -31,6 +46,7 @@
             </Border>
 
             <ListBox Grid.Row="1"
+                     Classes="context-shelf-list"
                      ItemsSource="{Binding ContextShelf.Items}"
                      SelectedIndex="{Binding ContextShelf.CurrentIndex, Mode=TwoWay}"
                      Background="{StaticResource PanelBrush}"

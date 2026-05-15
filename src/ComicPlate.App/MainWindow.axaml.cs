@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using ComicPlate.App.Input;
 using ComicPlate.App.Services;
 using ComicPlate.App.ViewModels;
 using ComicPlate.App.Views;
@@ -22,6 +23,7 @@ public partial class MainWindow : Window
     public MainWindow(string? startupPath)
     {
         InitializeComponent();
+        Classes.Add(OperatingSystem.IsMacOS() ? "mac-shell" : "windows-shell");
         _startupPath = startupPath;
         _viewModel = new MainWindowViewModel(
             new FolderPickerService(this),
@@ -72,14 +74,19 @@ public partial class MainWindow : Window
             _viewModel.Reader.LastPageCommand.Execute(null);
             e.Handled = true;
         }
-        else if (e.Key == Key.O && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        else if (PlatformShortcuts.IsOpenContent(e))
         {
             _viewModel.OpenContentCommand.Execute(null);
             e.Handled = true;
         }
-        else if (e.Key == Key.OemComma && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        else if (PlatformShortcuts.IsOpenSettings(e))
         {
             ShowSettingsWindow();
+            e.Handled = true;
+        }
+        else if (PlatformShortcuts.IsCloseWindow(e))
+        {
+            CloseSettingsWindowsAndShowStart();
             e.Handled = true;
         }
         else if (e.Key == Key.Tab)
@@ -106,7 +113,20 @@ public partial class MainWindow : Window
 
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
-        if (e.Delta.Y < 0)
+        if (OperatingSystem.IsMacOS() && Math.Abs(e.Delta.X) > Math.Abs(e.Delta.Y))
+        {
+            if (e.Delta.X > 0)
+            {
+                _viewModel.Reader.VisualLeftCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.Delta.X < 0)
+            {
+                _viewModel.Reader.VisualRightCommand.Execute(null);
+                e.Handled = true;
+            }
+        }
+        else if (e.Delta.Y < 0)
         {
             _viewModel.Reader.WheelNextReadingGroup();
             e.Handled = true;
@@ -135,6 +155,13 @@ public partial class MainWindow : Window
         _settingsWindow = new SettingsWindow();
         _settingsWindow.Closed += OnSettingsWindowClosed;
         _settingsWindow.Show();
+    }
+
+    private void CloseSettingsWindowsAndShowStart()
+    {
+        _settingsWindow?.Close();
+        _settingsWindow = null;
+        _viewModel.ShowStartCommand.Execute(null);
     }
 
     private void OnSettingsWindowClosed(object? sender, EventArgs e)

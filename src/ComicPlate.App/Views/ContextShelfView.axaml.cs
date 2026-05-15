@@ -9,7 +9,9 @@ public partial class ContextShelfView : UserControl
     public ContextShelfView()
     {
         InitializeComponent();
+        Classes.Add(OperatingSystem.IsMacOS() ? "mac-shell" : "windows-shell");
         AddHandler(PointerPressedEvent, OnShelfPointerPressedTunnel, RoutingStrategies.Tunnel);
+        AddHandler(PointerWheelChangedEvent, OnShelfPointerWheelChangedBubble, RoutingStrategies.Bubble);
     }
 
     private void OnShelfPointerPressedTunnel(object? sender, PointerPressedEventArgs e)
@@ -19,5 +21,10 @@ public partial class ContextShelfView : UserControl
         {
             e.Handled = true;
         }
+    }
+
+    private void OnShelfPointerWheelChangedBubble(object? sender, PointerWheelEventArgs e)
+    {
+        e.Handled = true;
     }
 }

@@ -9,6 +9,25 @@
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource BackgroundBase}">
     <Window.Styles>
+        <Style Selector="Window.mac-shell">
+            <Setter Property="Background" Value="#F7F7F7" />
+        </Style>
+
+        <Style Selector="Window.mac-shell Grid.settings-root">
+            <Setter Property="Background" Value="#F7F7F7" />
+        </Style>
+
+        <Style Selector="Window.mac-shell Border.settings-nav-panel">
+            <Setter Property="Background" Value="#F2F2F2" />
+            <Setter Property="BorderBrush" Value="#D8D8D8" />
+        </Style>
+
+        <Style Selector="Window.mac-shell Border.settings-card">
+            <Setter Property="Background" Value="#F1F1F1" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="14" />
+        </Style>
+
         <Style Selector="Button.settings-nav">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -22,11 +41,18 @@
         <Style Selector="Button.settings-nav.selected">
             <Setter Property="Background" Value="{StaticResource SettingsSelectedBrush}" />
         </Style>
+
+        <Style Selector="Window.mac-shell Button.settings-nav.selected">
+            <Setter Property="Background" Value="#E5E5E5" />
+            <Setter Property="CornerRadius" Value="10" />
+        </Style>
     </Window.Styles>
 
     <Grid ColumnDefinitions="220,*"
+          Classes="settings-root"
           Background="{StaticResource SettingsContentBrush}">
         <Border Grid.Column="0"
+                Classes="settings-nav-panel"
                 Background="{StaticResource SettingsNavBrush}"
                 BorderBrush="{StaticResource SettingsBorderBrush}"
                 BorderThickness="0,0,1,0">
@@ -83,7 +109,8 @@
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
-                    <Border Background="{StaticResource SettingsCardBrush}"
+                    <Border Classes="settings-card"
+                            Background="{StaticResource SettingsCardBrush}"
                             BorderBrush="{StaticResource SettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4">
@@ -134,7 +161,8 @@
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
-                    <Border Background="{StaticResource SettingsCardBrush}"
+                    <Border Classes="settings-card"
+                            Background="{StaticResource SettingsCardBrush}"
                             BorderBrush="{StaticResource SettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4">
@@ -168,7 +196,8 @@
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
-                    <Border Background="{StaticResource SettingsCardBrush}"
+                    <Border Classes="settings-card"
+                            Background="{StaticResource SettingsCardBrush}"
                             BorderBrush="{StaticResource SettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4">
@@ -182,14 +211,17 @@
                                     <TextBlock Text="数据目录"
                                                Foreground="{StaticResource SettingsTextBrush}"
                                                FontSize="15" />
-                                    <TextBlock Text="ComicPlate 的设置、会话和阅读进度保存在应用数据目录，不会写入漫画文件夹或压缩包。"
+                                    <TextBlock Text="{Binding DataFolderPath, RelativeSource={RelativeSource AncestorType=Window}}"
+                                               Foreground="{StaticResource SettingsMutedTextBrush}"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Text="ComicPlate 的设置、会话和阅读进度保存在这里，不会写入漫画文件夹或压缩包。"
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
                                 <Button Grid.Column="1"
                                         Content="打开"
                                         Width="86"
-                                        IsEnabled="False"
+                                        Click="OnOpenDataFolderClick"
                                         VerticalAlignment="Center" />
                             </Grid>
                             <Border Height="1"
@@ -223,7 +255,8 @@
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
-                    <Border Background="{StaticResource SettingsCardBrush}"
+                    <Border Classes="settings-card"
+                            Background="{StaticResource SettingsCardBrush}"
                             BorderBrush="{StaticResource SettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4">
@@ -237,7 +270,7 @@
                                     <TextBlock Text="CBZ 文件"
                                                Foreground="{StaticResource SettingsTextBrush}"
                                                FontSize="15" />
-                                    <TextBlock Text="允许从资源管理器直接用 ComicPlate 打开 .cbz 文件。"
+                                    <TextBlock Text="允许从 Finder 直接用 ComicPlate 打开 .cbz 文件。"
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
@@ -256,7 +289,7 @@
                                     <TextBlock Text="ZIP 文件"
                                                Foreground="{StaticResource SettingsTextBrush}"
                                                FontSize="15" />
-                                    <TextBlock Text="允许从资源管理器直接用 ComicPlate 打开 .zip 漫画压缩包。图片格式暂不进入文件关联设置。"
+                                    <TextBlock Text="允许从 Finder 直接用 ComicPlate 打开 .zip 漫画压缩包。图片格式暂不进入文件关联设置。"
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
@@ -274,7 +307,8 @@
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
-                    <Border Background="{StaticResource SettingsCardBrush}"
+                    <Border Classes="settings-card"
+                            Background="{StaticResource SettingsCardBrush}"
                             BorderBrush="{StaticResource SettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4">

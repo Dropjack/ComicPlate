@@ -33,11 +33,18 @@ public sealed class JsonAppStateStore
 
     private string ProgressPath => Path.Combine(_directoryPath, "progress.json");
 
+    public static string DefaultDirectoryPath
+    {
+        get
+        {
+            var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            return Path.Combine(appDataPath, "ComicPlate");
+        }
+    }
+
     public static JsonAppStateStore CreateDefault()
     {
-        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var directoryPath = Path.Combine(appDataPath, "ComicPlate");
-        return new JsonAppStateStore(directoryPath);
+        return new JsonAppStateStore(DefaultDirectoryPath);
     }
 
     public SessionState LoadSession()
