@@ -5,22 +5,33 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
 using ComicPlate.App.Input;
+using ComicPlate.App.Services;
+using ComicPlate.Infrastructure.Persistence;
 
 namespace ComicPlate.App.Views;
 
 public partial class SettingsWindow : Window
 {
     private const double CompactContentWidth = 640;
+    private readonly IPlatformLauncher _platformLauncher;
     private ShortcutWindow? _shortcutWindow;
 
     public SettingsWindow()
+        : this(new PlatformLauncher())
     {
+    }
+
+    public SettingsWindow(IPlatformLauncher platformLauncher)
+    {
+        _platformLauncher = platformLauncher;
         InitializeComponent();
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         Opened += OnOpened;
         Closed += OnClosed;
         ContentScrollViewer.SizeChanged += OnContentScrollViewerSizeChanged;
     }
+
+    public string DataFolderPath => JsonAppStateStore.DefaultDirectoryPath;
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
@@ -80,6 +91,12 @@ public partial class SettingsWindow : Window
     private void OnOpenShortcutsClick(object? sender, RoutedEventArgs e)
     {
         ShowShortcutWindow();
+        e.Handled = true;
+    }
+
+    private void OnOpenDataFolderClick(object? sender, RoutedEventArgs e)
+    {
+        _platformLauncher.OpenFolder(DataFolderPath);
         e.Handled = true;
     }
 

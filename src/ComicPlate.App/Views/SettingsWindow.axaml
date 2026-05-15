@@ -191,14 +191,17 @@
                                     <TextBlock Text="数据目录"
                                                Foreground="{StaticResource SettingsTextBrush}"
                                                FontSize="15" />
-                                    <TextBlock Text="ComicPlate 的设置、会话和阅读进度保存在应用数据目录，不会写入漫画文件夹或压缩包。"
+                                    <TextBlock Text="{Binding DataFolderPath, RelativeSource={RelativeSource AncestorType=Window}}"
+                                               Foreground="{StaticResource SettingsMutedTextBrush}"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Text="ComicPlate 的设置、会话和阅读进度保存在这里，不会写入漫画文件夹或压缩包。"
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
                                 <Button Grid.Column="1"
                                         Content="打开"
                                         Width="86"
-                                        IsEnabled="False"
+                                        Click="OnOpenDataFolderClick"
                                         VerticalAlignment="Center" />
                             </Grid>
                             <Border Height="1"
