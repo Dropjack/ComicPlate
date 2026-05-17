@@ -61,25 +61,36 @@ public sealed class SidebarThumbnailLoader : IDisposable
     {
         return item.Book.SourceKind switch
         {
-            BookSourceKind.Zip => await LoadZipThumbnailAsync(item.Book, cancellationToken),
+            BookSourceKind.Zip => await LoadArchiveThumbnailAsync(item.Book, cancellationToken),
+            BookSourceKind.Rar => await LoadArchiveThumbnailAsync(item.Book, cancellationToken),
             BookSourceKind.Folder => await LoadFolderThumbnailAsync(item.Book.Path, cancellationToken),
             BookSourceKind.Collection => await LoadFolderThumbnailAsync(item.Book.Path, cancellationToken),
             _ => null
         };
     }
 
-    private async Task<Bitmap?> LoadZipThumbnailAsync(BookEntry book, CancellationToken cancellationToken)
+    private async Task<Bitmap?> LoadArchiveThumbnailAsync(BookEntry book, CancellationToken cancellationToken)
     {
-        var source = new ZipBookSource(book.Path);
+        var source = CreateArchiveSource(book);
         var pages = await source.LoadPagesAsync(cancellationToken);
         var firstPage = pages.FirstOrDefault();
 
         return firstPage is null
             ? null
             : await LoadPageThumbnailAsync(
-                $"zip:{book.Path}:{GetLastWriteTicks(book.Path)}:{firstPage.LogicalPath}",
+                $"archive:{book.SourceKind}:{book.Path}:{GetLastWriteTicks(book.Path)}:{firstPage.LogicalPath}",
                 firstPage,
                 cancellationToken);
+    }
+
+    private static IBookSource CreateArchiveSource(BookEntry book)
+    {
+        return book.SourceKind switch
+        {
+            BookSourceKind.Zip => new ZipBookSource(book.Path),
+            BookSourceKind.Rar => new RarBookSource(book.Path),
+            _ => throw new InvalidOperationException($"Unsupported archive source kind: {book.SourceKind}.")
+        };
     }
 
     private async Task<Bitmap?> LoadFolderThumbnailAsync(string folderPath, CancellationToken cancellationToken)

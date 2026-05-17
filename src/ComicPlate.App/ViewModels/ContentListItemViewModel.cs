@@ -32,7 +32,7 @@ public sealed class ContentListItemViewModel : ViewModelBase
 
     public string KindLabel => Kind switch
     {
-        ContentListItemKind.Archive => "ZIP",
+        ContentListItemKind.Archive => "Archive",
         ContentListItemKind.Folder => "Folder",
         _ => "Folder"
     };
@@ -68,7 +68,7 @@ public sealed class ContentListItemViewModel : ViewModelBase
 
     public static ContentListItemViewModel FromBook(BookEntry book)
     {
-        var kind = book.SourceKind == BookSourceKind.Zip
+        var kind = book.SourceKind is BookSourceKind.Zip or BookSourceKind.Rar
             ? ContentListItemKind.Archive
             : ContentListItemKind.Folder;
         var detail = book.SourceKind switch
@@ -76,6 +76,7 @@ public sealed class ContentListItemViewModel : ViewModelBase
             BookSourceKind.Collection => "Folder",
             BookSourceKind.Image => "Image",
             BookSourceKind.Zip => "ZIP/CBZ",
+            BookSourceKind.Rar => "RAR/CBR",
             _ => "Comic folder"
         };
 

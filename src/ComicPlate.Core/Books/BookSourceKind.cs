@@ -5,5 +5,6 @@ public enum BookSourceKind
     Collection,
     Folder,
     Image,
-    Zip
+    Zip,
+    Rar
 }

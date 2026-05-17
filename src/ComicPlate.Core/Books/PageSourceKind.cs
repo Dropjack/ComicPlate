@@ -3,5 +3,6 @@ namespace ComicPlate.Core.Books;
 public enum PageSourceKind
 {
     FileSystem,
-    ZipEntry
+    ZipEntry,
+    RarEntry
 }

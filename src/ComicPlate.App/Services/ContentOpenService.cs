@@ -18,12 +18,12 @@ public sealed class ContentOpenService
             return new OpenPathResult(OpenPathKind.Missing, fullPath);
         }
 
-        if (IsSupportedArchivePath(fullPath))
+        if (ComicArchiveFormats.TryGetByPath(fullPath, out var archiveFormat))
         {
             return new OpenPathResult(
                 OpenPathKind.Book,
                 fullPath,
-                CreateBookEntry(fullPath, BookSourceKind.Zip));
+                CreateBookEntry(fullPath, archiveFormat.SourceKind));
         }
 
         if (SupportedPageFormats.IsSupportedExtension(Path.GetExtension(fullPath)))
@@ -67,6 +67,7 @@ public sealed class ContentOpenService
         {
             BookSourceKind.Image => new SingleImageBookSource(normalizedBook.Path),
             BookSourceKind.Zip => new ZipBookSource(normalizedBook.Path),
+            BookSourceKind.Rar => new RarBookSource(normalizedBook.Path),
             _ => new FolderBookSource(normalizedBook.Path, recursive: false)
         };
 
@@ -86,10 +87,4 @@ public sealed class ContentOpenService
         return book with { Id = fullPath, Path = fullPath };
     }
 
-    private static bool IsSupportedArchivePath(string path)
-    {
-        var extension = Path.GetExtension(path);
-        return extension.Equals(".zip", StringComparison.OrdinalIgnoreCase) ||
-            extension.Equals(".cbz", StringComparison.OrdinalIgnoreCase);
-    }
 }

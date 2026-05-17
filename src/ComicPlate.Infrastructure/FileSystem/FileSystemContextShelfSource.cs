@@ -31,10 +31,15 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
         foreach (var archive in EnumerateArchiveFiles(_rootPath, cancellationToken))
         {
             var fullPath = Path.GetFullPath(archive);
+            if (!ComicArchiveFormats.TryGetByPath(fullPath, out var archiveFormat))
+            {
+                continue;
+            }
+
             yield return new BookEntry(
                 fullPath,
                 Path.GetFileName(fullPath),
-                BookSourceKind.Zip,
+                archiveFormat.SourceKind,
                 fullPath);
         }
 
@@ -78,7 +83,7 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
     private static IEnumerable<string> EnumerateArchiveFiles(string directory, CancellationToken cancellationToken)
     {
         return EnumerateFiles(directory, cancellationToken)
-            .Where(IsSupportedArchivePath);
+            .Where(ComicArchiveFormats.IsSupportedArchivePath);
     }
 
     private static bool ContainsDirectPageFiles(string directory, CancellationToken cancellationToken)
@@ -121,10 +126,4 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
         }
     }
 
-    private static bool IsSupportedArchivePath(string path)
-    {
-        var extension = Path.GetExtension(path);
-        return extension.Equals(".zip", StringComparison.OrdinalIgnoreCase)
-            || extension.Equals(".cbz", StringComparison.OrdinalIgnoreCase);
-    }
 }
