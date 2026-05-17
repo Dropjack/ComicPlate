@@ -4,10 +4,10 @@ public static class ComicArchiveFormats
 {
     private static readonly ComicArchiveFormat[] Formats =
     [
-        new(".zip", ComicArchiveKind.Zip, BookSourceKind.Zip, "ZIP"),
         new(".cbz", ComicArchiveKind.Zip, BookSourceKind.Zip, "CBZ"),
-        new(".rar", ComicArchiveKind.Rar, BookSourceKind.Rar, "RAR"),
-        new(".cbr", ComicArchiveKind.Rar, BookSourceKind.Rar, "CBR")
+        new(".zip", ComicArchiveKind.Zip, BookSourceKind.Zip, "ZIP"),
+        new(".cbr", ComicArchiveKind.Rar, BookSourceKind.Rar, "CBR"),
+        new(".rar", ComicArchiveKind.Rar, BookSourceKind.Rar, "RAR")
     ];
 
     public static IReadOnlyList<ComicArchiveFormat> SupportedFormats => Formats;
@@ -37,4 +37,3 @@ public static class ComicArchiveFormats
         return false;
     }
 }
-

@@ -265,45 +265,59 @@
                             BorderBrush="{StaticResource SettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4">
-                        <StackPanel>
-                            <Grid x:Name="CbzAssociationRow"
-                                  ColumnDefinitions="*,Auto"
-                                  Margin="16,14"
-                                  ColumnSpacing="16">
-                                <StackPanel Spacing="3"
-                                            MinWidth="0">
-                                    <TextBlock Text="CBZ 文件"
-                                               Foreground="{StaticResource SettingsTextBrush}"
-                                               FontSize="15" />
-                                    <TextBlock x:Name="CbzAssociationDescription"
-                                               Text="允许从 Finder 直接用 ComicPlate 打开 .cbz 文件。"
-                                               Foreground="{StaticResource SettingsMutedTextBrush}"
-                                               TextWrapping="Wrap" />
-                                </StackPanel>
-                                <ToggleSwitch Grid.Column="1"
-                                              IsEnabled="False"
-                                              VerticalAlignment="Center" />
-                            </Grid>
-                            <Border Height="1"
-                                    Background="{StaticResource SettingsBorderBrush}" />
-                            <Grid x:Name="ZipAssociationRow"
-                                  ColumnDefinitions="*,Auto"
-                                  Margin="16,14"
-                                  ColumnSpacing="16">
-                                <StackPanel Spacing="3"
-                                            MinWidth="0">
-                                    <TextBlock Text="ZIP 文件"
-                                               Foreground="{StaticResource SettingsTextBrush}"
-                                               FontSize="15" />
-                                    <TextBlock x:Name="ZipAssociationDescription"
-                                               Text="允许从 Finder 直接用 ComicPlate 打开 .zip 漫画压缩包。图片格式暂不进入文件关联设置。"
-                                               Foreground="{StaticResource SettingsMutedTextBrush}"
-                                               TextWrapping="Wrap" />
-                                </StackPanel>
-                                <ToggleSwitch Grid.Column="1"
-                                              IsEnabled="False"
-                                              VerticalAlignment="Center" />
-                            </Grid>
+                        <StackPanel Margin="16,14"
+                                    Spacing="12">
+                            <TextBlock Text="这些关联不会自动启用。只有勾选后才会修改系统默认打开方式。"
+                                       Foreground="{StaticResource SettingsMutedTextBrush}"
+                                       TextWrapping="Wrap" />
+                            <UniformGrid x:Name="AssociationOptionsGrid"
+                                         Columns="2">
+                                <CheckBox x:Name="CbzAssociationCheckBox"
+                                          Content="CBZ"
+                                          Tag=".cbz"
+                                          Click="OnAssociateFileClick" />
+                                <CheckBox x:Name="ZipAssociationCheckBox"
+                                          Content="ZIP"
+                                          Tag=".zip"
+                                          Click="OnAssociateFileClick" />
+                                <CheckBox x:Name="CbrAssociationCheckBox"
+                                          Content="CBR"
+                                          Tag=".cbr"
+                                          Click="OnAssociateFileClick" />
+                                <CheckBox x:Name="RarAssociationCheckBox"
+                                          Content="RAR"
+                                          Tag=".rar"
+                                          Click="OnAssociateFileClick" />
+                            </UniformGrid>
+                            <TextBlock x:Name="AssociationStatusText"
+                                       Foreground="{StaticResource SettingsMutedTextBrush}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel x:Name="ExplorerContextMenuSection"
+                            Spacing="10">
+                    <TextBlock Text="资源管理器右键菜单"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource SettingsTextBrush}" />
+                    <Border Classes="settings-card"
+                            Background="{StaticResource SettingsCardBrush}"
+                            BorderBrush="{StaticResource SettingsBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <StackPanel Margin="16,14"
+                                    Spacing="12">
+                            <TextBlock Text="添加“在 ComicPlate 中打开”，不会改变默认打开方式。"
+                                       Foreground="{StaticResource SettingsMutedTextBrush}"
+                                       TextWrapping="Wrap" />
+                            <CheckBox x:Name="ExplorerContextMenuCheckBox"
+                                      Content="在右键菜单中显示“在 ComicPlate 中打开”"
+                                      Click="OnExplorerContextMenuClick" />
+                            <TextBlock x:Name="ExplorerContextMenuStatusText"
+                                       Foreground="{StaticResource SettingsMutedTextBrush}"
+                                       TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                 </StackPanel>

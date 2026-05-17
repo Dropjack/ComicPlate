@@ -14,6 +14,8 @@ public partial class SettingsWindow : Window
 {
     private const double CompactContentWidth = 640;
     private readonly IAppDataService _appDataService;
+    private readonly IExplorerContextMenuService _explorerContextMenuService;
+    private readonly IFileAssociationService _fileAssociationService;
     private readonly SettingsService _settingsService;
     private readonly ThumbnailCacheService _thumbnailCacheService;
     private AppSettings _settings = AppSettings.Default;
@@ -21,12 +23,12 @@ public partial class SettingsWindow : Window
     private ShortcutWindow? _shortcutWindow;
 
     public SettingsWindow()
-        : this(AppDataService.CreateDefault(), null)
+        : this(AppDataService.CreateDefault(), null, null)
     {
     }
 
     public SettingsWindow(IPlatformLauncher platformLauncher)
-        : this(AppDataService.CreateDefault(platformLauncher), null)
+        : this(AppDataService.CreateDefault(platformLauncher), null, null)
     {
     }
 
@@ -35,13 +37,25 @@ public partial class SettingsWindow : Window
             settingsService is null
                 ? AppDataService.CreateDefault(platformLauncher)
                 : new AppDataService(settingsService.UserDataDirectory, platformLauncher),
-            settingsService)
+            settingsService,
+            null)
     {
     }
 
     public SettingsWindow(IAppDataService appDataService, SettingsService? settingsService)
+        : this(appDataService, settingsService, null)
+    {
+    }
+
+    public SettingsWindow(
+        IAppDataService appDataService,
+        SettingsService? settingsService,
+        IFileAssociationService? fileAssociationService,
+        IExplorerContextMenuService? explorerContextMenuService = null)
     {
         _appDataService = appDataService;
+        _explorerContextMenuService = explorerContextMenuService ?? ExplorerContextMenuService.CreateDefault();
+        _fileAssociationService = fileAssociationService ?? FileAssociationService.CreateDefault();
         _settingsService = settingsService ?? SettingsService.CreateDefault();
         _thumbnailCacheService = new ThumbnailCacheService(_appDataService.UserDataDirectory);
         InitializeComponent();
@@ -49,6 +63,8 @@ public partial class SettingsWindow : Window
         Classes.Add(isMacOS ? "mac-shell" : "windows-shell");
         ApplyPlatformChrome(isMacOS);
         LoadSettingsIntoControls();
+        LoadFileAssociationOptions();
+        LoadExplorerContextMenuState();
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         Opened += OnOpened;
         Closed += OnClosed;
@@ -65,14 +81,10 @@ public partial class SettingsWindow : Window
             MinHeight = 480;
             SettingsRootGrid.ColumnDefinitions = new ColumnDefinitions("190,*");
             DataFolderOpenButton.Content = "在 Finder 中打开";
-            CbzAssociationDescription.Text = "允许从 Finder 直接用 ComicPlate 打开 .cbz 文件。";
-            ZipAssociationDescription.Text = "允许从 Finder 直接用 ComicPlate 打开 .zip 漫画压缩包。图片格式暂不进入文件关联设置。";
             return;
         }
 
         DataFolderOpenButton.Content = "在资源管理器中打开";
-        CbzAssociationDescription.Text = "允许从资源管理器直接用 ComicPlate 打开 .cbz 文件。";
-        ZipAssociationDescription.Text = "允许从资源管理器直接用 ComicPlate 打开 .zip 漫画压缩包。图片格式暂不进入文件关联设置。";
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
@@ -159,6 +171,31 @@ public partial class SettingsWindow : Window
         e.Handled = true;
     }
 
+    private void OnAssociateFileClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Control control || control.Tag is not string extension)
+        {
+            return;
+        }
+
+        var result = _fileAssociationService.Associate(extension);
+        LoadFileAssociationOptions();
+        SetAssociationStatus(extension, result.Message);
+        e.Handled = true;
+    }
+
+    private void OnExplorerContextMenuClick(object? sender, RoutedEventArgs e)
+    {
+        var result = _explorerContextMenuService.SetEnabled(ExplorerContextMenuCheckBox.IsChecked == true);
+        LoadExplorerContextMenuState();
+        if (!result.Succeeded)
+        {
+            ExplorerContextMenuStatusText.Text = result.Message;
+        }
+
+        e.Handled = true;
+    }
+
     private void SelectNav(Button selectedButton)
     {
         var navButtons = new[]
@@ -206,8 +243,6 @@ public partial class SettingsWindow : Window
             PaletteRow,
             DataFolderRow,
             ThumbnailCacheRow,
-            CbzAssociationRow,
-            ZipAssociationRow,
             ShortcutsRow,
         };
 
@@ -282,6 +317,56 @@ public partial class SettingsWindow : Window
         {
             _isLoadingSettings = false;
         }
+    }
+
+    private void LoadFileAssociationOptions()
+    {
+        var options = _fileAssociationService.GetSupportedAssociations();
+        foreach (var option in options)
+        {
+            SetAssociationOption(option.Extension, option.CanAssociate, option.IsAssociated);
+        }
+
+        AssociationStatusText.Text = options.Any(option => !option.CanAssociate)
+            ? options.First(option => !option.CanAssociate).StatusText
+            : "";
+    }
+
+    private void LoadExplorerContextMenuState()
+    {
+        var state = _explorerContextMenuService.GetState();
+        ExplorerContextMenuSection.IsVisible = state.IsSupported;
+        ExplorerContextMenuCheckBox.IsChecked = state.IsRegistered;
+        ExplorerContextMenuStatusText.Text = state.StatusText;
+    }
+
+    private void SetAssociationOption(string extension, bool canAssociate, bool isAssociated)
+    {
+        var checkBox = GetAssociationCheckBox(extension);
+        if (checkBox is null)
+        {
+            return;
+        }
+
+        checkBox.IsEnabled = canAssociate;
+        checkBox.IsChecked = isAssociated;
+    }
+
+    private void SetAssociationStatus(string extension, string status)
+    {
+        AssociationStatusText.Text = status;
+    }
+
+    private CheckBox? GetAssociationCheckBox(string extension)
+    {
+        return extension.ToLowerInvariant() switch
+        {
+            ".cbz" => CbzAssociationCheckBox,
+            ".zip" => ZipAssociationCheckBox,
+            ".cbr" => CbrAssociationCheckBox,
+            ".rar" => RarAssociationCheckBox,
+            _ => null
+        };
     }
 
     private void SaveSettingsFromControls()
