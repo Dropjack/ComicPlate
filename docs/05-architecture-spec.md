@@ -76,9 +76,11 @@ public sealed record BookEntry(
 - PageList 是当前 Book 内的 Page 列表。
 - BookEntry 描述当前打开范围，不描述书架中的一项。
 - Book 打开和 Page 收集可以分开：ReadableUnitOpener 负责按路径选择 IBookSource，IBookSource 负责收集 Page。
-- 文件夹 Book 默认递归收集内部图片，并按相对路径自然排序。
+- 当前最新口径以 `02-scope-cut.md`、`03-behavior-spec.md` 和 `06-todo-list.md` 为准：文件夹打开后只扫描当前层。
+- 文件夹 Book 只收集当前层直接图片，并按文件名自然排序；不递归收集子文件夹图片。
+- 当前层子文件夹和 ZIP/CBZ 作为 Context Shelf entry 暴露，用户点击后才进入该容器或把该 ZIP/CBZ 单独作为 Book 打开。
 - ZIP/CBZ 内部子目录属于这本 ZIP/CBZ Book 的 Page 结构。
-- 文件夹里的 ZIP/CBZ 串联阅读属于 MVP：它仍然生成同一个 Book 的 Page 流，不生成书架。
+- 文件夹内 ZIP/CBZ 串联阅读不是 MVP；它已经调整为 V1 候选，不应在当前架构里自动生成同一个 Book 的 Page 流。
 
 接口草案：
 
@@ -429,10 +431,11 @@ ComicPlate 的窗口级图标使用“源文件清楚、运行时轻量”的规
 1. Avalonia 窗口启动。
 2. 点击打开文件夹、ZIP/CBZ 或单张图片。
 3. 把用户选择的路径作为 Book 打开。
-4. 收集并自然排序 Page，包括文件夹内 ZIP/CBZ 合集。
-5. 横向阅读带显示当前页，当前页居中。
-6. 左右键按阅读方向翻页。
-7. 底部进度条显示当前阅读位置在阅读带里的相对位置。
+4. 文件夹只收集当前层直接图片并自然排序；当前层子文件夹和 ZIP/CBZ 进入 Context Shelf，不自动串联为合集。
+5. ZIP/CBZ 作为单独 Book 打开时，收集并自然排序压缩包内图片。
+6. 横向阅读带显示当前页，当前页居中。
+7. 左右键按阅读方向翻页。
+8. 底部进度条显示当前阅读位置在阅读带里的相对位置。
 
 这条线跑通前，不做设置、不做视觉抛光、不做漫画库管理。
 
@@ -440,7 +443,7 @@ ComicPlate 的窗口级图标使用“源文件清楚、运行时轻量”的规
 
 1. 双页模式。
 2. 阅读方向设置 UI。
-3. 基础页面列表。
+3. 当前容器 Context Shelf。
 4. 阅读进度保存。
 5. 多窗口：每个窗口是一套完整独立阅读器。
 
