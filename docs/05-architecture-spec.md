@@ -56,7 +56,7 @@ MVP 可以先用单项目起步，但命名空间按上述边界分组。等代�
 - 为该路径创建 BookEntry 和对应 IBookSource。
 - 支持文件夹作为 Book。
 - 支持 `.zip` 和 `.cbz` 作为 Book。
-- 后续支持 RAR/CBR/7z/CB7 作为 Book。
+- 当前 V1 只计划新增 RAR/CBR 作为 Book；7z/CB7 和嵌套压缩包不在当前 V1。
 - 支持单张图片作为单页 Book。
 - 不做漫画库扫描，不自动拆分作品，不把子文件夹识别为独立书籍。
 - 不修改用户文件。
@@ -80,6 +80,7 @@ public sealed record BookEntry(
 - 文件夹 Book 只收集当前层直接图片，并按文件名自然排序；不递归收集子文件夹图片。
 - 当前层子文件夹和 ZIP/CBZ 作为 Context Shelf entry 暴露，用户点击后才进入该容器或把该 ZIP/CBZ 单独作为 Book 打开。
 - ZIP/CBZ 内部子目录属于这本 ZIP/CBZ Book 的 Page 结构。
+- RAR/CBR 实现后也应复用同一套 Book/Page/PageEntry 语义：只读取图片条目，按逻辑路径自然排序，不修改用户压缩包。
 - 文件夹内 ZIP/CBZ 串联阅读不是 MVP；它已经调整为 V1 候选，不应在当前架构里自动生成同一个 Book 的 Page 流。
 
 接口草案：
