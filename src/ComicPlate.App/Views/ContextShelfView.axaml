@@ -18,7 +18,7 @@
             Background="Transparent"
             BorderBrush="{StaticResource BorderBrushSoft}"
             BorderThickness="0">
-        <Grid RowDefinitions="40,*">
+        <Grid RowDefinitions="40,*,58">
             <Border Grid.Row="0"
                     BorderBrush="{StaticResource BorderBrushSoft}"
                     BorderThickness="0,0,0,1">
@@ -103,6 +103,11 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
+
+            <Border Grid.Row="2"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="{StaticResource BorderBrushSoft}"
+                    BorderThickness="0,1,0,0" />
         </Grid>
     </Border>
 </UserControl>

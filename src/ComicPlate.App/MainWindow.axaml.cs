@@ -22,6 +22,8 @@ public partial class MainWindow : Window
     private AppSettings _appSettings;
     private readonly string? _startupPath;
     private SettingsWindow? _settingsWindow;
+    private WindowState _windowStateBeforeFullscreen = WindowState.Normal;
+    private bool _isFullscreen;
 
     public MainWindow()
         : this(null, null)
@@ -170,6 +172,13 @@ public partial class MainWindow : Window
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
+        if (_isFullscreen && e.Key == Key.Escape)
+        {
+            ExitFullscreen();
+            e.Handled = true;
+            return;
+        }
+
         switch (ShortcutRegistry.GetAction(e))
         {
             case ShortcutActionId.NextPage:
@@ -217,7 +226,7 @@ public partial class MainWindow : Window
                 e.Handled = true;
                 break;
             case ShortcutActionId.ToggleFullscreen:
-                // Reserved for fullscreen. Fullscreen UI behavior will be implemented in its own step.
+                ToggleFullscreen();
                 e.Handled = true;
                 break;
         }
@@ -307,5 +316,70 @@ public partial class MainWindow : Window
     {
         _appSettings = _settingsService.Load();
         CanCreateNewWindow = _appSettings.AllowMultipleWindows;
+    }
+
+    private void ToggleFullscreen()
+    {
+        if (_isFullscreen)
+        {
+            ExitFullscreen();
+            return;
+        }
+
+        EnterFullscreen();
+    }
+
+    private void EnterFullscreen()
+    {
+        if (_isFullscreen)
+        {
+            return;
+        }
+
+        _isFullscreen = true;
+        _windowStateBeforeFullscreen = WindowState;
+        WindowState = WindowState.FullScreen;
+        ApplyFullscreenChrome();
+    }
+
+    private void ExitFullscreen()
+    {
+        if (!_isFullscreen)
+        {
+            return;
+        }
+
+        _isFullscreen = false;
+        WindowState = _windowStateBeforeFullscreen == WindowState.FullScreen
+            ? WindowState.Normal
+            : _windowStateBeforeFullscreen;
+        ApplyFullscreenChrome();
+    }
+
+    private void ApplyFullscreenChrome()
+    {
+        var isMacOS = OperatingSystem.IsMacOS();
+
+        LeftFloatingPanel.IsVisible = !_isFullscreen;
+        MainShell.ColumnDefinitions = _isFullscreen
+            ? new ColumnDefinitions("0,*")
+            : isMacOS
+                ? new ColumnDefinitions("Auto,*")
+                : new ColumnDefinitions("64,*");
+        ReaderLayoutGrid.ColumnDefinitions = _isFullscreen
+            ? isMacOS
+                ? new ColumnDefinitions("*")
+                : new ColumnDefinitions("0,*")
+            : isMacOS
+                ? new ColumnDefinitions("*")
+                : new ColumnDefinitions("Auto,*");
+        ReaderStageGrid.RowDefinitions = _isFullscreen
+            ? new RowDefinitions("0,*")
+            : isMacOS
+                ? new RowDefinitions("0,*")
+                : new RowDefinitions("40,*");
+        Grid.SetColumn(ReaderStageGrid, isMacOS ? 0 : 1);
+        WindowsShelfHost.IsVisible = !_isFullscreen && !isMacOS;
+        ReaderSurface.SetFullscreenChromeHidden(_isFullscreen);
     }
 }

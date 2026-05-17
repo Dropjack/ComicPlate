@@ -249,7 +249,8 @@
                                VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
                 </Border>
-                <views:ReaderSurfaceView Grid.Row="1" />
+                <views:ReaderSurfaceView x:Name="ReaderSurface"
+                                         Grid.Row="1" />
             </Grid>
         </Grid>
     </Grid>

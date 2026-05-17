@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:ComicPlate.App.Views"
              x:Class="ComicPlate.App.Views.ReaderSurfaceView">
     <UserControl.Styles>
         <Style Selector="UserControl.mac-shell Border.reader-viewport">
@@ -16,7 +17,8 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="*,34,34">
+    <Grid x:Name="ReaderSurfaceRoot"
+          RowDefinitions="*,34,34">
         <Border Grid.Row="0"
                 Classes="reader-viewport"
                 Background="{StaticResource ReaderStage}"
@@ -76,6 +78,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </Canvas>
+
                 <Border Background="{StaticResource PanelBrush}"
                         BorderBrush="{StaticResource BorderBrushSoft}"
                         BorderThickness="1"
@@ -89,11 +92,76 @@
                                FontSize="15"
                                TextAlignment="Center" />
                 </Border>
+
+                <Border x:Name="FullscreenShelfOverlay"
+                        ZIndex="40"
+                        IsVisible="False"
+                        Width="300"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Stretch"
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="0,0,1,0">
+                    <views:ContextShelfView />
+                </Border>
+
+                <Border x:Name="FullscreenBottomOverlay"
+                        ZIndex="50"
+                        IsVisible="False"
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="0,1,0,0"
+                        Height="58"
+                        VerticalAlignment="Bottom"
+                        HorizontalAlignment="Stretch">
+                    <Grid RowDefinitions="22,36">
+                        <Grid Grid.Row="0"
+                              Background="Transparent"
+                              PointerPressed="OnProgressPointerPressed"
+                              PointerMoved="OnProgressPointerMoved"
+                              PointerReleased="OnProgressPointerReleased"
+                              PointerCaptureLost="OnProgressPointerCaptureLost">
+                            <ProgressBar Minimum="0"
+                                         Maximum="{Binding Reader.LastPageProgressIndex}"
+                                         Value="{Binding Reader.CurrentPageProgressIndex}"
+                                         Height="5"
+                                         VerticalAlignment="Center"
+                                         IsHitTestVisible="False" />
+                        </Grid>
+                        <StackPanel Grid.Row="1"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Spacing="8">
+                            <Button Click="OnVisualLeftClick"
+                                    Padding="12,3"
+                                    CornerRadius="4"
+                                    ToolTip.Tip="上一阅读帧">
+                                <PathIcon Data="{StaticResource NavLeftIcon}"
+                                          Width="18"
+                                          Height="18" />
+                            </Button>
+                            <Button Content="{Binding Reader.PageText}"
+                                    IsEnabled="False"
+                                    Padding="14,3"
+                                    CornerRadius="4" />
+                            <Button Click="OnVisualRightClick"
+                                    Padding="12,3"
+                                    CornerRadius="4"
+                                    ToolTip.Tip="下一阅读帧">
+                                <PathIcon Data="{StaticResource NavRightIcon}"
+                                          Width="18"
+                                          Height="18" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
             </Grid>
         </Border>
 
         <Border Grid.Row="1"
                 Grid.RowSpan="2"
+                x:Name="BottomBubble"
                 Classes="bottom-bubble"
                 IsVisible="False"
                 Background="{StaticResource PanelBrush}"
@@ -103,6 +171,7 @@
                 Margin="8,4,8,8" />
 
         <Border Grid.Row="1"
+                x:Name="BottomButtonRow"
                 Classes="reader-bottom-row"
                 Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource BorderBrushSoft}"
@@ -135,6 +204,7 @@
         </Border>
 
         <Border Grid.Row="2"
+                x:Name="BottomProgressRow"
                 Classes="reader-bottom-row"
                 Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource BorderBrushSoft}"
@@ -150,6 +220,7 @@
                       Margin="14,0"
                       Background="Transparent"
                       PointerPressed="OnProgressPointerPressed"
+                      PointerMoved="OnProgressPointerMoved"
                       PointerReleased="OnProgressPointerReleased"
                       PointerCaptureLost="OnProgressPointerCaptureLost">
                     <ProgressBar Minimum="0"
