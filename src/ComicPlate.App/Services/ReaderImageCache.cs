@@ -5,12 +5,18 @@ namespace ComicPlate.App.Services;
 
 public sealed class ReaderImageCache : IDisposable
 {
+    public const long DefaultBudgetBytes = 384L * 1024 * 1024;
+
     private readonly Dictionary<int, CacheEntry> _cache = new();
     private readonly ImagePageLoader _imagePageLoader;
+    private readonly long _budgetBytes;
+    private long _accessClock;
+    private long _estimatedBytes;
 
-    public ReaderImageCache(ImagePageLoader imagePageLoader)
+    public ReaderImageCache(ImagePageLoader imagePageLoader, long budgetBytes = DefaultBudgetBytes)
     {
         _imagePageLoader = imagePageLoader;
+        _budgetBytes = Math.Max(0, budgetBytes);
     }
 
     public async Task<Bitmap> GetOrLoadAsync(
@@ -22,6 +28,7 @@ public sealed class ReaderImageCache : IDisposable
         if (_cache.TryGetValue(pageIndex, out var cachedEntry)
             && cachedEntry.Request.CanReuseFor(request))
         {
+            cachedEntry.MarkAccessed(GetNextAccessOrder());
             return cachedEntry.Image;
         }
 
@@ -38,23 +45,38 @@ public sealed class ReaderImageCache : IDisposable
 
         if (_cache.TryGetValue(pageIndex, out var oldEntry))
         {
+            _estimatedBytes -= oldEntry.EstimatedBytes;
             oldEntry.Image.Dispose();
         }
 
-        _cache[pageIndex] = new CacheEntry(image, request);
+        var nextEntry = new CacheEntry(image, request, request.EstimatedBytes, GetNextAccessOrder());
+        _cache[pageIndex] = nextEntry;
+        _estimatedBytes += nextEntry.EstimatedBytes;
         return image;
     }
 
-    public void TrimTo(IReadOnlySet<int> activeIndexes)
+    public void TrimToBudget(IReadOnlySet<int> activeIndexes, int currentPageIndex)
     {
-        var staleIndexes = _cache.Keys
-            .Where(index => !activeIndexes.Contains(index))
-            .ToArray();
-
-        foreach (var index in staleIndexes)
+        if (_estimatedBytes <= _budgetBytes)
         {
-            _cache[index].Image.Dispose();
-            _cache.Remove(index);
+            return;
+        }
+
+        var removableIndexes = ReaderImageCacheBudgetPolicy.SelectRemovalOrder(
+            _cache.Select(entry => new ReaderImageCacheBudgetCandidate(
+                entry.Key,
+                entry.Value.LastAccessOrder)),
+            activeIndexes,
+            currentPageIndex);
+
+        foreach (var index in removableIndexes)
+        {
+            if (_estimatedBytes <= _budgetBytes)
+            {
+                return;
+            }
+
+            Remove(index);
         }
     }
 
@@ -66,6 +88,7 @@ public sealed class ReaderImageCache : IDisposable
         }
 
         _cache.Clear();
+        _estimatedBytes = 0;
     }
 
     public void Dispose()
@@ -73,5 +96,47 @@ public sealed class ReaderImageCache : IDisposable
         Clear();
     }
 
-    private sealed record CacheEntry(Bitmap Image, ReaderImageDecodeRequest Request);
+    private long GetNextAccessOrder()
+    {
+        return ++_accessClock;
+    }
+
+    private void Remove(int pageIndex)
+    {
+        if (!_cache.Remove(pageIndex, out var entry))
+        {
+            return;
+        }
+
+        _estimatedBytes -= entry.EstimatedBytes;
+        entry.Image.Dispose();
+    }
+
+    private sealed class CacheEntry
+    {
+        public CacheEntry(
+            Bitmap image,
+            ReaderImageDecodeRequest request,
+            long estimatedBytes,
+            long lastAccessOrder)
+        {
+            Image = image;
+            Request = request;
+            EstimatedBytes = estimatedBytes;
+            LastAccessOrder = lastAccessOrder;
+        }
+
+        public Bitmap Image { get; }
+
+        public ReaderImageDecodeRequest Request { get; }
+
+        public long EstimatedBytes { get; }
+
+        public long LastAccessOrder { get; private set; }
+
+        public void MarkAccessed(long accessOrder)
+        {
+            LastAccessOrder = accessOrder;
+        }
+    }
 }

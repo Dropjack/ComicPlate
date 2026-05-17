@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Threading;
 using ComicPlate.App.Controllers;
 using ComicPlate.App.Services;
 using ComicPlate.Core.Books;
@@ -10,10 +11,12 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 {
     private const int NeighborPageLimit = 5;
     private const int ReaderViewportResizeCommitDelayMilliseconds = 140;
-    private const double ReaderStripItemHorizontalMargin = 8;
     private const double ReaderFrameHorizontalPadding = 28;
-    private const double ReaderFrameVerticalPadding = 24;
+    private const double ReaderFrameVerticalPadding = 0;
     private const double ReaderViewportSizeEpsilon = 0.5;
+    private const double ReaderTransitionDistanceRatio = 0.32;
+    private static readonly TimeSpan ReaderTransitionDuration = TimeSpan.FromMilliseconds(150);
+    private static readonly TimeSpan ReaderTransitionFrameInterval = TimeSpan.FromMilliseconds(16);
 
     private readonly PageImageInfoLoader _pageImageInfoLoader = new();
     private readonly ReaderFrameBuilder _readerFrameBuilder = new();
@@ -29,13 +32,22 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     private bool _hasReaderViewportSize;
     private int? _progressPreviewPageIndex;
     private string? _progressPreviewPageText;
+    private readonly DispatcherTimer _readerTransitionTimer;
     private CancellationTokenSource? _readerStripImageLoadCts;
     private int _readerStripRefreshVersion;
     private CancellationTokenSource? _readerViewportRefreshCts;
+    private double _readerTransitionStartOffset;
+    private double _readerTransitionOffset;
+    private DateTimeOffset _readerTransitionStartedAt;
 
     public ReaderSurfaceViewModel(ReaderImageCache readerImageCache)
     {
         _readerImageCache = readerImageCache;
+        _readerTransitionTimer = new DispatcherTimer
+        {
+            Interval = ReaderTransitionFrameInterval,
+        };
+        _readerTransitionTimer.Tick += OnReaderTransitionTimerTick;
 
         NextPageCommand = new RelayCommand(NextPage, CanGoNextFrame);
         PreviousPageCommand = new RelayCommand(PreviousPage, CanGoPreviousFrame);
@@ -141,7 +153,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _currentLogicalPath, value);
     }
 
-    public double ReaderStripTranslateX => _readerStripController.TranslateX;
+    public double ReaderStripTranslateX => _readerStripController.TranslateX + _readerTransitionOffset;
 
     public ReadingDirection ReadingDirection => _readerState.ReadingDirection;
 
@@ -250,6 +262,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     public void BeginReaderStripDrag()
     {
+        StopReaderTransition();
         _readerStripController.BeginDrag();
         UpdateReaderStripTransform();
     }
@@ -348,10 +361,11 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             _readerStripController.GetPageScreenCenter(_readerState.CurrentPageIndex, ReaderStripTranslateX)));
     }
 
-    private Task RefreshReaderStripAsync(ReaderStripPlacement? placement = null)
+    private Task RefreshReaderStripAsync(ReaderStripPlacement? placement = null, int transitionDirection = 0)
     {
         var refreshVersion = ++_readerStripRefreshVersion;
         CancelReaderStripImageLoads();
+        StopReaderTransition();
 
         if (!_readerState.HasPages)
         {
@@ -413,11 +427,12 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         }
 
         ReplaceReaderStripItems(nextItems, placement);
-        _readerImageCache.TrimTo(activeIndexes);
+        _readerImageCache.TrimToBudget(activeIndexes, _readerState.CurrentPageIndex);
         StartReaderStripImageLoad(nextItems, refreshVersion);
         UpdatePageStatus();
         ReadingStateChanged?.Invoke();
         RaiseCommandStates();
+        StartReaderTransition(transitionDirection);
         return Task.CompletedTask;
     }
 
@@ -524,8 +539,11 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        var previousPageIndex = _readerState.CurrentPageIndex;
         _readerState.GoToFrameStartPage(_readerFrames[nextFrameIndex].PageIndexes.Min());
-        _ = RefreshReaderStripAsync();
+        _ = RefreshReaderStripAsync(transitionDirection: GetReaderTransitionDirection(
+            previousPageIndex,
+            _readerState.CurrentPageIndex));
     }
 
     private void GoToProgressPage(int pageIndex)
@@ -536,8 +554,11 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        var previousPageIndex = _readerState.CurrentPageIndex;
         _readerState.GoToFrameStartPage(landingPageIndex);
-        _ = RefreshReaderStripAsync();
+        _ = RefreshReaderStripAsync(transitionDirection: GetReaderTransitionDirection(
+            previousPageIndex,
+            landingPageIndex));
     }
 
     private void VisualLeft()
@@ -729,6 +750,8 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        StopReaderTransition();
+        _readerTransitionTimer.Tick -= OnReaderTransitionTimerTick;
         CancelReaderViewportRefresh();
         CancelReaderStripImageLoads();
     }
@@ -750,7 +773,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             .ToArray();
         var pageExtents = ReaderStripItems.ToDictionary(
             item => item.PageIndex,
-            item => item.DisplayWidth + (ReaderStripItemHorizontalMargin * 2));
+            item => item.DisplayWidth);
         var currentGroupPageIndexes = _readerFrames
             .FirstOrDefault(frame => frame.IsCurrent)
             ?.PageIndexes ?? _readerState.CurrentReadingGroupPageIndexes;
@@ -803,6 +826,74 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     private void UpdateReaderStripTransform()
     {
         OnPropertyChanged(nameof(ReaderStripTranslateX));
+    }
+
+    private int GetReaderTransitionDirection(int previousPageIndex, int targetPageIndex)
+    {
+        if (previousPageIndex == targetPageIndex)
+        {
+            return 0;
+        }
+
+        var logicalDirection = Math.Sign(targetPageIndex - previousPageIndex);
+        return _readerState.ReadingDirection == ReadingDirection.RightToLeft
+            ? -logicalDirection
+            : logicalDirection;
+    }
+
+    private void StartReaderTransition(int direction)
+    {
+        if (direction == 0 || _readerStripController.ViewportWidth <= 0)
+        {
+            return;
+        }
+
+        var distance = Math.Clamp(
+            _readerStripController.ViewportWidth * ReaderTransitionDistanceRatio,
+            120,
+            360);
+        _readerTransitionStartOffset = direction > 0 ? distance : -distance;
+        _readerTransitionOffset = _readerTransitionStartOffset;
+        _readerTransitionStartedAt = DateTimeOffset.UtcNow;
+        UpdateReaderStripTransform();
+        _readerTransitionTimer.Start();
+    }
+
+    private void StopReaderTransition()
+    {
+        _readerTransitionTimer.Stop();
+        if (Math.Abs(_readerTransitionOffset) <= 0.001)
+        {
+            _readerTransitionOffset = 0;
+            return;
+        }
+
+        _readerTransitionOffset = 0;
+        UpdateReaderStripTransform();
+    }
+
+    private void OnReaderTransitionTimerTick(object? sender, EventArgs e)
+    {
+        var elapsed = DateTimeOffset.UtcNow - _readerTransitionStartedAt;
+        var progress = Math.Clamp(
+            elapsed.TotalMilliseconds / ReaderTransitionDuration.TotalMilliseconds,
+            0,
+            1);
+        if (progress >= 1)
+        {
+            StopReaderTransition();
+            return;
+        }
+
+        var easedProgress = EaseOutCubic(progress);
+        _readerTransitionOffset = _readerTransitionStartOffset * (1 - easedProgress);
+        UpdateReaderStripTransform();
+    }
+
+    private static double EaseOutCubic(double progress)
+    {
+        var inverse = 1 - progress;
+        return 1 - (inverse * inverse * inverse);
     }
 
     private void UpdatePageStatus()

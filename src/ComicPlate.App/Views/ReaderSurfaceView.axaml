@@ -42,7 +42,7 @@
                             <DataTemplate>
                                 <Grid Width="{Binding DisplayWidth}"
                                       Height="{Binding DisplayHeight}"
-                                      Margin="8,12"
+                                      Margin="0"
                                       Opacity="{Binding SlotOpacity}">
                                     <Border Background="{StaticResource ReaderPageSurface}"
                                             BorderBrush="{StaticResource BorderBrushSoft}"

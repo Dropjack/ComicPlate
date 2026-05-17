@@ -45,7 +45,7 @@ public sealed class ReaderStripItemViewModel : ViewModelBase
         private set => SetProperty(ref _displayHeight, value);
     }
 
-    public double SlotOpacity => IsCurrent ? 1.0 : 0.92;
+    public double SlotOpacity => 1.0;
 
     public Bitmap? Image
     {

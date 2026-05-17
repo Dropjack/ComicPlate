@@ -41,6 +41,25 @@ public sealed class VirtualizedReaderStripTests
     }
 
     [Fact]
+    public void CreatesContiguousLayoutWithoutImplicitGaps()
+    {
+        var strip = new VirtualizedReaderStrip(neighborPageLimit: 2);
+        var window = new[] { 4, 3, 2 };
+        var extents = new Dictionary<int, double>
+        {
+            [4] = 90,
+            [3] = 120,
+            [2] = 80,
+        };
+
+        var layout = strip.CreateLayout(window, currentPageIndex: 3, extents);
+
+        Assert.Equal(0, layout[0].StartX);
+        Assert.Equal(90, layout[1].StartX);
+        Assert.Equal(210, layout[2].StartX);
+    }
+
+    [Fact]
     public void CentersCurrentGroup()
     {
         var strip = new VirtualizedReaderStrip(neighborPageLimit: 2);
