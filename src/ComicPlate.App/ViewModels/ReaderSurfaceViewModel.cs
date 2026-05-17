@@ -239,8 +239,8 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         }
 
         var targetPageIndex = _progressPreviewPageIndex ?? RatioToPageIndex(visualRatio);
-        ClearProgressPreview();
         GoToProgressPage(targetPageIndex);
+        ClearProgressPreview();
     }
 
     public void CancelProgressPreview()
