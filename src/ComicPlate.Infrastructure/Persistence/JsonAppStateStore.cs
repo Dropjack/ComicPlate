@@ -119,6 +119,9 @@ public sealed class JsonAppStateStore
             WriteJson(SessionPath, new SessionState(
                 Version,
                 new ReadableUnitState(normalizedPath, book.DisplayName, book.SourceKind, pageIndex),
+                navigationHistory.Current?.SourceKind == BookSourceKind.Collection
+                    ? navigationHistory.Current
+                    : null,
                 navigationHistory.BackStack,
                 savedAt));
 
@@ -162,6 +165,9 @@ public sealed class JsonAppStateStore
             WriteJson(SessionPath, new SessionState(
                 Version,
                 new ReadableUnitState(normalizedPath, book.DisplayName, book.SourceKind, pageIndex),
+                navigationHistory.Current?.SourceKind == BookSourceKind.Collection
+                    ? navigationHistory.Current
+                    : null,
                 navigationHistory.BackStack,
                 DateTimeOffset.UtcNow));
         }

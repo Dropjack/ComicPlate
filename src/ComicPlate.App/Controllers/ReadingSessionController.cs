@@ -19,6 +19,10 @@ public sealed class ReadingSessionController
 
     public bool CanGoBack => _navigationHistory.CanGoBack;
 
+    public NavigationEntry? CurrentShelf => _navigationHistory.Current?.SourceKind == BookSourceKind.Collection
+        ? _navigationHistory.Current
+        : null;
+
     public bool CanOpenLastReadingPosition => _lastSession.Current is not null;
 
     public string LastReadingPositionText => _lastSession.Current is null
@@ -37,7 +41,11 @@ public sealed class ReadingSessionController
 
     public void StartAtBook(BookEntry book)
     {
-        _navigationHistory.StartAt(CreateNavigationEntry(book));
+        var parent = CreateParentCollectionEntry(book.Path);
+        if (parent is not null)
+        {
+            _navigationHistory.StartAt(parent);
+        }
     }
 
     public void NavigateToContentFolder(string folderPath)
@@ -47,14 +55,12 @@ public sealed class ReadingSessionController
 
     public void NavigateToBook(BookEntry book)
     {
-        var entry = CreateNavigationEntry(book);
-        if (_navigationHistory.Current?.SourceKind == BookSourceKind.Collection)
+        if (_navigationHistory.Current is not null)
         {
-            _navigationHistory.NavigateTo(entry);
             return;
         }
 
-        _navigationHistory.ReplaceCurrent(entry);
+        StartAtBook(book);
     }
 
     public NavigationEntry? Back()
@@ -70,8 +76,13 @@ public sealed class ReadingSessionController
             return null;
         }
 
-        var entry = new NavigationEntry(current.Path, current.DisplayName, current.SourceKind);
-        _navigationHistory.Restore(entry, _lastSession.BackStack);
+        var shelfCurrent = _lastSession.ShelfCurrent?.SourceKind == BookSourceKind.Collection
+            ? _lastSession.ShelfCurrent
+            : CreateParentCollectionEntry(current.Path);
+        if (shelfCurrent is not null)
+        {
+            _navigationHistory.Restore(shelfCurrent, _lastSession.BackStack);
+        }
         return current;
     }
 
@@ -101,14 +112,20 @@ public sealed class ReadingSessionController
         _lastSession = _stateStore.LoadSession();
     }
 
-    private static NavigationEntry CreateNavigationEntry(BookEntry book)
-    {
-        return new NavigationEntry(book.Path, book.DisplayName, book.SourceKind);
-    }
-
     private static NavigationEntry CreateNavigationEntry(string path, BookSourceKind sourceKind)
     {
         var displayName = Path.GetFileName(path);
         return new NavigationEntry(path, string.IsNullOrWhiteSpace(displayName) ? path : displayName, sourceKind);
+    }
+
+    private static NavigationEntry? CreateParentCollectionEntry(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        var parentPath = Directory.Exists(fullPath)
+            ? Directory.GetParent(fullPath)?.FullName
+            : Path.GetDirectoryName(fullPath);
+        return string.IsNullOrWhiteSpace(parentPath)
+            ? null
+            : CreateNavigationEntry(parentPath, BookSourceKind.Collection);
     }
 }

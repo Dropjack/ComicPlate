@@ -5,12 +5,14 @@ namespace ComicPlate.Infrastructure.Persistence;
 public sealed record SessionState(
     int Version,
     ReadableUnitState? Current,
+    NavigationEntry? ShelfCurrent,
     IReadOnlyList<NavigationEntry> BackStack,
     DateTimeOffset SavedAt)
 {
     public static SessionState Empty { get; } = new(
         Version: 1,
         Current: null,
+        ShelfCurrent: null,
         BackStack: Array.Empty<NavigationEntry>(),
         SavedAt: DateTimeOffset.MinValue);
 }

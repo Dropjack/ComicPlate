@@ -45,7 +45,7 @@ public sealed class ReadingSessionControllerTests : IDisposable
     }
 
     [Fact]
-    public void BackReturnsPreviousContentFolder()
+    public void OpeningBookDoesNotEnterBookInShelfNavigation()
     {
         var controller = CreateController();
         var folderPath = Path.Combine(_rootPath, "Series");
@@ -54,11 +54,29 @@ public sealed class ReadingSessionControllerTests : IDisposable
         controller.StartAtContentFolder(folderPath);
         controller.NavigateToBook(book);
 
+        Assert.False(controller.CanGoBack);
+        Assert.Equal(BookSourceKind.Collection, controller.CurrentShelf?.SourceKind);
+        Assert.Equal(Path.GetFullPath(folderPath), controller.CurrentShelf?.Path);
+    }
+
+    [Fact]
+    public void BackReturnsPreviousShelfCollectionWithoutReaderBook()
+    {
+        var controller = CreateController();
+        var rootPath = Path.Combine(_rootPath, "Root");
+        var seriesPath = Path.Combine(rootPath, "Series");
+        var book = CreateBook(Path.Combine(seriesPath, "A.cbz"));
+
+        controller.StartAtContentFolder(rootPath);
+        controller.NavigateToContentFolder(seriesPath);
+        controller.NavigateToBook(book);
+
         var previous = controller.Back();
 
         Assert.NotNull(previous);
         Assert.Equal(BookSourceKind.Collection, previous.SourceKind);
-        Assert.Equal(Path.GetFullPath(folderPath), previous.Path);
+        Assert.Equal(Path.GetFullPath(rootPath), previous.Path);
+        Assert.Equal(Path.GetFullPath(rootPath), controller.CurrentShelf?.Path);
     }
 
     [Fact]
@@ -82,6 +100,7 @@ public sealed class ReadingSessionControllerTests : IDisposable
         Assert.NotNull(current);
         Assert.Equal(book.Path, current.Path);
         Assert.Equal(3, current.LastPageIndex);
+        Assert.Equal(Path.GetFullPath(_rootPath), restoredController.CurrentShelf?.Path);
     }
 
     [Fact]
@@ -154,6 +173,34 @@ public sealed class ReadingSessionControllerTests : IDisposable
         Assert.Equal(34, session.Current?.LastPageIndex);
     }
 
+    [Fact]
+    public void SaveReadingStateStoresShelfCurrentSeparatelyFromCurrentBook()
+    {
+        var controller = CreateController();
+        var rootPath = Path.Combine(_rootPath, "Root");
+        var seriesPath = Path.Combine(rootPath, "Series");
+        var book = CreateBook(Path.Combine(seriesPath, "A.cbz"));
+
+        controller.StartAtContentFolder(rootPath);
+        controller.NavigateToContentFolder(seriesPath);
+        controller.NavigateToBook(book);
+        controller.SaveReadingState(
+            book,
+            hasPages: true,
+            currentPageIndex: 2,
+            pageCount: 100,
+            ReadingDirection.RightToLeft,
+            ViewMode.SinglePage,
+            deleteCompletedProgress: false);
+
+        var session = new JsonAppStateStore(_rootPath).LoadSession();
+
+        Assert.Equal(book.Path, session.Current?.Path);
+        Assert.Equal(Path.GetFullPath(seriesPath), session.ShelfCurrent?.Path);
+        Assert.Single(session.BackStack);
+        Assert.Equal(Path.GetFullPath(rootPath), session.BackStack[0].Path);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_rootPath))
@@ -169,7 +216,9 @@ public sealed class ReadingSessionControllerTests : IDisposable
 
     private BookEntry CreateBook(string fileName)
     {
-        var path = Path.Combine(_rootPath, fileName);
-        return new BookEntry(path, fileName, BookSourceKind.Zip, path);
+        var path = Path.IsPathFullyQualified(fileName)
+            ? fileName
+            : Path.Combine(_rootPath, fileName);
+        return new BookEntry(path, Path.GetFileName(path), BookSourceKind.Zip, path);
     }
 }

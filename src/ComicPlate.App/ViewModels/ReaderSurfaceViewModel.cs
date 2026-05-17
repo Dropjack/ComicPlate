@@ -299,12 +299,10 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         ClearProgressPreview();
         CancelReaderViewportRefresh();
         CancelReaderStripImageLoads();
-        _readerImageCache.Clear();
         var pageInfoLoadVersion = ++_pageInfoLoadVersion;
         _pageImageInfos = CreateUnknownPageImageInfos(pages.Count);
         _readerState.LoadPages(pages, initialPageIndex);
         PageItems.Clear();
-        ReplaceReaderStripItems(new ObservableCollection<ReaderStripItemViewModel>());
 
         for (var index = 0; index < pages.Count; index++)
         {
@@ -313,12 +311,14 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
         if (pages.Count == 0)
         {
+            _readerImageCache.Clear();
+            ReplaceReaderStripItems(new ObservableCollection<ReaderStripItemViewModel>());
             UpdatePageStatus();
             RaiseCommandStates();
             return;
         }
 
-        await RefreshReaderStripAsync();
+        await RefreshReaderStripAsync(clearImageCacheBeforeReplace: true);
         _ = LoadPageImageInfosInBackgroundAsync(pages, pageInfoLoadVersion);
     }
 
@@ -361,7 +361,10 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             _readerStripController.GetPageScreenCenter(_readerState.CurrentPageIndex, ReaderStripTranslateX)));
     }
 
-    private Task RefreshReaderStripAsync(ReaderStripPlacement? placement = null, int transitionDirection = 0)
+    private Task RefreshReaderStripAsync(
+        ReaderStripPlacement? placement = null,
+        int transitionDirection = 0,
+        bool clearImageCacheBeforeReplace = false)
     {
         var refreshVersion = ++_readerStripRefreshVersion;
         CancelReaderStripImageLoads();
@@ -369,6 +372,11 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
         if (!_readerState.HasPages)
         {
+            if (clearImageCacheBeforeReplace)
+            {
+                _readerImageCache.Clear();
+            }
+
             ReplaceReaderStripItems(new ObservableCollection<ReaderStripItemViewModel>());
             UpdatePageStatus();
             return Task.CompletedTask;
@@ -389,6 +397,11 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         var currentFrame = _readerFrames.FirstOrDefault(frame => frame.IsCurrent);
         if (currentFrame is null)
         {
+            if (clearImageCacheBeforeReplace)
+            {
+                _readerImageCache.Clear();
+            }
+
             ReplaceReaderStripItems(new ObservableCollection<ReaderStripItemViewModel>());
             UpdatePageStatus();
             return Task.CompletedTask;
@@ -424,6 +437,11 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         if (refreshVersion != _readerStripRefreshVersion)
         {
             return Task.CompletedTask;
+        }
+
+        if (clearImageCacheBeforeReplace)
+        {
+            _readerImageCache.Clear();
         }
 
         ReplaceReaderStripItems(nextItems, placement);

@@ -329,16 +329,16 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private async Task StartAtBookAsync(BookEntry book)
     {
         _readingSession.StartAtBook(book);
-        ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
         RaiseCommandStates();
         await OpenBookAsync(book);
+        await OpenCurrentShelfAsync();
     }
 
     private async Task NavigateToContentFolderAsync(string folderPath)
     {
         _readingSession.NavigateToContentFolder(folderPath);
         RaiseCommandStates();
-        await OpenContentFolderAsync(folderPath, updateReaderFromDirectPages: false);
+        await OpenShelfCollectionAsync(folderPath);
     }
 
     private async Task NavigateToBookAsync(BookEntry book)
@@ -413,7 +413,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         RaiseCommandStates();
-        _ = OpenNavigationEntryAsync(entry);
+        _ = OpenShelfCollectionAsync(entry.Path);
     }
 
     private void OpenLastReadingPosition()
@@ -433,20 +433,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         PersistCurrentReadingState(deleteCompletedProgress: true);
         _currentBook = null;
         RaiseCommandStates();
-        await OpenNavigationEntryAsync(
-            new NavigationEntry(current.Path, current.DisplayName, current.SourceKind),
+        await OpenBookAsync(
+            new BookEntry(current.Path, current.DisplayName, current.SourceKind, current.Path),
             current.LastPageIndex);
-    }
-
-    private async Task OpenNavigationEntryAsync(NavigationEntry entry, int? initialPageIndex = null)
-    {
-        if (entry.SourceKind == BookSourceKind.Collection)
-        {
-            await OpenContentFolderAsync(entry.Path, updateReaderFromDirectPages: false);
-            return;
-        }
-
-        await OpenBookAsync(new BookEntry(entry.Path, entry.DisplayName, entry.SourceKind, entry.Path), initialPageIndex);
+        await OpenCurrentShelfAsync();
     }
 
     private void PersistCurrentReadingState(bool deleteCompletedProgress)
@@ -467,6 +457,45 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private void SetMessage(string message)
     {
         StatusMessage = message;
+    }
+
+    private async Task OpenCurrentShelfAsync()
+    {
+        var shelf = _readingSession.CurrentShelf;
+        if (shelf is null)
+        {
+            ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
+            return;
+        }
+
+        await OpenShelfCollectionAsync(shelf.Path);
+    }
+
+    private async Task OpenShelfCollectionAsync(string folderPath)
+    {
+        IsLoading = true;
+        ShelfTitle = Path.GetFileName(folderPath);
+
+        try
+        {
+            await LoadContentFolderAsync(folderPath, updateReaderFromDirectPages: false);
+            if (Reader.HasPages)
+            {
+                SetMessage("");
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
+            if (!Reader.HasPages)
+            {
+                SetMessage("ComicPlate could not read this folder.");
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     private void RaiseCommandStates()

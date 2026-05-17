@@ -23,6 +23,7 @@ public sealed class JsonAppStateStoreTests : IDisposable
         var session = new SessionState(
             1,
             new ReadableUnitState(@"D:\Manga\A.cbz", "A.cbz", BookSourceKind.Zip, 100),
+            new NavigationEntry(@"D:\Manga", "Manga", BookSourceKind.Collection),
             new[] { new NavigationEntry(@"D:\Manga", "Manga", BookSourceKind.Collection) },
             DateTimeOffset.Parse("2026-05-13T10:30:00Z"));
 
@@ -31,8 +32,36 @@ public sealed class JsonAppStateStoreTests : IDisposable
 
         Assert.Equal("A.cbz", loaded.Current?.DisplayName);
         Assert.Equal(100, loaded.Current?.LastPageIndex);
+        Assert.Equal("Manga", loaded.ShelfCurrent?.DisplayName);
         Assert.Single(loaded.BackStack);
         Assert.Equal("Manga", loaded.BackStack[0].DisplayName);
+    }
+
+    [Fact]
+    public void LoadsSessionWithoutShelfCurrentForBackwardCompatibility()
+    {
+        var store = new JsonAppStateStore(_tempDirectory);
+        File.WriteAllText(
+            Path.Combine(_tempDirectory, "session.json"),
+            """
+            {
+              "Version": 1,
+              "Current": {
+                "Path": "D:\\Manga\\A.cbz",
+                "DisplayName": "A.cbz",
+                "SourceKind": "Zip",
+                "LastPageIndex": 12
+              },
+              "BackStack": [],
+              "SavedAt": "2026-05-13T10:30:00Z"
+            }
+            """);
+
+        var loaded = store.LoadSession();
+
+        Assert.Equal("A.cbz", loaded.Current?.DisplayName);
+        Assert.Equal(12, loaded.Current?.LastPageIndex);
+        Assert.Null(loaded.ShelfCurrent);
     }
 
     [Fact]
