@@ -13,26 +13,37 @@ namespace ComicPlate.App.Views;
 public partial class SettingsWindow : Window
 {
     private const double CompactContentWidth = 640;
-    private readonly IPlatformLauncher _platformLauncher;
+    private readonly IAppDataService _appDataService;
     private readonly SettingsService _settingsService;
+    private readonly ThumbnailCacheService _thumbnailCacheService;
     private AppSettings _settings = AppSettings.Default;
     private bool _isLoadingSettings;
     private ShortcutWindow? _shortcutWindow;
 
     public SettingsWindow()
-        : this(new PlatformLauncher(), null)
+        : this(AppDataService.CreateDefault(), null)
     {
     }
 
     public SettingsWindow(IPlatformLauncher platformLauncher)
-        : this(platformLauncher, null)
+        : this(AppDataService.CreateDefault(platformLauncher), null)
     {
     }
 
     public SettingsWindow(IPlatformLauncher platformLauncher, SettingsService? settingsService)
+        : this(
+            settingsService is null
+                ? AppDataService.CreateDefault(platformLauncher)
+                : new AppDataService(settingsService.UserDataDirectory, platformLauncher),
+            settingsService)
     {
-        _platformLauncher = platformLauncher;
+    }
+
+    public SettingsWindow(IAppDataService appDataService, SettingsService? settingsService)
+    {
+        _appDataService = appDataService;
         _settingsService = settingsService ?? SettingsService.CreateDefault();
+        _thumbnailCacheService = new ThumbnailCacheService(_appDataService.UserDataDirectory);
         InitializeComponent();
         var isMacOS = OperatingSystem.IsMacOS();
         Classes.Add(isMacOS ? "mac-shell" : "windows-shell");
@@ -43,8 +54,6 @@ public partial class SettingsWindow : Window
         Closed += OnClosed;
         ContentScrollViewer.SizeChanged += OnContentScrollViewerSizeChanged;
     }
-
-    public string DataFolderPath => _settingsService.UserDataDirectory;
 
     private void ApplyPlatformChrome(bool isMacOS)
     {
@@ -139,7 +148,14 @@ public partial class SettingsWindow : Window
 
     private void OnOpenDataFolderClick(object? sender, RoutedEventArgs e)
     {
-        _platformLauncher.OpenFolder(DataFolderPath);
+        _appDataService.OpenUserDataDirectory();
+        e.Handled = true;
+    }
+
+    private void OnClearThumbnailCacheClick(object? sender, RoutedEventArgs e)
+    {
+        _thumbnailCacheService.Clear();
+        ThumbnailCacheStatusText.Text = "缩略图缓存已清理。";
         e.Handled = true;
     }
 

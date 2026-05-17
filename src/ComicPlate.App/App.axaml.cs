@@ -19,7 +19,9 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow(GetStartupPath(desktop.Args));
+            var settingsService = ComicPlate.Infrastructure.Persistence.SettingsService.CreateDefault();
+            var readerWindowService = new ReaderWindowService(settingsService);
+            desktop.MainWindow = new MainWindow(GetStartupPath(desktop.Args), settingsService, readerWindowService);
         }
 
         base.OnFrameworkInitializationCompleted();

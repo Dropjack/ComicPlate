@@ -18,6 +18,7 @@ internal static class ShortcutRegistry
         new ShortcutDefinition(ShortcutActionId.FirstPage, "第一页", "翻页与定位", Key.Home),
         new ShortcutDefinition(ShortcutActionId.LastPage, "最后一页", "翻页与定位", Key.End),
         new ShortcutDefinition(ShortcutActionId.OpenContent, "打开漫画", "功能操作", Key.O, UsesPlatformCommandModifier: true),
+        new ShortcutDefinition(ShortcutActionId.NewWindow, "新建窗口", "功能操作", Key.N, UsesPlatformCommandModifier: true),
         new ShortcutDefinition(ShortcutActionId.ToggleNavigationPane, "显示/隐藏 Shelf", "功能操作", Key.Tab),
         new ShortcutDefinition(ShortcutActionId.ToggleViewMode, "单页/双页切换", "功能操作", Key.Q),
         new ShortcutDefinition(ShortcutActionId.ToggleReadingDirection, "阅读方向", "功能操作", Key.R),

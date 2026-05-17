@@ -16,7 +16,7 @@ public sealed record AppSettings
 
     public bool RestoreProgress { get; init; } = true;
 
-    public bool AllowMultipleWindows { get; init; }
+    public bool AllowMultipleWindows { get; init; } = true;
 
     public bool RestoreWindowPlacement { get; init; } = true;
 

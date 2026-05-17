@@ -7,6 +7,7 @@ internal enum ShortcutActionId
     FirstPage,
     LastPage,
     OpenContent,
+    NewWindow,
     ToggleNavigationPane,
     ToggleViewMode,
     ToggleReadingDirection,

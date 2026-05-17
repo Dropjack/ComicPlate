@@ -84,6 +84,76 @@ public sealed class ReadingSessionControllerTests : IDisposable
         Assert.Equal(3, current.LastPageIndex);
     }
 
+    [Fact]
+    public void MultipleControllersForSameBookUseSingleProgressRecordWithLastWriterWinning()
+    {
+        var firstWindow = CreateController();
+        var secondWindow = CreateController();
+        var book = CreateBook("Shared.cbz");
+
+        firstWindow.StartAtBook(book);
+        secondWindow.StartAtBook(book);
+
+        firstWindow.SaveReadingState(
+            book,
+            hasPages: true,
+            currentPageIndex: 10,
+            pageCount: 100,
+            ReadingDirection.RightToLeft,
+            ViewMode.SinglePage,
+            deleteCompletedProgress: true);
+        secondWindow.SaveReadingState(
+            book,
+            hasPages: true,
+            currentPageIndex: 50,
+            pageCount: 100,
+            ReadingDirection.RightToLeft,
+            ViewMode.DoublePage,
+            deleteCompletedProgress: true);
+
+        var progressStore = new JsonAppStateStore(_rootPath).LoadProgress();
+        var normalizedPath = JsonAppStateStore.NormalizePath(book.Path);
+
+        Assert.Single(progressStore.Books);
+        Assert.True(progressStore.Books.ContainsKey(normalizedPath));
+        Assert.Equal(50, progressStore.Books[normalizedPath].LastPageIndex);
+        Assert.Equal(ViewMode.DoublePage, progressStore.Books[normalizedPath].ViewMode);
+    }
+
+    [Fact]
+    public void MultipleControllersUpdateSingleLastSessionWithLastWriterWinning()
+    {
+        var firstWindow = CreateController();
+        var secondWindow = CreateController();
+        var firstBook = CreateBook("A.cbz");
+        var secondBook = CreateBook("B.cbz");
+
+        firstWindow.StartAtBook(firstBook);
+        secondWindow.StartAtBook(secondBook);
+
+        firstWindow.SaveReadingState(
+            firstBook,
+            hasPages: true,
+            currentPageIndex: 12,
+            pageCount: 100,
+            ReadingDirection.RightToLeft,
+            ViewMode.SinglePage,
+            deleteCompletedProgress: true);
+        secondWindow.SaveReadingState(
+            secondBook,
+            hasPages: true,
+            currentPageIndex: 34,
+            pageCount: 100,
+            ReadingDirection.RightToLeft,
+            ViewMode.SinglePage,
+            deleteCompletedProgress: true);
+
+        var session = new JsonAppStateStore(_rootPath).LoadSession();
+
+        Assert.Equal(secondBook.Path, session.Current?.Path);
+        Assert.Equal(34, session.Current?.LastPageIndex);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_rootPath))

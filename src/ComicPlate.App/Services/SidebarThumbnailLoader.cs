@@ -11,6 +11,17 @@ public sealed class SidebarThumbnailLoader : IDisposable
     private const int MaxLoadedThumbnails = 96;
 
     private readonly Dictionary<string, Bitmap> _cache = new();
+    private readonly ThumbnailCacheService _diskCache;
+
+    public SidebarThumbnailLoader()
+        : this(new ThumbnailCacheService(AppDataService.CreateDefault().UserDataDirectory))
+    {
+    }
+
+    public SidebarThumbnailLoader(ThumbnailCacheService diskCache)
+    {
+        _diskCache = diskCache;
+    }
 
     public async Task LoadInitialThumbnailsAsync(
         IReadOnlyList<ContentListItemViewModel> items,
@@ -65,7 +76,10 @@ public sealed class SidebarThumbnailLoader : IDisposable
 
         return firstPage is null
             ? null
-            : await LoadPageThumbnailAsync($"zip:{book.Path}:{firstPage.LogicalPath}", firstPage, cancellationToken);
+            : await LoadPageThumbnailAsync(
+                $"zip:{book.Path}:{GetLastWriteTicks(book.Path)}:{firstPage.LogicalPath}",
+                firstPage,
+                cancellationToken);
     }
 
     private async Task<Bitmap?> LoadFolderThumbnailAsync(string folderPath, CancellationToken cancellationToken)
@@ -76,7 +90,10 @@ public sealed class SidebarThumbnailLoader : IDisposable
 
         return firstPage is null
             ? null
-            : await LoadPageThumbnailAsync($"folder:{folderPath}:{firstPage.LogicalPath}", firstPage, cancellationToken);
+            : await LoadPageThumbnailAsync(
+                $"folder:{folderPath}:{firstPage.LogicalPath}:{GetLastWriteTicks(Path.Combine(folderPath, firstPage.LogicalPath))}",
+                firstPage,
+                cancellationToken);
     }
 
     private async Task<Bitmap> LoadPageThumbnailAsync(string cacheKey, PageEntry page, CancellationToken cancellationToken)
@@ -86,9 +103,31 @@ public sealed class SidebarThumbnailLoader : IDisposable
             return cached;
         }
 
+        var diskCached = _diskCache.TryLoad(cacheKey);
+        if (diskCached is not null)
+        {
+            _cache[cacheKey] = diskCached;
+            return diskCached;
+        }
+
         await using var stream = await page.OpenStreamAsync(cancellationToken);
         var thumbnail = Bitmap.DecodeToWidth(stream, DecodeWidth);
         _cache[cacheKey] = thumbnail;
+        _diskCache.Save(cacheKey, thumbnail);
         return thumbnail;
+    }
+
+    private static long GetLastWriteTicks(string path)
+    {
+        try
+        {
+            return File.Exists(path)
+                ? File.GetLastWriteTimeUtc(path).Ticks
+                : 0;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return 0;
+        }
     }
 }

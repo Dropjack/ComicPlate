@@ -2,15 +2,27 @@ namespace ComicPlate.Infrastructure.Persistence;
 
 public sealed class DefaultUserDataPathProvider : IUserDataPathProvider
 {
+    private readonly IUserDataPathProvider _platformProvider;
+
+    public DefaultUserDataPathProvider()
+        : this(CreateForCurrentPlatform())
+    {
+    }
+
+    private DefaultUserDataPathProvider(IUserDataPathProvider platformProvider)
+    {
+        _platformProvider = platformProvider;
+    }
+
+    public static IUserDataPathProvider CreateForCurrentPlatform()
+    {
+        return OperatingSystem.IsMacOS()
+            ? new MacOSUserDataPathProvider()
+            : new WindowsUserDataPathProvider();
+    }
+
     public string GetUserDataDirectory()
     {
-        if (OperatingSystem.IsMacOS())
-        {
-            var userProfilePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            return Path.Combine(userProfilePath, "Library", "Application Support", "ComicPlate");
-        }
-
-        var localAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        return Path.Combine(localAppDataPath, "ComicPlate");
+        return _platformProvider.GetUserDataDirectory();
     }
 }

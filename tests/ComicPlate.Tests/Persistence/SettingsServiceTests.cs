@@ -22,6 +22,7 @@ public sealed class SettingsServiceTests : IDisposable
         var settings = service.Load();
 
         Assert.Equal(AppSettings.Default, settings);
+        Assert.True(settings.AllowMultipleWindows);
     }
 
     [Fact]

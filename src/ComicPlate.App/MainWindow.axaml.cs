@@ -13,8 +13,12 @@ namespace ComicPlate.App;
 
 public partial class MainWindow : Window
 {
+    public static readonly StyledProperty<bool> CanCreateNewWindowProperty =
+        AvaloniaProperty.Register<MainWindow, bool>(nameof(CanCreateNewWindow), defaultValue: true);
+
     private readonly MainWindowViewModel _viewModel;
     private readonly SettingsService _settingsService;
+    private readonly IReaderWindowService _readerWindowService;
     private AppSettings _appSettings;
     private readonly string? _startupPath;
     private SettingsWindow? _settingsWindow;
@@ -30,10 +34,20 @@ public partial class MainWindow : Window
     }
 
     public MainWindow(string? startupPath, SettingsService? settingsService)
+        : this(startupPath, settingsService, null)
+    {
+    }
+
+    public MainWindow(
+        string? startupPath,
+        SettingsService? settingsService,
+        IReaderWindowService? readerWindowService)
     {
         InitializeComponent();
         _settingsService = settingsService ?? SettingsService.CreateDefault();
+        _readerWindowService = readerWindowService ?? new ReaderWindowService(_settingsService);
         _appSettings = _settingsService.Load();
+        CanCreateNewWindow = _appSettings.AllowMultipleWindows;
         if (_appSettings.RestoreWindowPlacement)
         {
             ApplyWindowPlacement(_appSettings.MainWindow);
@@ -62,6 +76,12 @@ public partial class MainWindow : Window
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         Opened += OnOpened;
         Closed += OnClosed;
+    }
+
+    public bool CanCreateNewWindow
+    {
+        get => GetValue(CanCreateNewWindowProperty);
+        private set => SetValue(CanCreateNewWindowProperty, value);
     }
 
     private void OnOpened(object? sender, EventArgs e)
@@ -172,6 +192,10 @@ public partial class MainWindow : Window
                 _viewModel.OpenContentCommand.Execute(null);
                 e.Handled = true;
                 break;
+            case ShortcutActionId.NewWindow:
+                TryShowNewWindow();
+                e.Handled = true;
+                break;
             case ShortcutActionId.OpenSettings:
                 ShowSettingsWindow();
                 e.Handled = true;
@@ -232,6 +256,23 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
+    private void OnNewWindowClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        TryShowNewWindow();
+        e.Handled = true;
+    }
+
+    private void TryShowNewWindow()
+    {
+        RefreshSettings();
+        if (!CanCreateNewWindow)
+        {
+            return;
+        }
+
+        _readerWindowService.ShowEmptyWindow();
+    }
+
     private void ShowSettingsWindow()
     {
         if (_settingsWindow is not null)
@@ -258,7 +299,13 @@ public partial class MainWindow : Window
         {
             _settingsWindow.Closed -= OnSettingsWindowClosed;
             _settingsWindow = null;
-            _appSettings = _settingsService.Load();
+            RefreshSettings();
         }
+    }
+
+    private void RefreshSettings()
+    {
+        _appSettings = _settingsService.Load();
+        CanCreateNewWindow = _appSettings.AllowMultipleWindows;
     }
 }

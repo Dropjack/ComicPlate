@@ -9,6 +9,7 @@ namespace ComicPlate.Infrastructure.Persistence;
 public sealed class JsonAppStateStore
 {
     private const int Version = 1;
+    private static readonly object FileGate = new();
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -45,44 +46,59 @@ public sealed class JsonAppStateStore
 
     public SessionState LoadSession()
     {
-        return ReadJson(SessionPath, SessionState.Empty);
+        lock (FileGate)
+        {
+            return ReadJson(SessionPath, SessionState.Empty);
+        }
     }
 
     public void SaveSession(SessionState session)
     {
-        WriteJson(SessionPath, session);
+        lock (FileGate)
+        {
+            WriteJson(SessionPath, session);
+        }
     }
 
     public ProgressStore LoadProgress()
     {
-        var store = ReadJson(ProgressPath, ProgressStore.Empty);
-        return new ProgressStore(
-            store.Version,
-            new Dictionary<string, ProgressEntry>(store.Books, StringComparer.OrdinalIgnoreCase));
+        lock (FileGate)
+        {
+            return LoadProgressCore();
+        }
     }
 
     public ProgressEntry? FindProgress(string bookPath)
     {
         var key = NormalizePath(bookPath);
-        var store = LoadProgress();
-        return store.Books.TryGetValue(key, out var entry) ? entry : null;
+        lock (FileGate)
+        {
+            var store = LoadProgressCore();
+            return store.Books.TryGetValue(key, out var entry) ? entry : null;
+        }
     }
 
     public void SaveProgress(ProgressEntry entry)
     {
-        var store = LoadProgress();
-        var key = NormalizePath(entry.Path);
-        store.Books[key] = entry with { Path = key };
-        TrimProgress(store);
-        WriteJson(ProgressPath, store);
+        lock (FileGate)
+        {
+            var store = LoadProgressCore();
+            var key = NormalizePath(entry.Path);
+            store.Books[key] = entry with { Path = key };
+            TrimProgress(store);
+            WriteJson(ProgressPath, store);
+        }
     }
 
     public void DeleteProgress(string bookPath)
     {
-        var store = LoadProgress();
-        if (store.Books.Remove(NormalizePath(bookPath)))
+        lock (FileGate)
         {
-            WriteJson(ProgressPath, store);
+            var store = LoadProgressCore();
+            if (store.Books.Remove(NormalizePath(bookPath)))
+            {
+                WriteJson(ProgressPath, store);
+            }
         }
     }
 
@@ -98,31 +114,41 @@ public sealed class JsonAppStateStore
         var normalizedPath = NormalizePath(book.Path);
         var savedAt = DateTimeOffset.UtcNow;
 
-        SaveSession(new SessionState(
-            Version,
-            new ReadableUnitState(normalizedPath, book.DisplayName, book.SourceKind, pageIndex),
-            navigationHistory.BackStack,
-            savedAt));
-
-        if (pageCount > 0 && pageIndex >= pageCount - 1)
+        lock (FileGate)
         {
-            if (deleteCompletedProgress)
+            WriteJson(SessionPath, new SessionState(
+                Version,
+                new ReadableUnitState(normalizedPath, book.DisplayName, book.SourceKind, pageIndex),
+                navigationHistory.BackStack,
+                savedAt));
+
+            if (pageCount > 0 && pageIndex >= pageCount - 1)
             {
-                DeleteProgress(normalizedPath);
+                if (deleteCompletedProgress)
+                {
+                    var store = LoadProgressCore();
+                    if (store.Books.Remove(normalizedPath))
+                    {
+                        WriteJson(ProgressPath, store);
+                    }
+                }
+
+                return;
             }
 
-            return;
+            var progressStore = LoadProgressCore();
+            progressStore.Books[normalizedPath] = new ProgressEntry(
+                normalizedPath,
+                book.DisplayName,
+                book.SourceKind,
+                pageIndex,
+                pageCount,
+                readingDirection,
+                viewMode,
+                savedAt);
+            TrimProgress(progressStore);
+            WriteJson(ProgressPath, progressStore);
         }
-
-        SaveProgress(new ProgressEntry(
-            normalizedPath,
-            book.DisplayName,
-            book.SourceKind,
-            pageIndex,
-            pageCount,
-            readingDirection,
-            viewMode,
-            savedAt));
     }
 
     public void SaveSessionOnly(
@@ -131,11 +157,14 @@ public sealed class JsonAppStateStore
         NavigationHistory navigationHistory)
     {
         var normalizedPath = NormalizePath(book.Path);
-        SaveSession(new SessionState(
-            Version,
-            new ReadableUnitState(normalizedPath, book.DisplayName, book.SourceKind, pageIndex),
-            navigationHistory.BackStack,
-            DateTimeOffset.UtcNow));
+        lock (FileGate)
+        {
+            WriteJson(SessionPath, new SessionState(
+                Version,
+                new ReadableUnitState(normalizedPath, book.DisplayName, book.SourceKind, pageIndex),
+                navigationHistory.BackStack,
+                DateTimeOffset.UtcNow));
+        }
     }
 
     public static string NormalizePath(string path)
@@ -159,6 +188,14 @@ public sealed class JsonAppStateStore
         {
             return fallback;
         }
+    }
+
+    private ProgressStore LoadProgressCore()
+    {
+        var store = ReadJson(ProgressPath, ProgressStore.Empty);
+        return new ProgressStore(
+            store.Version,
+            new Dictionary<string, ProgressEntry>(store.Books, StringComparer.OrdinalIgnoreCase));
     }
 
     private static void WriteJson<T>(string path, T value)

@@ -214,10 +214,7 @@
                                     <TextBlock Text="数据目录"
                                                Foreground="{StaticResource SettingsTextBrush}"
                                                FontSize="15" />
-                                    <TextBlock Text="{Binding DataFolderPath, RelativeSource={RelativeSource AncestorType=Window}}"
-                                               Foreground="{StaticResource SettingsMutedTextBrush}"
-                                               TextWrapping="Wrap" />
-                                    <TextBlock Text="ComicPlate 的设置、会话和阅读进度保存在这里，不会写入漫画文件夹或压缩包。"
+                                    <TextBlock Text="保存本机设置、阅读进度与缓存。"
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
@@ -239,14 +236,18 @@
                                     <TextBlock Text="缩略图缓存"
                                                Foreground="{StaticResource SettingsTextBrush}"
                                                FontSize="15" />
-                                    <TextBlock Text="清理 Context Shelf 的封面缩略图缓存。"
+                                    <TextBlock Text="清理可重建的封面缩略图。"
+                                               Foreground="{StaticResource SettingsMutedTextBrush}"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock x:Name="ThumbnailCacheStatusText"
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
-                                <Button Grid.Column="1"
+                                <Button x:Name="ThumbnailCacheClearButton"
+                                        Grid.Column="1"
                                         Content="清理"
                                         Width="86"
-                                        IsEnabled="False"
+                                        Click="OnClearThumbnailCacheClick"
                                         VerticalAlignment="Center" />
                             </Grid>
                         </StackPanel>
