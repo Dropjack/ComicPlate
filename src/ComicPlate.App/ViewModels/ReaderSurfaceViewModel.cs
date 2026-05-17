@@ -27,6 +27,8 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     private int _pageInfoLoadVersion;
     private string _pageText = "";
     private bool _hasReaderViewportSize;
+    private int? _progressPreviewPageIndex;
+    private string? _progressPreviewPageText;
     private CancellationTokenSource? _readerStripImageLoadCts;
     private int _readerStripRefreshVersion;
     private CancellationTokenSource? _readerViewportRefreshCts;
@@ -101,14 +103,24 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         }
     }
 
+    public int DisplayPageProgressIndex => _progressPreviewPageIndex.HasValue
+        ? PageIndexToVisualProgressIndex(_progressPreviewPageIndex.Value)
+        : CurrentPageProgressIndex;
+
     public int LastPageProgressIndex => _readerState.HasPages ? Math.Max(_readerState.PageCount - 1, 0) : 0;
 
     public int PageCount => _readerState.PageCount;
 
     public string PageText
     {
-        get => _pageText;
-        private set => SetProperty(ref _pageText, value);
+        get => _progressPreviewPageText ?? _pageText;
+        private set
+        {
+            if (SetProperty(ref _pageText, value))
+            {
+                OnPropertyChanged(nameof(PageText));
+            }
+        }
     }
 
     public string ViewModeText => _readerState.ViewMode == ViewMode.DoublePage ? "双页" : "单页";
@@ -199,11 +211,41 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        var targetPageIndex = ReaderProgressMapper.RatioToPageIndex(
-            visualRatio,
-            _readerState.PageCount,
-            _readerState.ReadingDirection);
+        var targetPageIndex = RatioToPageIndex(visualRatio);
         GoToProgressPage(targetPageIndex);
+    }
+
+    public void PreviewProgressRatio(double visualRatio)
+    {
+        if (!_readerState.HasPages)
+        {
+            return;
+        }
+
+        var targetPageIndex = RatioToPageIndex(visualRatio);
+        var landingPageIndex = GetProgressLandingPageIndex(targetPageIndex);
+        _progressPreviewPageIndex = landingPageIndex;
+        _progressPreviewPageText = FormatPageTextForPage(landingPageIndex);
+        OnPropertyChanged(nameof(PageText));
+        OnPropertyChanged(nameof(DisplayPageProgressIndex));
+    }
+
+    public void CommitProgressPreview(double visualRatio)
+    {
+        if (!_readerState.HasPages)
+        {
+            ClearProgressPreview();
+            return;
+        }
+
+        var targetPageIndex = _progressPreviewPageIndex ?? RatioToPageIndex(visualRatio);
+        ClearProgressPreview();
+        GoToProgressPage(targetPageIndex);
+    }
+
+    public void CancelProgressPreview()
+    {
+        ClearProgressPreview();
     }
 
     public void BeginReaderStripDrag()
@@ -241,6 +283,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     public async Task LoadPagesAsync(IReadOnlyList<PageEntry> pages, int initialPageIndex = 0)
     {
+        ClearProgressPreview();
         CancelReaderViewportRefresh();
         CancelReaderStripImageLoads();
         _readerImageCache.Clear();
@@ -268,6 +311,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     public void ClearPages()
     {
+        ClearProgressPreview();
         CancelReaderViewportRefresh();
         CancelReaderStripImageLoads();
         _readerImageCache.Clear();
@@ -486,16 +530,13 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     private void GoToProgressPage(int pageIndex)
     {
-        var targetFrame = _readerFrames.FirstOrDefault(frame => frame.PageIndexes.Contains(pageIndex));
-        if (targetFrame is null)
+        var landingPageIndex = GetProgressLandingPageIndex(pageIndex);
+        if (landingPageIndex == _readerState.CurrentPageIndex)
         {
-            _readerState.GoToPage(pageIndex);
-        }
-        else
-        {
-            _readerState.GoToFrameStartPage(targetFrame.PageIndexes.Min());
+            return;
         }
 
+        _readerState.GoToFrameStartPage(landingPageIndex);
         _ = RefreshReaderStripAsync();
     }
 
@@ -768,14 +809,71 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     {
         OnPropertyChanged(nameof(CurrentPageNumber));
         OnPropertyChanged(nameof(CurrentPageProgressIndex));
+        OnPropertyChanged(nameof(DisplayPageProgressIndex));
         OnPropertyChanged(nameof(LastPageProgressIndex));
         OnPropertyChanged(nameof(PageCount));
         OnPropertyChanged(nameof(HasPages));
 
-        PageText = ReaderFramePageTextFormatter.Format(
+        PageText = FormatPageText(
             _readerFrames.FirstOrDefault(frame => frame.IsCurrent),
-            _readerState.CurrentPageIndex,
+            _readerState.CurrentPageIndex);
+    }
+
+    private int RatioToPageIndex(double visualRatio)
+    {
+        return ReaderProgressMapper.RatioToPageIndex(
+            visualRatio,
+            _readerState.PageCount,
+            _readerState.ReadingDirection);
+    }
+
+    private int PageIndexToVisualProgressIndex(int pageIndex)
+    {
+        if (!_readerState.HasPages)
+        {
+            return 0;
+        }
+
+        var clampedPageIndex = Math.Clamp(pageIndex, 0, _readerState.PageCount - 1);
+        return _readerState.ReadingDirection == ReadingDirection.RightToLeft
+            ? LastPageProgressIndex - clampedPageIndex
+            : clampedPageIndex;
+    }
+
+    private int GetProgressLandingPageIndex(int pageIndex)
+    {
+        var clampedPageIndex = _readerState.HasPages
+            ? Math.Clamp(pageIndex, 0, _readerState.PageCount - 1)
+            : 0;
+        var targetFrame = _readerFrames.FirstOrDefault(frame => frame.PageIndexes.Contains(clampedPageIndex));
+        return targetFrame?.PageIndexes.Min() ?? clampedPageIndex;
+    }
+
+    private string FormatPageTextForPage(int pageIndex)
+    {
+        var targetFrame = _readerFrames.FirstOrDefault(frame => frame.PageIndexes.Contains(pageIndex));
+        return FormatPageText(targetFrame, pageIndex);
+    }
+
+    private string FormatPageText(ReaderFrame? frame, int fallbackPageIndex)
+    {
+        return ReaderFramePageTextFormatter.Format(
+            frame,
+            fallbackPageIndex,
             _readerState.PageCount);
+    }
+
+    private void ClearProgressPreview()
+    {
+        if (!_progressPreviewPageIndex.HasValue && _progressPreviewPageText is null)
+        {
+            return;
+        }
+
+        _progressPreviewPageIndex = null;
+        _progressPreviewPageText = null;
+        OnPropertyChanged(nameof(PageText));
+        OnPropertyChanged(nameof(DisplayPageProgressIndex));
     }
 
     private void RaiseCommandStates()

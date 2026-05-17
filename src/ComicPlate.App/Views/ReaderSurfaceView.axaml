@@ -123,7 +123,7 @@
                               PointerCaptureLost="OnProgressPointerCaptureLost">
                             <ProgressBar Minimum="0"
                                          Maximum="{Binding Reader.LastPageProgressIndex}"
-                                         Value="{Binding Reader.CurrentPageProgressIndex}"
+                                         Value="{Binding Reader.DisplayPageProgressIndex}"
                                          Height="5"
                                          VerticalAlignment="Center"
                                          IsHitTestVisible="False" />
@@ -225,7 +225,7 @@
                       PointerCaptureLost="OnProgressPointerCaptureLost">
                     <ProgressBar Minimum="0"
                                  Maximum="{Binding Reader.LastPageProgressIndex}"
-                                 Value="{Binding Reader.CurrentPageProgressIndex}"
+                                 Value="{Binding Reader.DisplayPageProgressIndex}"
                                  Height="4"
                                  VerticalAlignment="Center"
                                  IsHitTestVisible="False" />

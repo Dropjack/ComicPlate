@@ -156,7 +156,7 @@ public partial class ReaderSurfaceView : UserControl
         _isProgressDragging = true;
         FullscreenBottomOverlay.IsVisible = ShouldUseFullscreenBottomOverlay();
         ResetFullscreenOverlayHideTimer();
-        CommitProgressNavigation(progressTrack, point.Position);
+        PreviewProgressNavigation(progressTrack, point.Position);
         e.Pointer.Capture(progressTrack);
         e.Handled = true;
     }
@@ -168,7 +168,7 @@ public partial class ReaderSurfaceView : UserControl
             return;
         }
 
-        CommitProgressNavigation(progressTrack, e.GetPosition(progressTrack));
+        PreviewProgressNavigation(progressTrack, e.GetPosition(progressTrack));
         ResetFullscreenOverlayHideTimer();
         e.Handled = true;
     }
@@ -190,6 +190,7 @@ public partial class ReaderSurfaceView : UserControl
     private void OnProgressPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
     {
         _isProgressDragging = false;
+        ViewModel?.Reader.CancelProgressPreview();
         ResetFullscreenOverlayHideTimer();
     }
 
@@ -208,14 +209,37 @@ public partial class ReaderSurfaceView : UserControl
 
     private void CommitProgressNavigation(Control progressTrack, Point position)
     {
-        var width = progressTrack.Bounds.Width;
-        if (width <= 0)
+        var ratio = GetProgressRatio(progressTrack, position);
+        if (ratio is null)
         {
             return;
         }
 
-        ViewModel?.Reader.GoToProgressRatio(position.X / width);
+        ViewModel?.Reader.CommitProgressPreview(ratio.Value);
         Focus();
+    }
+
+    private void PreviewProgressNavigation(Control progressTrack, Point position)
+    {
+        var ratio = GetProgressRatio(progressTrack, position);
+        if (ratio is null)
+        {
+            return;
+        }
+
+        ViewModel?.Reader.PreviewProgressRatio(ratio.Value);
+        Focus();
+    }
+
+    private static double? GetProgressRatio(Control progressTrack, Point position)
+    {
+        var width = progressTrack.Bounds.Width;
+        if (width <= 0)
+        {
+            return null;
+        }
+
+        return position.X / width;
     }
 
     private void UpdateFullscreenBottomOverlay(Control readerSurface, Point position)
