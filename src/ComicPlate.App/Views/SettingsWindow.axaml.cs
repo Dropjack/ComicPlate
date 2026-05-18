@@ -178,7 +178,10 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        var result = _fileAssociationService.Associate(extension);
+        var shouldAssociate = sender is CheckBox { IsChecked: true };
+        var result = shouldAssociate
+            ? _fileAssociationService.Associate(extension)
+            : _fileAssociationService.Disassociate(extension);
         LoadFileAssociationOptions();
         SetAssociationStatus(extension, result.Message);
         e.Handled = true;
@@ -186,13 +189,15 @@ public partial class SettingsWindow : Window
 
     private void OnExplorerContextMenuClick(object? sender, RoutedEventArgs e)
     {
-        var result = _explorerContextMenuService.SetEnabled(ExplorerContextMenuCheckBox.IsChecked == true);
-        LoadExplorerContextMenuState();
-        if (!result.Succeeded)
+        if (sender is not Control control || control.Tag is not string extension)
         {
-            ExplorerContextMenuStatusText.Text = result.Message;
+            return;
         }
 
+        var shouldRegister = sender is CheckBox { IsChecked: true };
+        var result = _explorerContextMenuService.SetEnabled(extension, shouldRegister);
+        LoadExplorerContextMenuState();
+        ExplorerContextMenuStatusText.Text = result.Message;
         e.Handled = true;
     }
 
@@ -336,8 +341,13 @@ public partial class SettingsWindow : Window
     {
         var state = _explorerContextMenuService.GetState();
         ExplorerContextMenuSection.IsVisible = state.IsSupported;
-        ExplorerContextMenuCheckBox.IsChecked = state.IsRegistered;
-        ExplorerContextMenuStatusText.Text = state.StatusText;
+        var options = _explorerContextMenuService.GetSupportedOptions();
+        foreach (var option in options)
+        {
+            SetExplorerContextMenuOption(option.Extension, option.CanRegister, option.IsRegistered);
+        }
+
+        ExplorerContextMenuStatusText.Text = state.IsSupported ? "" : state.StatusText;
     }
 
     private void SetAssociationOption(string extension, bool canAssociate, bool isAssociated)
@@ -357,14 +367,36 @@ public partial class SettingsWindow : Window
         AssociationStatusText.Text = status;
     }
 
+    private void SetExplorerContextMenuOption(string extension, bool canRegister, bool isRegistered)
+    {
+        var checkBox = GetExplorerContextMenuCheckBox(extension);
+        if (checkBox is null)
+        {
+            return;
+        }
+
+        checkBox.IsEnabled = canRegister;
+        checkBox.IsChecked = isRegistered;
+    }
+
     private CheckBox? GetAssociationCheckBox(string extension)
     {
         return extension.ToLowerInvariant() switch
         {
             ".cbz" => CbzAssociationCheckBox,
-            ".zip" => ZipAssociationCheckBox,
             ".cbr" => CbrAssociationCheckBox,
-            ".rar" => RarAssociationCheckBox,
+            _ => null
+        };
+    }
+
+    private CheckBox? GetExplorerContextMenuCheckBox(string extension)
+    {
+        return extension.ToLowerInvariant() switch
+        {
+            ".cbz" => ExplorerContextMenuCbzCheckBox,
+            ".cbr" => ExplorerContextMenuCbrCheckBox,
+            ".zip" => ExplorerContextMenuZipCheckBox,
+            ".rar" => ExplorerContextMenuRarCheckBox,
             _ => null
         };
     }

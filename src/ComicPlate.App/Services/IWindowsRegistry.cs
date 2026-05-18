@@ -10,6 +10,7 @@ public interface IWindowsRegistry
 
     void WriteValue(string keyPath, string valueName, string value);
 
+    void DeleteValue(string keyPath, string valueName);
+
     void DeleteTree(string keyPath);
 }
-

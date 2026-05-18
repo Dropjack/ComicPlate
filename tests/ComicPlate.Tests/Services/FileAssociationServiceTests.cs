@@ -51,6 +51,38 @@ public sealed class FileAssociationServiceTests
     }
 
     [Fact]
+    public void WindowsServiceDisassociatesComicPlateExtension()
+    {
+        var registry = new InMemoryFileAssociationRegistry();
+        var service = new WindowsFileAssociationService(
+            registry,
+            @"D:\Tools\ComicPlate\ComicPlate.exe");
+
+        service.Associate(".cbr");
+        var result = service.Disassociate(".cbr");
+
+        Assert.True(result.Succeeded);
+        Assert.Null(registry.ReadDefaultValue(@"Software\Classes\.cbr"));
+        Assert.False(registry.Values.ContainsKey(@"Software\Classes\ComicPlate.cbr"));
+        Assert.DoesNotContain(registry.Values.Keys, key => key.StartsWith(@"Software\Classes\ComicPlate.cbr\", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void WindowsServiceDisassociateDoesNotRemoveAnotherDefaultHandler()
+    {
+        var registry = new InMemoryFileAssociationRegistry();
+        registry.WriteDefaultValue(@"Software\Classes\.cbr", "OtherApp.cbr");
+        var service = new WindowsFileAssociationService(
+            registry,
+            @"D:\Tools\ComicPlate\ComicPlate.exe");
+
+        var result = service.Disassociate(".cbr");
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("OtherApp.cbr", registry.ReadDefaultValue(@"Software\Classes\.cbr"));
+    }
+
+    [Fact]
     public void WindowsServiceDoesNotClaimSuccessWhenWindowsUserChoicePointsElsewhere()
     {
         var registry = new InMemoryFileAssociationRegistry();
@@ -112,6 +144,20 @@ public sealed class FileAssociationServiceTests
             }
 
             values[valueName] = value;
+        }
+
+        public void DeleteValue(string keyPath, string valueName)
+        {
+            if (!Values.TryGetValue(keyPath, out var values))
+            {
+                return;
+            }
+
+            values.Remove(valueName);
+            if (values.Count == 0)
+            {
+                Values.Remove(keyPath);
+            }
         }
 
         public void DeleteTree(string keyPath)

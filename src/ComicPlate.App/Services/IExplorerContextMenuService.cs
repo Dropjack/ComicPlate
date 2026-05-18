@@ -4,6 +4,9 @@ public interface IExplorerContextMenuService
 {
     ExplorerContextMenuState GetState();
 
-    ExplorerContextMenuResult SetEnabled(bool isEnabled);
-}
+    IReadOnlyList<ExplorerContextMenuOption> GetSupportedOptions();
 
+    ExplorerContextMenuResult SetEnabled(bool isEnabled);
+
+    ExplorerContextMenuResult SetEnabled(string extension, bool isEnabled);
+}

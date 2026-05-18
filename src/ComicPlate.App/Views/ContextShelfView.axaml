@@ -11,6 +11,27 @@
         <Style Selector="UserControl.mac-shell ListBox.context-shelf-list">
             <Setter Property="Background" Value="Transparent" />
         </Style>
+
+        <Style Selector="ListBox.context-shelf-list ListBoxItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+
+        <Style Selector="ListBox.context-shelf-list ListBoxItem:selected">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="Grid.context-shelf-item.navigation">
+            <Setter Property="Background" Value="{StaticResource ShelfNavigationHighlight}" />
+        </Style>
+
+        <Style Selector="Grid.context-shelf-item.reading">
+            <Setter Property="Background" Value="{StaticResource ShelfReadingHighlight}" />
+        </Style>
+
+        <Style Selector="ListBox.context-shelf-list ListBoxItem:pointerover Grid.context-shelf-item">
+            <Setter Property="Background" Value="{StaticResource ShelfHoverHighlight}" />
+        </Style>
     </UserControl.Styles>
 
     <Border MinWidth="220"
@@ -52,6 +73,9 @@
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <Grid ColumnDefinitions="56,*"
+                              Classes="context-shelf-item"
+                              Classes.reading="{Binding IsReading}"
+                              Classes.navigation="{Binding IsNavigationCurrent}"
                               MinHeight="62"
                               Margin="6,4">
                             <Border Grid.Column="0"

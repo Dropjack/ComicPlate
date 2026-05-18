@@ -21,4 +21,9 @@ public sealed class UnsupportedFileAssociationService : IFileAssociationService
     {
         return new FileAssociationResult(false, _message);
     }
+
+    public FileAssociationResult Disassociate(string extension)
+    {
+        return new FileAssociationResult(false, _message);
+    }
 }

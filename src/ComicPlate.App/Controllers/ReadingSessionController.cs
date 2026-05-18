@@ -76,12 +76,12 @@ public sealed class ReadingSessionController
             return null;
         }
 
-        var shelfCurrent = _lastSession.ShelfCurrent?.SourceKind == BookSourceKind.Collection
-            ? _lastSession.ShelfCurrent
+        var shelfCurrent = _lastSession.ReadingShelfCurrent?.SourceKind == BookSourceKind.Collection
+            ? _lastSession.ReadingShelfCurrent
             : CreateParentCollectionEntry(current.Path);
         if (shelfCurrent is not null)
         {
-            _navigationHistory.Restore(shelfCurrent, _lastSession.BackStack);
+            _navigationHistory.Restore(shelfCurrent, _lastSession.ReadingShelfBackStack);
         }
         return current;
     }

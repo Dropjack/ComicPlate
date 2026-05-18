@@ -7,6 +7,8 @@ public sealed class ContentListItemViewModel : ViewModelBase
 {
     private Bitmap? _thumbnail;
     private string _thumbnailStatus = "";
+    private bool _isReading;
+    private bool _isNavigationCurrent;
 
     private ContentListItemViewModel(
         ContentListItemKind kind,
@@ -38,6 +40,18 @@ public sealed class ContentListItemViewModel : ViewModelBase
     };
 
     public bool HasKindOverlay => true;
+
+    public bool IsReading
+    {
+        get => _isReading;
+        set => SetProperty(ref _isReading, value);
+    }
+
+    public bool IsNavigationCurrent
+    {
+        get => _isNavigationCurrent;
+        set => SetProperty(ref _isNavigationCurrent, value);
+    }
 
     public Bitmap? Thumbnail
     {

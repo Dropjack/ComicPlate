@@ -9,6 +9,10 @@ public sealed record SessionState(
     IReadOnlyList<NavigationEntry> BackStack,
     DateTimeOffset SavedAt)
 {
+    public NavigationEntry? ReadingShelfCurrent { get; init; }
+
+    public IReadOnlyList<NavigationEntry> ReadingShelfBackStack { get; init; } = Array.Empty<NavigationEntry>();
+
     public static SessionState Empty { get; } = new(
         Version: 1,
         Current: null,

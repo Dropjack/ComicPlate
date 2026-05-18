@@ -59,6 +59,26 @@ public sealed class WindowsFileAssociationService : IFileAssociationService
         }
     }
 
+    public FileAssociationResult Disassociate(string extension)
+    {
+        if (!ComicArchiveFormats.TryGetByExtension(extension, out var format))
+        {
+            return new FileAssociationResult(false, "不支持的文件格式。");
+        }
+
+        try
+        {
+            RemoveAssociation(format);
+            return IsAssociated(format.Extension)
+                ? new FileAssociationResult(false, $"{format.DisplayName} 仍由 Windows 默认应用设置关联到 ComicPlate；请在 Windows 默认应用中取消。")
+                : new FileAssociationResult(true, $"{format.DisplayName} 已取消 ComicPlate 关联。");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return new FileAssociationResult(false, "取消文件关联失败，请检查系统权限或 Windows 默认应用设置。");
+        }
+    }
+
     private bool IsAssociated(string extension)
     {
         var userChoice = _registry.ReadValue($@"{FileExtsRoot}\{NormalizeExtension(extension)}\UserChoice", "ProgId");
@@ -85,6 +105,26 @@ public sealed class WindowsFileAssociationService : IFileAssociationService
         _registry.WriteDefaultValue(commandKey, CreateOpenCommand());
     }
 
+    private void RemoveAssociation(ComicArchiveFormat format)
+    {
+        var extension = NormalizeExtension(format.Extension);
+        var progId = GetProgId(format);
+        var extensionKey = $@"{ClassesRoot}\{extension}";
+        var userChoiceKey = $@"{FileExtsRoot}\{extension}\UserChoice";
+
+        if (IsRegistryValue(progId, _registry.ReadValue(userChoiceKey, "ProgId")))
+        {
+            _registry.DeleteTree(userChoiceKey);
+        }
+
+        if (IsRegistryValue(progId, _registry.ReadDefaultValue(extensionKey)))
+        {
+            _registry.DeleteValue(extensionKey, "");
+        }
+
+        _registry.DeleteTree($@"{ClassesRoot}\{progId}");
+    }
+
     private string CreateOpenCommand()
     {
         return $"\"{_executablePath}\" \"%1\"";
@@ -98,6 +138,12 @@ public sealed class WindowsFileAssociationService : IFileAssociationService
     private static string GetProgId(string extension)
     {
         return $"{ProgIdPrefix}{NormalizeExtension(extension)}";
+    }
+
+    private static bool IsRegistryValue(string expected, string? actual)
+    {
+        return actual is not null
+            && actual.Equals(expected, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string NormalizeExtension(string extension)

@@ -25,13 +25,20 @@ public sealed class JsonAppStateStoreTests : IDisposable
             new ReadableUnitState(@"D:\Manga\A.cbz", "A.cbz", BookSourceKind.Zip, 100),
             new NavigationEntry(@"D:\Manga", "Manga", BookSourceKind.Collection),
             new[] { new NavigationEntry(@"D:\Manga", "Manga", BookSourceKind.Collection) },
-            DateTimeOffset.Parse("2026-05-13T10:30:00Z"));
+            DateTimeOffset.Parse("2026-05-13T10:30:00Z"))
+        {
+            ReadingShelfCurrent = new NavigationEntry(@"D:\Manga", "Manga", BookSourceKind.Collection),
+            ReadingShelfBackStack = new[] { new NavigationEntry(@"D:\", "D:", BookSourceKind.Collection) }
+        };
 
         store.SaveSession(session);
         var loaded = store.LoadSession();
 
         Assert.Equal("A.cbz", loaded.Current?.DisplayName);
         Assert.Equal(100, loaded.Current?.LastPageIndex);
+        Assert.Equal("Manga", loaded.ReadingShelfCurrent?.DisplayName);
+        Assert.Single(loaded.ReadingShelfBackStack);
+        Assert.Equal("D:", loaded.ReadingShelfBackStack[0].DisplayName);
         Assert.Equal("Manga", loaded.ShelfCurrent?.DisplayName);
         Assert.Single(loaded.BackStack);
         Assert.Equal("Manga", loaded.BackStack[0].DisplayName);
@@ -61,6 +68,8 @@ public sealed class JsonAppStateStoreTests : IDisposable
 
         Assert.Equal("A.cbz", loaded.Current?.DisplayName);
         Assert.Equal(12, loaded.Current?.LastPageIndex);
+        Assert.Null(loaded.ReadingShelfCurrent);
+        Assert.Empty(loaded.ReadingShelfBackStack);
         Assert.Null(loaded.ShelfCurrent);
     }
 
@@ -113,6 +122,7 @@ public sealed class JsonAppStateStoreTests : IDisposable
 
         Assert.Null(store.FindProgress(book.Path));
         Assert.Equal("A.cbz", store.LoadSession().Current?.DisplayName);
+        Assert.Equal(@"D:\Manga", store.LoadSession().ReadingShelfCurrent?.Path);
     }
 
     [Fact]
@@ -135,6 +145,7 @@ public sealed class JsonAppStateStoreTests : IDisposable
 
         Assert.Equal(50, store.FindProgress(book.Path)?.LastPageIndex);
         Assert.Equal(99, store.LoadSession().Current?.LastPageIndex);
+        Assert.Equal(@"D:\Manga", store.LoadSession().ReadingShelfCurrent?.Path);
     }
 
     public void Dispose()

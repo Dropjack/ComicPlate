@@ -1,5 +1,6 @@
 using ComicPlate.App.Controllers;
 using ComicPlate.Core.Books;
+using ComicPlate.Core.Navigation;
 using ComicPlate.Core.Reading;
 using ComicPlate.Infrastructure.Persistence;
 
@@ -104,6 +105,38 @@ public sealed class ReadingSessionControllerTests : IDisposable
     }
 
     [Fact]
+    public void PrepareOpenLastReadingPositionUsesReadingShelfInsteadOfLastBrowsedShelf()
+    {
+        var seriesPath = Path.Combine(_rootPath, "Series");
+        var otherPath = Path.Combine(_rootPath, "Other");
+        var bookPath = Path.Combine(seriesPath, "A.cbz");
+        var store = new JsonAppStateStore(_rootPath);
+        store.SaveSession(new SessionState(
+            1,
+            new ReadableUnitState(bookPath, "A.cbz", BookSourceKind.Zip, 7),
+            new NavigationEntry(otherPath, "Other", BookSourceKind.Collection),
+            new[] { new NavigationEntry(_rootPath, Path.GetFileName(_rootPath), BookSourceKind.Collection) },
+            DateTimeOffset.UtcNow)
+        {
+            ReadingShelfCurrent = new NavigationEntry(seriesPath, "Series", BookSourceKind.Collection),
+            ReadingShelfBackStack = new[] { new NavigationEntry(_rootPath, Path.GetFileName(_rootPath), BookSourceKind.Collection) }
+        });
+
+        var controller = CreateController();
+        var current = controller.PrepareOpenLastReadingPosition();
+
+        Assert.NotNull(current);
+        Assert.Equal(bookPath, current.Path);
+        Assert.Equal(Path.GetFullPath(seriesPath), controller.CurrentShelf?.Path);
+        Assert.True(controller.CanGoBack);
+
+        var previous = controller.Back();
+
+        Assert.NotNull(previous);
+        Assert.Equal(Path.GetFullPath(_rootPath), previous.Path);
+    }
+
+    [Fact]
     public void MultipleControllersForSameBookUseSingleProgressRecordWithLastWriterWinning()
     {
         var firstWindow = CreateController();
@@ -174,16 +207,18 @@ public sealed class ReadingSessionControllerTests : IDisposable
     }
 
     [Fact]
-    public void SaveReadingStateStoresShelfCurrentSeparatelyFromCurrentBook()
+    public void SaveReadingStateStoresReadingShelfSeparatelyFromLastBrowsedShelf()
     {
         var controller = CreateController();
         var rootPath = Path.Combine(_rootPath, "Root");
         var seriesPath = Path.Combine(rootPath, "Series");
+        var otherPath = Path.Combine(rootPath, "Other");
         var book = CreateBook(Path.Combine(seriesPath, "A.cbz"));
 
         controller.StartAtContentFolder(rootPath);
         controller.NavigateToContentFolder(seriesPath);
         controller.NavigateToBook(book);
+        controller.NavigateToContentFolder(otherPath);
         controller.SaveReadingState(
             book,
             hasPages: true,
@@ -196,9 +231,13 @@ public sealed class ReadingSessionControllerTests : IDisposable
         var session = new JsonAppStateStore(_rootPath).LoadSession();
 
         Assert.Equal(book.Path, session.Current?.Path);
-        Assert.Equal(Path.GetFullPath(seriesPath), session.ShelfCurrent?.Path);
-        Assert.Single(session.BackStack);
-        Assert.Equal(Path.GetFullPath(rootPath), session.BackStack[0].Path);
+        Assert.Equal(Path.GetFullPath(seriesPath), session.ReadingShelfCurrent?.Path);
+        Assert.Single(session.ReadingShelfBackStack);
+        Assert.Equal(Path.GetFullPath(rootPath), session.ReadingShelfBackStack[0].Path);
+        Assert.Equal(Path.GetFullPath(otherPath), session.ShelfCurrent?.Path);
+        Assert.Equal(2, session.BackStack.Count);
+        Assert.Equal(Path.GetFullPath(seriesPath), session.BackStack[0].Path);
+        Assert.Equal(Path.GetFullPath(rootPath), session.BackStack[1].Path);
     }
 
     public void Dispose()

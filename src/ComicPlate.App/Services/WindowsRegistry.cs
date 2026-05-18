@@ -29,9 +29,14 @@ public sealed class WindowsRegistry : IWindowsRegistry
         key.SetValue(valueName, value);
     }
 
+    public void DeleteValue(string keyPath, string valueName)
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(keyPath, writable: true);
+        key?.DeleteValue(valueName, throwOnMissingValue: false);
+    }
+
     public void DeleteTree(string keyPath)
     {
         Registry.CurrentUser.DeleteSubKeyTree(keyPath, throwOnMissingSubKey: false);
     }
 }
-

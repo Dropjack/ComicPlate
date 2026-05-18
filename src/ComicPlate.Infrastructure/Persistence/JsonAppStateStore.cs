@@ -123,7 +123,11 @@ public sealed class JsonAppStateStore
                     ? navigationHistory.Current
                     : null,
                 navigationHistory.BackStack,
-                savedAt));
+                savedAt)
+            {
+                ReadingShelfCurrent = CreateReadingShelfEntry(book),
+                ReadingShelfBackStack = CreateReadingShelfBackStack(book, navigationHistory)
+            });
 
             if (pageCount > 0 && pageIndex >= pageCount - 1)
             {
@@ -169,13 +173,67 @@ public sealed class JsonAppStateStore
                     ? navigationHistory.Current
                     : null,
                 navigationHistory.BackStack,
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow)
+            {
+                ReadingShelfCurrent = CreateReadingShelfEntry(book),
+                ReadingShelfBackStack = CreateReadingShelfBackStack(book, navigationHistory)
+            });
         }
     }
 
     public static string NormalizePath(string path)
     {
         return Path.GetFullPath(path);
+    }
+
+    private static NavigationEntry? CreateReadingShelfEntry(BookEntry book)
+    {
+        var fullPath = Path.GetFullPath(book.Path);
+        var shelfPath = Directory.Exists(fullPath)
+            ? Directory.GetParent(fullPath)?.FullName
+            : Path.GetDirectoryName(fullPath);
+
+        if (string.IsNullOrWhiteSpace(shelfPath))
+        {
+            return null;
+        }
+
+        var displayName = Path.GetFileName(shelfPath);
+        return new NavigationEntry(
+            shelfPath,
+            string.IsNullOrWhiteSpace(displayName) ? shelfPath : displayName,
+            BookSourceKind.Collection);
+    }
+
+    private static IReadOnlyList<NavigationEntry> CreateReadingShelfBackStack(
+        BookEntry book,
+        NavigationHistory navigationHistory)
+    {
+        var readingShelf = CreateReadingShelfEntry(book);
+        if (readingShelf is null)
+        {
+            return Array.Empty<NavigationEntry>();
+        }
+
+        if (IsSameNavigationEntry(navigationHistory.Current, readingShelf))
+        {
+            return navigationHistory.BackStack;
+        }
+
+        var backStack = navigationHistory.BackStack;
+        var readingShelfIndex = Array.FindIndex(
+            backStack.ToArray(),
+            entry => IsSameNavigationEntry(entry, readingShelf));
+        return readingShelfIndex >= 0
+            ? backStack.Skip(readingShelfIndex + 1).ToArray()
+            : Array.Empty<NavigationEntry>();
+    }
+
+    private static bool IsSameNavigationEntry(NavigationEntry? first, NavigationEntry second)
+    {
+        return first is not null
+            && first.SourceKind == second.SourceKind
+            && NormalizePath(first.Path).Equals(NormalizePath(second.Path), StringComparison.OrdinalIgnoreCase);
     }
 
     private static T ReadJson<T>(string path, T fallback)

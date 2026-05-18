@@ -37,6 +37,20 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
                 : "");
     }
 
+    public IReadOnlyList<ExplorerContextMenuOption> GetSupportedOptions()
+    {
+        return ComicArchiveFormats.SupportedFormats
+            .Select(format => new ExplorerContextMenuOption(
+                format.Extension,
+                format.DisplayName,
+                true,
+                IsRegistered(format.Extension),
+                IsRegistered(format.Extension)
+                    ? $"{format.DisplayName} 右键菜单已注册。"
+                    : ""))
+            .ToArray();
+    }
+
     public ExplorerContextMenuResult SetEnabled(bool isEnabled)
     {
         try
@@ -53,6 +67,34 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
             return IsRegistered()
                 ? new ExplorerContextMenuResult(false, "右键菜单移除失败。")
                 : new ExplorerContextMenuResult(true, "右键菜单已移除。");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return new ExplorerContextMenuResult(false, "右键菜单设置失败，请检查系统权限。");
+        }
+    }
+
+    public ExplorerContextMenuResult SetEnabled(string extension, bool isEnabled)
+    {
+        if (!ComicArchiveFormats.TryGetByExtension(extension, out var format))
+        {
+            return new ExplorerContextMenuResult(false, "不支持的文件格式。");
+        }
+
+        try
+        {
+            if (isEnabled)
+            {
+                Register(format);
+                return IsRegistered(format.Extension)
+                    ? new ExplorerContextMenuResult(true, $"{format.DisplayName} 右键菜单已注册。")
+                    : new ExplorerContextMenuResult(false, $"{format.DisplayName} 右键菜单注册失败。");
+            }
+
+            Unregister(format);
+            return IsRegistered(format.Extension)
+                ? new ExplorerContextMenuResult(false, $"{format.DisplayName} 右键菜单移除失败。")
+                : new ExplorerContextMenuResult(true, $"{format.DisplayName} 右键菜单已移除。");
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
@@ -77,21 +119,31 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
     {
         foreach (var format in ComicArchiveFormats.SupportedFormats)
         {
-            var shellKeyPath = GetShellKeyPath(format.Extension);
-            var commandKeyPath = GetCommandKeyPath(format.Extension);
-            _registry.WriteDefaultValue(shellKeyPath, MenuText);
-            _registry.WriteValue(shellKeyPath, "MUIVerb", MenuText);
-            _registry.WriteValue(shellKeyPath, "Icon", _executablePath);
-            _registry.WriteDefaultValue(commandKeyPath, CreateOpenCommand());
+            Register(format);
         }
+    }
+
+    private void Register(ComicArchiveFormat format)
+    {
+        var shellKeyPath = GetShellKeyPath(format.Extension);
+        var commandKeyPath = GetCommandKeyPath(format.Extension);
+        _registry.WriteDefaultValue(shellKeyPath, MenuText);
+        _registry.WriteValue(shellKeyPath, "MUIVerb", MenuText);
+        _registry.WriteValue(shellKeyPath, "Icon", _executablePath);
+        _registry.WriteDefaultValue(commandKeyPath, CreateOpenCommand());
     }
 
     private void Unregister()
     {
         foreach (var format in ComicArchiveFormats.SupportedFormats)
         {
-            _registry.DeleteTree(GetShellKeyPath(format.Extension));
+            Unregister(format);
         }
+    }
+
+    private void Unregister(ComicArchiveFormat format)
+    {
+        _registry.DeleteTree(GetShellKeyPath(format.Extension));
     }
 
     private string CreateOpenCommand()

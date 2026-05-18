@@ -35,6 +35,35 @@ public sealed class ExplorerContextMenuServiceTests
     }
 
     [Fact]
+    public void WindowsServiceRegistersSingleArchiveContextMenu()
+    {
+        var registry = new InMemoryRegistry();
+        var service = CreateService(registry);
+
+        var result = service.SetEnabled(".zip", true);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(
+            "\"D:\\Tools\\ComicPlate\\ComicPlate.exe\" \"%1\"",
+            registry.ReadDefaultValue(@"Software\Classes\SystemFileAssociations\.zip\shell\ComicPlate.Open\command"));
+        Assert.Null(registry.ReadDefaultValue(@"Software\Classes\SystemFileAssociations\.cbr\shell\ComicPlate.Open\command"));
+    }
+
+    [Fact]
+    public void WindowsServiceUnregistersSingleArchiveContextMenu()
+    {
+        var registry = new InMemoryRegistry();
+        var service = CreateService(registry);
+        service.SetEnabled(true);
+
+        var result = service.SetEnabled(".zip", false);
+
+        Assert.True(result.Succeeded);
+        Assert.Null(registry.ReadDefaultValue(@"Software\Classes\SystemFileAssociations\.zip\shell\ComicPlate.Open\command"));
+        Assert.NotNull(registry.ReadDefaultValue(@"Software\Classes\SystemFileAssociations\.cbr\shell\ComicPlate.Open\command"));
+    }
+
+    [Fact]
     public void WindowsServiceUnregistersSupportedArchiveContextMenus()
     {
         var registry = new InMemoryRegistry();
@@ -96,6 +125,20 @@ public sealed class ExplorerContextMenuServiceTests
             }
 
             values[valueName] = value;
+        }
+
+        public void DeleteValue(string keyPath, string valueName)
+        {
+            if (!Values.TryGetValue(keyPath, out var values))
+            {
+                return;
+            }
+
+            values.Remove(valueName);
+            if (values.Count == 0)
+            {
+                Values.Remove(keyPath);
+            }
         }
 
         public void DeleteTree(string keyPath)

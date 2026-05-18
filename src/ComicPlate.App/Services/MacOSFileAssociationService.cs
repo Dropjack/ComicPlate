@@ -14,4 +14,9 @@ public sealed class MacOSFileAssociationService : IFileAssociationService
     {
         return new FileAssociationResult(false, "macOS 文件关联需要通过应用包或系统设置处理。");
     }
+
+    public FileAssociationResult Disassociate(string extension)
+    {
+        return new FileAssociationResult(false, "macOS 文件关联需要通过应用包或系统设置处理。");
+    }
 }

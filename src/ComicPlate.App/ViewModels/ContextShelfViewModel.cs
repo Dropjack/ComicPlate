@@ -56,6 +56,20 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(ItemCount));
     }
 
+    public void SetVisualState(string? readingBookId, string? navigationCollectionPath)
+    {
+        var normalizedReadingBookId = NormalizePath(readingBookId);
+        var normalizedNavigationCollectionPath = NormalizePath(navigationCollectionPath);
+
+        foreach (var item in Items)
+        {
+            item.IsReading = PathsEqual(item.Book.Id, normalizedReadingBookId);
+            item.IsNavigationCurrent =
+                item.Book.SourceKind == BookSourceKind.Collection
+                && PathsEqual(item.Book.Path, normalizedNavigationCollectionPath);
+        }
+    }
+
     public async Task LoadThumbnailsAsync()
     {
         var cancellationToken = _thumbnailCancellationTokenSource.Token;
@@ -85,5 +99,23 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
         _thumbnailCancellationTokenSource.Cancel();
         _thumbnailCancellationTokenSource.Dispose();
         _thumbnailLoader.Dispose();
+    }
+
+    private static bool PathsEqual(string? first, string? second)
+    {
+        if (string.IsNullOrWhiteSpace(first) || string.IsNullOrWhiteSpace(second))
+        {
+            return false;
+        }
+
+        return string.Equals(
+            NormalizePath(first),
+            NormalizePath(second),
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? NormalizePath(string? path)
+    {
+        return string.IsNullOrWhiteSpace(path) ? null : Path.GetFullPath(path);
     }
 }

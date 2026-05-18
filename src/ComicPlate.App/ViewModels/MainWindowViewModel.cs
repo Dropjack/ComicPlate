@@ -10,11 +10,14 @@ namespace ComicPlate.App.ViewModels;
 
 public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 {
+    private const string AppTitle = "ComicPlate";
+
     private readonly IFolderPickerService _folderPickerService;
     private readonly ContentOpenService _contentOpenService = new();
     private readonly ReaderImageCache _readerImageCache;
     private readonly ReadingSessionController _readingSession;
     private BookEntry? _currentBook;
+    private string? _navigationHighlightPath;
     private string _readerTitle = "";
     private string _shelfTitle = "";
     private bool _isNavigationPaneVisible = true;
@@ -74,7 +77,28 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     public string ReaderTitle
     {
         get => _readerTitle;
-        private set => SetProperty(ref _readerTitle, value);
+        private set
+        {
+            if (SetProperty(ref _readerTitle, value))
+            {
+                OnPropertyChanged(nameof(WindowTitle));
+            }
+        }
+    }
+
+    public string WindowTitle
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(ReaderTitle))
+            {
+                return AppTitle;
+            }
+
+            return Reader.HasPages && !string.IsNullOrWhiteSpace(Reader.PageText)
+                ? $"{ReaderTitle} ({Reader.PageText}) - {AppTitle}"
+                : $"{ReaderTitle} - {AppTitle}";
+        }
     }
 
     public string ShelfTitle
@@ -141,6 +165,16 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         await OpenPathAsSessionStartAsync(path);
     }
 
+    private BookEntry? CurrentBook
+    {
+        get => _currentBook;
+        set
+        {
+            _currentBook = value;
+            UpdateContextShelfVisualState();
+        }
+    }
+
     private async Task OpenContentAsync()
     {
         var folderPath = await _folderPickerService.PickFolderAsync();
@@ -162,7 +196,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             Reader.ClearPages();
-            ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
+            ClearContextShelfItems();
             SetMessage("ComicPlate could not read this folder.");
         }
         finally
@@ -191,6 +225,12 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         {
             OnPropertyChanged(nameof(HasMessage));
         }
+
+        if (e.PropertyName is nameof(ReaderSurfaceViewModel.HasPages)
+            or nameof(ReaderSurfaceViewModel.PageText))
+        {
+            OnPropertyChanged(nameof(WindowTitle));
+        }
     }
 
     private void OnReaderReadingStateChanged()
@@ -200,10 +240,15 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         PersistCurrentReadingState(deleteCompletedProgress: false);
     }
 
-    private void LoadContextShelfEntries(string rootPath, IReadOnlyList<BookEntry> books)
+    private void LoadContextShelfEntries(
+        string rootPath,
+        IReadOnlyList<BookEntry> books,
+        string? navigationHighlightPath)
     {
         ShelfTitle = Path.GetFileName(rootPath);
         ContextShelf.ReplaceItems(books);
+        _navigationHighlightPath = navigationHighlightPath;
+        UpdateContextShelfVisualState();
     }
 
     private async Task ActivateBookItemAsync(BookEntry book)
@@ -222,7 +267,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         await ActivateBookItemAsync(item.Book);
     }
 
-    private async Task LoadContentFolderAsync(string folderPath, bool updateReaderFromDirectPages)
+    private async Task LoadContentFolderAsync(
+        string folderPath,
+        bool updateReaderFromDirectPages,
+        string? navigationHighlightPath = null)
     {
         if (updateReaderFromDirectPages)
         {
@@ -230,13 +278,13 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         var result = await _contentOpenService.OpenContentFolderAsync(folderPath, CancellationToken.None);
-        LoadContextShelfEntries(result.FolderPath, result.ContextShelfEntries);
+        LoadContextShelfEntries(result.FolderPath, result.ContextShelfEntries, navigationHighlightPath);
 
         if (updateReaderFromDirectPages)
         {
             var progress = _readingSession.FindProgress(result.DirectFolderBook.Path);
-            _currentBook = result.DirectPages.Count > 0 ? result.DirectFolderBook : null;
-            ReaderTitle = _currentBook?.DisplayName ?? "";
+            CurrentBook = result.DirectPages.Count > 0 ? result.DirectFolderBook : null;
+            ReaderTitle = CurrentBook?.DisplayName ?? "";
             await Reader.LoadPagesAsync(result.DirectPages, progress?.LastPageIndex ?? 0);
         }
 
@@ -276,7 +324,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
                 Reader.ClearPages();
             }
 
-            ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
+            ClearContextShelfItems();
             SetMessage("ComicPlate could not read this folder.");
         }
         finally
@@ -298,7 +346,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             var result = await _contentOpenService.OpenBookAsync(book, CancellationToken.None);
             var pages = result.Pages;
             var progress = initialPageIndex.HasValue ? null : _readingSession.FindProgress(book.Path);
-            _currentBook = pages.Count > 0 ? result.Book : null;
+            CurrentBook = pages.Count > 0 ? result.Book : null;
             await Reader.LoadPagesAsync(pages, initialPageIndex ?? progress?.LastPageIndex ?? 0);
 
             if (pages.Count == 0)
@@ -308,7 +356,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
         {
-            _currentBook = null;
+            CurrentBook = null;
             Reader.ClearPages();
             ReaderTitle = "";
             SetMessage("ComicPlate could not read this comic.");
@@ -369,7 +417,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             }
 
             Reader.ClearPages();
-            ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
+            ClearContextShelfItems();
             SetMessage(result.Kind == OpenPathKind.Missing
                 ? "ComicPlate could not find this path."
                 : "ComicPlate cannot open this file type yet.");
@@ -377,7 +425,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
         {
             Reader.ClearPages();
-            ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
+            ClearContextShelfItems();
             SetMessage("ComicPlate could not open this path.");
         }
         finally
@@ -406,6 +454,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void GoBack()
     {
+        var navigationHighlightPath = _readingSession.CurrentShelf?.Path;
         var entry = _readingSession.Back();
         if (entry is null)
         {
@@ -413,7 +462,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         RaiseCommandStates();
-        _ = OpenShelfCollectionAsync(entry.Path);
+        _ = OpenShelfCollectionAsync(entry.Path, navigationHighlightPath);
     }
 
     private void OpenLastReadingPosition()
@@ -431,7 +480,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
         ShowReader();
         PersistCurrentReadingState(deleteCompletedProgress: true);
-        _currentBook = null;
+        CurrentBook = null;
         RaiseCommandStates();
         await OpenBookAsync(
             new BookEntry(current.Path, current.DisplayName, current.SourceKind, current.Path),
@@ -442,7 +491,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private void PersistCurrentReadingState(bool deleteCompletedProgress)
     {
         _readingSession.SaveReadingState(
-            _currentBook,
+            CurrentBook,
             Reader.HasPages,
             Reader.CurrentPageIndex,
             Reader.PageCount,
@@ -464,21 +513,24 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         var shelf = _readingSession.CurrentShelf;
         if (shelf is null)
         {
-            ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
+            ClearContextShelfItems();
             return;
         }
 
         await OpenShelfCollectionAsync(shelf.Path);
     }
 
-    private async Task OpenShelfCollectionAsync(string folderPath)
+    private async Task OpenShelfCollectionAsync(string folderPath, string? navigationHighlightPath = null)
     {
         IsLoading = true;
         ShelfTitle = Path.GetFileName(folderPath);
 
         try
         {
-            await LoadContentFolderAsync(folderPath, updateReaderFromDirectPages: false);
+            await LoadContentFolderAsync(
+                folderPath,
+                updateReaderFromDirectPages: false,
+                navigationHighlightPath);
             if (Reader.HasPages)
             {
                 SetMessage("");
@@ -486,7 +538,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
+            ClearContextShelfItems();
             if (!Reader.HasPages)
             {
                 SetMessage("ComicPlate could not read this folder.");
@@ -496,6 +548,18 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         {
             IsLoading = false;
         }
+    }
+
+    private void ClearContextShelfItems()
+    {
+        ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
+        _navigationHighlightPath = null;
+        UpdateContextShelfVisualState();
+    }
+
+    private void UpdateContextShelfVisualState()
+    {
+        ContextShelf.SetVisualState(CurrentBook?.Id, _navigationHighlightPath);
     }
 
     private void RaiseCommandStates()
