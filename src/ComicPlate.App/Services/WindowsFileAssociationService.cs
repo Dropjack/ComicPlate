@@ -97,11 +97,13 @@ public sealed class WindowsFileAssociationService : IFileAssociationService
         var extension = NormalizeExtension(format.Extension);
         var extensionKey = $@"{ClassesRoot}\{extension}";
         var progIdKey = $@"{ClassesRoot}\{progId}";
+        var defaultIconKey = $@"{progIdKey}\DefaultIcon";
         var commandKey = $@"{progIdKey}\shell\open\command";
 
         _registry.WriteDefaultValue(extensionKey, progId);
         _registry.WriteDefaultValue(progIdKey, $"{ApplicationName} {format.DisplayName} File");
         _registry.WriteValue(progIdKey, "FriendlyTypeName", $"{format.DisplayName} 漫画压缩包");
+        _registry.WriteDefaultValue(defaultIconKey, CreateIconReference());
         _registry.WriteDefaultValue(commandKey, CreateOpenCommand());
     }
 
@@ -128,6 +130,11 @@ public sealed class WindowsFileAssociationService : IFileAssociationService
     private string CreateOpenCommand()
     {
         return $"\"{_executablePath}\" \"%1\"";
+    }
+
+    private string CreateIconReference()
+    {
+        return $"\"{_executablePath}\",0";
     }
 
     private static string GetProgId(ComicArchiveFormat format)
