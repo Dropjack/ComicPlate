@@ -7,9 +7,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>..\..\platform\windows\ComicPlate.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <UsedAvaloniaProducts></UsedAvaloniaProducts>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <ApplicationIcon>..\..\platform\windows\ComicPlate.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,6 +33,15 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
-    <AvaloniaResource Include="..\..\platform\windows\ComicPlate.ico" Link="platform\windows\ComicPlate.ico" />
+    <AvaloniaResource Include="..\..\platform\windows\ComicPlate.ico"
+                      Link="!__AvaloniaDefaultWindowIcon"
+                      Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+    <AvaloniaResource Include="..\..\artworks\ComicPlate_Logo_Mac.png"
+                      Link="!__AvaloniaDefaultWindowIcon"
+                      Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
+    <Content Include="..\..\platform\mac\ComicPlate_Logo.icns"
+             Link="platform\mac\ComicPlate_Logo.icns"
+             CopyToOutputDirectory="PreserveNewest"
+             Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
   </ItemGroup>
 </Project>

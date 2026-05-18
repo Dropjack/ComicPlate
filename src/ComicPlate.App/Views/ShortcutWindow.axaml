@@ -2,7 +2,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="ComicPlate.App.Views.ShortcutWindow"
         Title="快捷键"
-        Icon="/platform/windows/ComicPlate.ico"
         Width="560"
         Height="520"
         MinWidth="460"

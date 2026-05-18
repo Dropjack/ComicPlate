@@ -8,7 +8,6 @@
         d:DesignHeight="800"
         x:Class="ComicPlate.App.MainWindow"
         Title="{Binding WindowTitle}"
-        Icon="/platform/windows/ComicPlate.ico"
         Width="1200"
         Height="800"
         MinWidth="900"

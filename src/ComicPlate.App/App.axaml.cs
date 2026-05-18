@@ -17,6 +17,8 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        MacOSDockIconService.ApplyDevelopmentDockIcon();
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var settingsService = ComicPlate.Infrastructure.Persistence.SettingsService.CreateDefault();
