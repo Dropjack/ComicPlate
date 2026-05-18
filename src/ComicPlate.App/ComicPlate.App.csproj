@@ -2,9 +2,12 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>ComicPlate</AssemblyName>
+    <RootNamespace>ComicPlate.App</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\platform\windows\ComicPlate.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <UsedAvaloniaProducts></UsedAvaloniaProducts>
   </PropertyGroup>
@@ -27,5 +30,6 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+    <AvaloniaResource Include="..\..\platform\windows\ComicPlate.ico" Link="platform\windows\ComicPlate.ico" />
   </ItemGroup>
 </Project>

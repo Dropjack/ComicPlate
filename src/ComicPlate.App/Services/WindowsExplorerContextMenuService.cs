@@ -129,7 +129,7 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
         var commandKeyPath = GetCommandKeyPath(format.Extension);
         _registry.WriteDefaultValue(shellKeyPath, MenuText);
         _registry.WriteValue(shellKeyPath, "MUIVerb", MenuText);
-        _registry.WriteValue(shellKeyPath, "Icon", _executablePath);
+        _registry.WriteValue(shellKeyPath, "Icon", CreateIconReference());
         _registry.WriteDefaultValue(commandKeyPath, CreateOpenCommand());
     }
 
@@ -149,6 +149,11 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
     private string CreateOpenCommand()
     {
         return $"\"{_executablePath}\" \"%1\"";
+    }
+
+    private string CreateIconReference()
+    {
+        return $"\"{_executablePath}\",0";
     }
 
     private static string GetShellKeyPath(string extension)

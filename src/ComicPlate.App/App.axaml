@@ -6,7 +6,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://ComicPlate.App/Themes/ColorTokens.axaml" />
+                <ResourceInclude Source="avares://ComicPlate/Themes/ColorTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

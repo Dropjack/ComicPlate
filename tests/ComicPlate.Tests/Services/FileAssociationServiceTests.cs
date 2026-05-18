@@ -34,6 +34,9 @@ public sealed class FileAssociationServiceTests
         Assert.Equal(
             "\"D:\\Tools\\ComicPlate\\ComicPlate.exe\" \"%1\"",
             registry.ReadDefaultValue(@"Software\Classes\ComicPlate.cbr\shell\open\command"));
+        Assert.Equal(
+            "\"D:\\Tools\\ComicPlate\\ComicPlate.exe\",0",
+            registry.ReadDefaultValue(@"Software\Classes\ComicPlate.cbr\DefaultIcon"));
     }
 
     [Fact]

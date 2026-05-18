@@ -31,6 +31,9 @@ public sealed class ExplorerContextMenuServiceTests
         Assert.Equal(
             "\"D:\\Tools\\ComicPlate\\ComicPlate.exe\" \"%1\"",
             registry.ReadDefaultValue(@"Software\Classes\SystemFileAssociations\.cbr\shell\ComicPlate.Open\command"));
+        Assert.Equal(
+            "\"D:\\Tools\\ComicPlate\\ComicPlate.exe\",0",
+            registry.ReadValue(@"Software\Classes\SystemFileAssociations\.cbz\shell\ComicPlate.Open", "Icon"));
         Assert.False(registry.Values.ContainsKey(@"Software\Classes\SystemFileAssociations\.cb7\shell\ComicPlate.Open"));
     }
 
