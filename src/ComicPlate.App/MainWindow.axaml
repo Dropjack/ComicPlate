@@ -44,14 +44,14 @@
             <Setter Property="Background" Value="{StaticResource PanelBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="28" />
-            <Setter Property="Margin" Value="8,8,8,8" />
+            <Setter Property="CornerRadius" Value="28,0,0,28" />
+            <Setter Property="Margin" Value="8,8,0,8" />
         </Style>
 
         <Style Selector="Window.mac-shell Border.command-rail">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="28" />
+            <Setter Property="CornerRadius" Value="28,0,0,28" />
         </Style>
 
         <Style Selector="Window.mac-shell Border.reader-title-bar">
@@ -208,13 +208,13 @@
                         Grid.Column="1"
                         Width="1"
                         Background="{StaticResource BorderBrushSoft}"
-                        IsVisible="{Binding IsNavigationPaneVisible}" />
+                        IsVisible="{Binding IsReaderNavigationPaneVisible}" />
 
                 <views:ContextShelfView x:Name="MacContextShelf"
                                         Grid.Column="2"
                                         Width="300"
                                         MinWidth="220"
-                                        IsVisible="{Binding IsNavigationPaneVisible}" />
+                                        IsVisible="{Binding IsReaderNavigationPaneVisible}" />
             </Grid>
         </Border>
 

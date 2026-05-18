@@ -116,7 +116,13 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     public bool IsReaderVisible
     {
         get => _isReaderVisible;
-        private set => SetProperty(ref _isReaderVisible, value);
+        private set
+        {
+            if (SetProperty(ref _isReaderVisible, value))
+            {
+                OnPropertyChanged(nameof(IsReaderNavigationPaneVisible));
+            }
+        }
     }
 
     public bool IsNavigationPaneVisible
@@ -128,6 +134,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             {
                 OnPropertyChanged(nameof(NavigationPaneToggleText));
                 OnPropertyChanged(nameof(IsNavigationPaneHidden));
+                OnPropertyChanged(nameof(IsReaderNavigationPaneVisible));
             }
         }
     }
@@ -135,6 +142,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     public string NavigationPaneToggleText => IsNavigationPaneVisible ? "隐藏 Shelf" : "显示 Shelf";
 
     public bool IsNavigationPaneHidden => !IsNavigationPaneVisible;
+
+    public bool IsReaderNavigationPaneVisible => IsReaderVisible && IsNavigationPaneVisible;
 
     public bool CanGoBack => _readingSession.CanGoBack && !IsLoading;
 

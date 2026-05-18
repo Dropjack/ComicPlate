@@ -15,6 +15,32 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
         </Style>
+
+        <Style Selector="UserControl.mac-shell Border.mac-fullscreen-bottom-overlay">
+            <Setter Property="Background" Value="{StaticResource MacFullscreenChromeBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource MacFullscreenChromeBorderBrush}" />
+        </Style>
+
+        <Style Selector="UserControl.mac-shell Border.mac-fullscreen-shelf-overlay">
+            <Setter Property="Background" Value="{StaticResource MacFullscreenChromeBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource MacFullscreenChromeBorderBrush}" />
+        </Style>
+
+        <Style Selector="Button.reader-bottom-button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <Style Selector="Button.reader-bottom-button:pointerover">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+
+        <Style Selector="Button.reader-bottom-button:pressed">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
     </UserControl.Styles>
 
     <Grid x:Name="ReaderSurfaceRoot"
@@ -105,6 +131,26 @@
                     <views:ContextShelfView />
                 </Border>
 
+                <Border x:Name="MacFullscreenShelfOverlay"
+                        Classes="mac-fullscreen-shelf-overlay"
+                        ZIndex="54"
+                        IsVisible="False"
+                        Width="300"
+                        Margin="0"
+                        Padding="0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Stretch"
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="0,0,1,0"
+                        CornerRadius="0"
+                        Opacity="1"
+                        ClipToBounds="True"
+                        PointerEntered="OnFullscreenOverlayPointerEntered"
+                        PointerExited="OnFullscreenOverlayPointerExited">
+                    <views:ContextShelfView />
+                </Border>
+
                 <Border x:Name="FullscreenBottomOverlay"
                         ZIndex="50"
                         IsVisible="False"
@@ -134,6 +180,7 @@
                                     VerticalAlignment="Center"
                                     Spacing="8">
                             <Button Click="OnVisualLeftClick"
+                                    Classes="reader-bottom-button"
                                     Padding="12,3"
                                     CornerRadius="4"
                                     ToolTip.Tip="上一阅读帧">
@@ -141,11 +188,13 @@
                                           Width="18"
                                           Height="18" />
                             </Button>
-                            <Button Content="{Binding Reader.PageText}"
-                                    IsEnabled="False"
-                                    Padding="14,3"
-                                    CornerRadius="4" />
+                            <TextBlock Text="{Binding Reader.PageText}"
+                                       Foreground="{StaticResource TextBrush}"
+                                       MinWidth="92"
+                                       TextAlignment="Center"
+                                       VerticalAlignment="Center" />
                             <Button Click="OnVisualRightClick"
+                                    Classes="reader-bottom-button"
                                     Padding="12,3"
                                     CornerRadius="4"
                                     ToolTip.Tip="下一阅读帧">
@@ -154,6 +203,68 @@
                                           Height="18" />
                             </Button>
                         </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border x:Name="MacFullscreenBottomOverlay"
+                        Classes="mac-fullscreen-bottom-overlay"
+                        ZIndex="55"
+                        IsVisible="False"
+                        Height="82"
+                        Margin="0,0,0,8"
+                        Padding="18,9,18,10"
+                        VerticalAlignment="Bottom"
+                        HorizontalAlignment="Center"
+                        Background="{StaticResource MacFullscreenChromeBrush}"
+                        BorderBrush="{StaticResource MacFullscreenChromeBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="41"
+                        PointerEntered="OnFullscreenOverlayPointerEntered"
+                        PointerExited="OnFullscreenOverlayPointerExited">
+                    <Grid RowDefinitions="32,*">
+                        <StackPanel Grid.Row="0"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Spacing="12">
+                            <Button Click="OnVisualLeftClick"
+                                    Classes="reader-bottom-button"
+                                    Padding="13,3"
+                                    CornerRadius="16"
+                                    ToolTip.Tip="上一阅读帧">
+                                <PathIcon Data="{StaticResource NavLeftIcon}"
+                                          Width="18"
+                                          Height="18" />
+                            </Button>
+                            <TextBlock Text="{Binding Reader.PageText}"
+                                       Foreground="{StaticResource TextBrush}"
+                                       MinWidth="92"
+                                       TextAlignment="Center"
+                                       VerticalAlignment="Center" />
+                            <Button Click="OnVisualRightClick"
+                                    Classes="reader-bottom-button"
+                                    Padding="13,3"
+                                    CornerRadius="16"
+                                    ToolTip.Tip="下一阅读帧">
+                                <PathIcon Data="{StaticResource NavRightIcon}"
+                                          Width="18"
+                                          Height="18" />
+                            </Button>
+                        </StackPanel>
+                        <Grid Grid.Row="1"
+                              Margin="18,4,18,0"
+                              Background="Transparent"
+                              PointerPressed="OnProgressPointerPressed"
+                              PointerMoved="OnProgressPointerMoved"
+                              PointerReleased="OnProgressPointerReleased"
+                              PointerCaptureLost="OnProgressPointerCaptureLost">
+                            <ProgressBar Minimum="0"
+                                         Maximum="{Binding Reader.LastPageProgressIndex}"
+                                         Value="{Binding Reader.DisplayPageProgressIndex}"
+                                         Height="4"
+                                         VerticalAlignment="Center"
+                                         IsHitTestVisible="False" />
+                        </Grid>
                     </Grid>
                 </Border>
             </Grid>
@@ -181,6 +292,7 @@
                         VerticalAlignment="Center"
                         Spacing="8">
                 <Button Click="OnVisualLeftClick"
+                        Classes="reader-bottom-button"
                         Padding="12,3"
                         CornerRadius="4"
                         ToolTip.Tip="上一阅读帧">
@@ -188,11 +300,13 @@
                               Width="18"
                               Height="18" />
                 </Button>
-                <Button Content="{Binding Reader.PageText}"
-                        IsEnabled="False"
-                        Padding="14,3"
-                        CornerRadius="4" />
+                <TextBlock Text="{Binding Reader.PageText}"
+                           Foreground="{StaticResource TextBrush}"
+                           MinWidth="92"
+                           TextAlignment="Center"
+                           VerticalAlignment="Center" />
                 <Button Click="OnVisualRightClick"
+                        Classes="reader-bottom-button"
                         Padding="12,3"
                         CornerRadius="4"
                         ToolTip.Tip="下一阅读帧">
