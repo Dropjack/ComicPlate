@@ -22,7 +22,7 @@ internal static class ShortcutRegistry
         new ShortcutDefinition(ShortcutActionId.ToggleNavigationPane, "显示/隐藏 Shelf", "功能操作", Key.Tab),
         new ShortcutDefinition(ShortcutActionId.ToggleViewMode, "单页/双页切换", "功能操作", Key.Q),
         new ShortcutDefinition(ShortcutActionId.ToggleReadingDirection, "阅读方向", "功能操作", Key.R),
-        new ShortcutDefinition(ShortcutActionId.ToggleFullscreen, "全屏", "功能操作", Key.F11),
+        new ShortcutDefinition(ShortcutActionId.ToggleFullscreen, "全屏", "功能操作", Key.F),
         new ShortcutDefinition(ShortcutActionId.OpenSettings, "设置", "功能操作", Key.OemComma, UsesPlatformCommandModifier: true),
         new ShortcutDefinition(ShortcutActionId.CloseWindow, "回到起始页", "功能操作", Key.W, UsesPlatformCommandModifier: true),
     };

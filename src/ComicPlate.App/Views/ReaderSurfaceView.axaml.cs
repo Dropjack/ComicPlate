@@ -12,6 +12,7 @@ public partial class ReaderSurfaceView : UserControl
 {
     private const double FullscreenShelfHotZoneWidth = 80;
     private const double FullscreenBottomHotZoneHeight = 80;
+    private const double MacFullscreenBottomOverlayWidthRatio = 2.0 / 3.0;
     private static readonly TimeSpan FullscreenOverlayHideDelay = TimeSpan.FromSeconds(3);
 
     private bool _isReaderDragging;
@@ -48,12 +49,15 @@ public partial class ReaderSurfaceView : UserControl
         BottomButtonRow.IsVisible = !isHidden;
         BottomProgressRow.IsVisible = !isHidden;
         FullscreenBottomOverlay.IsVisible = false;
+        MacFullscreenBottomOverlay.IsVisible = false;
         FullscreenShelfOverlay.IsVisible = false;
+        MacFullscreenShelfOverlay.IsVisible = false;
         _fullscreenOverlayHideTimer.Stop();
     }
 
     private void OnReaderViewportSizeChanged(object? sender, SizeChangedEventArgs e)
     {
+        UpdateMacFullscreenBottomOverlayWidth(e.NewSize.Width);
         ViewModel?.Reader.SetReaderViewportSize(e.NewSize.Width, e.NewSize.Height);
     }
 
@@ -154,7 +158,8 @@ public partial class ReaderSurfaceView : UserControl
         }
 
         _isProgressDragging = true;
-        FullscreenBottomOverlay.IsVisible = ShouldUseFullscreenBottomOverlay();
+        FullscreenBottomOverlay.IsVisible = ShouldUseWindowsFullscreenBottomOverlay();
+        MacFullscreenBottomOverlay.IsVisible = ShouldUseMacFullscreenBottomOverlay();
         ResetFullscreenOverlayHideTimer();
         PreviewProgressNavigation(progressTrack, point.Position);
         e.Pointer.Capture(progressTrack);
@@ -204,7 +209,25 @@ public partial class ReaderSurfaceView : UserControl
         }
 
         FullscreenBottomOverlay.IsVisible = false;
+        MacFullscreenBottomOverlay.IsVisible = false;
         FullscreenShelfOverlay.IsVisible = false;
+        MacFullscreenShelfOverlay.IsVisible = false;
+    }
+
+    private void OnFullscreenOverlayPointerEntered(object? sender, PointerEventArgs e)
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            _fullscreenOverlayHideTimer.Stop();
+        }
+    }
+
+    private void OnFullscreenOverlayPointerExited(object? sender, PointerEventArgs e)
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            ResetFullscreenOverlayHideTimer();
+        }
     }
 
     private void CommitProgressNavigation(Control progressTrack, Point position)
@@ -247,6 +270,7 @@ public partial class ReaderSurfaceView : UserControl
         if (!ShouldUseFullscreenBottomOverlay())
         {
             FullscreenBottomOverlay.IsVisible = false;
+            MacFullscreenBottomOverlay.IsVisible = false;
             return;
         }
 
@@ -257,7 +281,8 @@ public partial class ReaderSurfaceView : UserControl
 
         if (readerSurface.Bounds.Height - position.Y <= FullscreenBottomHotZoneHeight)
         {
-            FullscreenBottomOverlay.IsVisible = true;
+            FullscreenBottomOverlay.IsVisible = ShouldUseWindowsFullscreenBottomOverlay();
+            MacFullscreenBottomOverlay.IsVisible = ShouldUseMacFullscreenBottomOverlay();
             ResetFullscreenOverlayHideTimer();
         }
     }
@@ -267,6 +292,7 @@ public partial class ReaderSurfaceView : UserControl
         if (!ShouldUseFullscreenShelfOverlay())
         {
             FullscreenShelfOverlay.IsVisible = false;
+            MacFullscreenShelfOverlay.IsVisible = false;
             return;
         }
 
@@ -277,19 +303,40 @@ public partial class ReaderSurfaceView : UserControl
 
         if (position.X <= FullscreenShelfHotZoneWidth)
         {
-            FullscreenShelfOverlay.IsVisible = true;
+            FullscreenShelfOverlay.IsVisible = ShouldUseWindowsFullscreenShelfOverlay();
+            MacFullscreenShelfOverlay.IsVisible = ShouldUseMacFullscreenShelfOverlay();
             ResetFullscreenOverlayHideTimer();
         }
     }
 
     private bool ShouldUseFullscreenBottomOverlay()
     {
-        return _isFullscreenChromeHidden && !OperatingSystem.IsMacOS();
+        return _isFullscreenChromeHidden;
+    }
+
+    private bool ShouldUseWindowsFullscreenBottomOverlay()
+    {
+        return ShouldUseFullscreenBottomOverlay() && !OperatingSystem.IsMacOS();
+    }
+
+    private bool ShouldUseMacFullscreenBottomOverlay()
+    {
+        return ShouldUseFullscreenBottomOverlay() && OperatingSystem.IsMacOS();
     }
 
     private bool ShouldUseFullscreenShelfOverlay()
     {
-        return ShouldUseFullscreenBottomOverlay();
+        return _isFullscreenChromeHidden;
+    }
+
+    private bool ShouldUseWindowsFullscreenShelfOverlay()
+    {
+        return ShouldUseWindowsFullscreenBottomOverlay();
+    }
+
+    private bool ShouldUseMacFullscreenShelfOverlay()
+    {
+        return ShouldUseFullscreenShelfOverlay() && OperatingSystem.IsMacOS();
     }
 
     private void ResetFullscreenOverlayHideTimer()
@@ -312,6 +359,18 @@ public partial class ReaderSurfaceView : UserControl
         }
 
         return FullscreenBottomOverlay.IsVisualAncestorOf(visual)
-            || FullscreenShelfOverlay.IsVisualAncestorOf(visual);
+            || MacFullscreenBottomOverlay.IsVisualAncestorOf(visual)
+            || FullscreenShelfOverlay.IsVisualAncestorOf(visual)
+            || MacFullscreenShelfOverlay.IsVisualAncestorOf(visual);
+    }
+
+    private void UpdateMacFullscreenBottomOverlayWidth(double readerWidth)
+    {
+        if (readerWidth <= 0)
+        {
+            return;
+        }
+
+        MacFullscreenBottomOverlay.Width = Math.Max(320, readerWidth * MacFullscreenBottomOverlayWidthRatio);
     }
 }
