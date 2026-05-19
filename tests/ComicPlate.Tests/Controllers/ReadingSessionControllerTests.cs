@@ -1,4 +1,4 @@
-using ComicPlate.App.Controllers;
+﻿using ComicPlate.App.Controllers;
 using ComicPlate.Core.Books;
 using ComicPlate.Core.Navigation;
 using ComicPlate.Core.Reading;
@@ -55,13 +55,13 @@ public sealed class ReadingSessionControllerTests : IDisposable
         controller.StartAtContentFolder(folderPath);
         controller.NavigateToBook(book);
 
-        Assert.False(controller.CanGoBack);
-        Assert.Equal(BookSourceKind.Collection, controller.CurrentShelf?.SourceKind);
-        Assert.Equal(Path.GetFullPath(folderPath), controller.CurrentShelf?.Path);
+        Assert.True(controller.CanNavigateUp);
+        Assert.Equal(BookSourceKind.Collection, controller.CurrentCollection?.SourceKind);
+        Assert.Equal(Path.GetFullPath(folderPath), controller.CurrentCollection?.Path);
     }
 
     [Fact]
-    public void BackReturnsPreviousShelfCollectionWithoutReaderBook()
+    public void NavigateUpReturnsPreviousCollectionWithoutReaderBook()
     {
         var controller = CreateController();
         var rootPath = Path.Combine(_rootPath, "Root");
@@ -72,12 +72,26 @@ public sealed class ReadingSessionControllerTests : IDisposable
         controller.NavigateToContentFolder(seriesPath);
         controller.NavigateToBook(book);
 
-        var previous = controller.Back();
+        var previous = controller.NavigateUp();
 
         Assert.NotNull(previous);
         Assert.Equal(BookSourceKind.Collection, previous.SourceKind);
         Assert.Equal(Path.GetFullPath(rootPath), previous.Path);
-        Assert.Equal(Path.GetFullPath(rootPath), controller.CurrentShelf?.Path);
+        Assert.Equal(Path.GetFullPath(rootPath), controller.CurrentCollection?.Path);
+    }
+
+    [Fact]
+    public void NavigateUpFallsBackToParentDirectoryWhenNavigationStackIsEmpty()
+    {
+        var controller = CreateController();
+        var rootPath = Path.Combine(_rootPath, "Root");
+        var seriesPath = Path.Combine(rootPath, "Series");
+
+        controller.StartAtContentFolder(seriesPath);
+
+        Assert.True(controller.CanNavigateUp);
+        Assert.Equal(Path.GetFullPath(rootPath), controller.NavigateUp()?.Path);
+        Assert.Equal(Path.GetFullPath(rootPath), controller.CurrentCollection?.Path);
     }
 
     [Fact]
@@ -101,11 +115,11 @@ public sealed class ReadingSessionControllerTests : IDisposable
         Assert.NotNull(current);
         Assert.Equal(book.Path, current.Path);
         Assert.Equal(3, current.LastPageIndex);
-        Assert.Equal(Path.GetFullPath(_rootPath), restoredController.CurrentShelf?.Path);
+        Assert.Equal(Path.GetFullPath(_rootPath), restoredController.CurrentCollection?.Path);
     }
 
     [Fact]
-    public void PrepareOpenLastReadingPositionUsesReadingShelfInsteadOfLastBrowsedShelf()
+    public void PrepareOpenLastReadingPositionUsesReadingParentCollectionInsteadOfLastBrowsedCollection()
     {
         var seriesPath = Path.Combine(_rootPath, "Series");
         var otherPath = Path.Combine(_rootPath, "Other");
@@ -118,8 +132,8 @@ public sealed class ReadingSessionControllerTests : IDisposable
             new[] { new NavigationEntry(_rootPath, Path.GetFileName(_rootPath), BookSourceKind.Collection) },
             DateTimeOffset.UtcNow)
         {
-            ReadingShelfCurrent = new NavigationEntry(seriesPath, "Series", BookSourceKind.Collection),
-            ReadingShelfBackStack = new[] { new NavigationEntry(_rootPath, Path.GetFileName(_rootPath), BookSourceKind.Collection) }
+            ReadingParentCollectionCurrent = new NavigationEntry(seriesPath, "Series", BookSourceKind.Collection),
+            ReadingParentCollectionBackStack = new[] { new NavigationEntry(_rootPath, Path.GetFileName(_rootPath), BookSourceKind.Collection) }
         });
 
         var controller = CreateController();
@@ -127,10 +141,10 @@ public sealed class ReadingSessionControllerTests : IDisposable
 
         Assert.NotNull(current);
         Assert.Equal(bookPath, current.Path);
-        Assert.Equal(Path.GetFullPath(seriesPath), controller.CurrentShelf?.Path);
-        Assert.True(controller.CanGoBack);
+        Assert.Equal(Path.GetFullPath(seriesPath), controller.CurrentCollection?.Path);
+        Assert.True(controller.CanNavigateUp);
 
-        var previous = controller.Back();
+        var previous = controller.NavigateUp();
 
         Assert.NotNull(previous);
         Assert.Equal(Path.GetFullPath(_rootPath), previous.Path);
@@ -207,7 +221,7 @@ public sealed class ReadingSessionControllerTests : IDisposable
     }
 
     [Fact]
-    public void SaveReadingStateStoresReadingShelfSeparatelyFromLastBrowsedShelf()
+    public void SaveReadingStateStoresReadingParentCollectionSeparatelyFromLastBrowsedCollection()
     {
         var controller = CreateController();
         var rootPath = Path.Combine(_rootPath, "Root");
@@ -231,13 +245,98 @@ public sealed class ReadingSessionControllerTests : IDisposable
         var session = new JsonAppStateStore(_rootPath).LoadSession();
 
         Assert.Equal(book.Path, session.Current?.Path);
-        Assert.Equal(Path.GetFullPath(seriesPath), session.ReadingShelfCurrent?.Path);
-        Assert.Single(session.ReadingShelfBackStack);
-        Assert.Equal(Path.GetFullPath(rootPath), session.ReadingShelfBackStack[0].Path);
+        Assert.Equal(Path.GetFullPath(seriesPath), session.ReadingParentCollectionCurrent?.Path);
+        Assert.Single(session.ReadingParentCollectionBackStack);
+        Assert.Equal(Path.GetFullPath(rootPath), session.ReadingParentCollectionBackStack[0].Path);
         Assert.Equal(Path.GetFullPath(otherPath), session.ShelfCurrent?.Path);
         Assert.Equal(2, session.BackStack.Count);
         Assert.Equal(Path.GetFullPath(seriesPath), session.BackStack[0].Path);
         Assert.Equal(Path.GetFullPath(rootPath), session.BackStack[1].Path);
+    }
+
+    [Fact]
+    public void StartingAtHistoryBookUsesItsParentAsShelfRootAndCanNavigateUpToParentDirectory()
+    {
+        var controller = CreateController();
+        var rootPath = Path.Combine(_rootPath, "Root");
+        var seriesPath = Path.Combine(rootPath, "Series");
+        var historyPath = Path.Combine(_rootPath, "History");
+        var historyBook = CreateBook(Path.Combine(historyPath, "B.cbz"));
+
+        controller.StartAtContentFolder(rootPath);
+        controller.NavigateToContentFolder(seriesPath);
+        Assert.True(controller.CanNavigateUp);
+
+        controller.StartAtBook(historyBook);
+
+        Assert.True(controller.CanNavigateUp);
+        Assert.Equal(Path.GetFullPath(historyPath), controller.CurrentCollection?.Path);
+        Assert.Equal(Path.GetFullPath(_rootPath), controller.NavigateUp()?.Path);
+    }
+
+    [Fact]
+    public void PrepareOpenLastReadingPositionRestoresFolderBookParentCollectionNavigation()
+    {
+        var rootPath = Path.Combine(_rootPath, "Root");
+        var parentCollectionPath = Path.Combine(rootPath, "Series");
+        var folderBookPath = Path.Combine(parentCollectionPath, "Volume");
+        Directory.CreateDirectory(folderBookPath);
+        var controller = CreateController();
+        var book = new BookEntry(folderBookPath, "Volume", BookSourceKind.Folder, folderBookPath);
+
+        controller.StartAtContentFolder(rootPath);
+        controller.NavigateToContentFolder(parentCollectionPath);
+        controller.NavigateToContentFolder(folderBookPath);
+        controller.SaveReadingState(
+            book,
+            hasPages: true,
+            currentPageIndex: 104,
+            pageCount: 142,
+            ReadingDirection.RightToLeft,
+            ViewMode.SinglePage,
+            deleteCompletedProgress: false);
+
+        var restoredController = CreateController();
+        var current = restoredController.PrepareOpenLastReadingPosition();
+
+        Assert.NotNull(current);
+        Assert.Equal(folderBookPath, current.Path);
+        Assert.Equal(Path.GetFullPath(parentCollectionPath), restoredController.CurrentCollection?.Path);
+        Assert.True(restoredController.CanNavigateUp);
+        Assert.Equal(Path.GetFullPath(rootPath), restoredController.NavigateUp()?.Path);
+    }
+
+    [Fact]
+    public void PrepareOpenLastReadingPositionKeepsParentCollectionUpNavigationAfterUserNavigatedUpBeforeClose()
+    {
+        var rootPath = Path.Combine(_rootPath, "Root");
+        var parentCollectionPath = Path.Combine(rootPath, "Series");
+        var folderBookPath = Path.Combine(parentCollectionPath, "Volume");
+        Directory.CreateDirectory(folderBookPath);
+        var controller = CreateController();
+        var book = new BookEntry(folderBookPath, "Volume", BookSourceKind.Folder, folderBookPath);
+
+        controller.StartAtContentFolder(rootPath);
+        controller.NavigateToContentFolder(parentCollectionPath);
+        controller.NavigateToContentFolder(folderBookPath);
+        Assert.Equal(Path.GetFullPath(parentCollectionPath), controller.NavigateUp()?.Path);
+        controller.SaveReadingState(
+            book,
+            hasPages: true,
+            currentPageIndex: 104,
+            pageCount: 142,
+            ReadingDirection.RightToLeft,
+            ViewMode.SinglePage,
+            deleteCompletedProgress: false);
+
+        var restoredController = CreateController();
+        var current = restoredController.PrepareOpenLastReadingPosition();
+
+        Assert.NotNull(current);
+        Assert.Equal(folderBookPath, current.Path);
+        Assert.Equal(Path.GetFullPath(parentCollectionPath), restoredController.CurrentCollection?.Path);
+        Assert.True(restoredController.CanNavigateUp);
+        Assert.Equal(Path.GetFullPath(rootPath), restoredController.NavigateUp()?.Path);
     }
 
     public void Dispose()

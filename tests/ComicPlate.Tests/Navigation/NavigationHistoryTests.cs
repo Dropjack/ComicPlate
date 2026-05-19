@@ -14,7 +14,7 @@ public sealed class NavigationHistoryTests
         history.NavigateTo(CreateEntry("book"));
         history.StartAt(CreateEntry("other"));
 
-        Assert.False(history.CanGoBack);
+        Assert.False(history.CanNavigateUp);
         Assert.Equal("other", history.Current?.Path);
     }
 
@@ -26,12 +26,12 @@ public sealed class NavigationHistoryTests
         history.StartAt(CreateEntry("root"));
         history.NavigateTo(CreateEntry("book"));
 
-        Assert.True(history.CanGoBack);
+        Assert.True(history.CanNavigateUp);
         Assert.Equal("book", history.Current?.Path);
     }
 
     [Fact]
-    public void BackReturnsPreviousEntry()
+    public void NavigateUpReturnsPreviousEntry()
     {
         var history = new NavigationHistory();
 
@@ -39,11 +39,11 @@ public sealed class NavigationHistoryTests
         history.NavigateTo(CreateEntry("series"));
         history.NavigateTo(CreateEntry("book"));
 
-        var previous = history.Back();
+        var previous = history.NavigateUp();
 
         Assert.Equal("series", previous?.Path);
         Assert.Equal("series", history.Current?.Path);
-        Assert.True(history.CanGoBack);
+        Assert.True(history.CanNavigateUp);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public sealed class NavigationHistoryTests
         history.StartAt(root);
         history.NavigateTo(root);
 
-        Assert.False(history.CanGoBack);
+        Assert.False(history.CanNavigateUp);
     }
 
     [Fact]
@@ -83,9 +83,9 @@ public sealed class NavigationHistoryTests
             CreateEntry("book"),
             new[] { CreateEntry("series"), CreateEntry("root") });
 
-        Assert.Equal("series", history.Back()?.Path);
-        Assert.Equal("root", history.Back()?.Path);
-        Assert.False(history.CanGoBack);
+        Assert.Equal("series", history.NavigateUp()?.Path);
+        Assert.Equal("root", history.NavigateUp()?.Path);
+        Assert.False(history.CanNavigateUp);
     }
 
     private static NavigationEntry CreateEntry(string path)

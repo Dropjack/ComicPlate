@@ -28,7 +28,13 @@ public sealed class JsonAppStateStoreTests : IDisposable
             DateTimeOffset.Parse("2026-05-13T10:30:00Z"))
         {
             ReadingShelfCurrent = new NavigationEntry(@"D:\Manga", "Manga", BookSourceKind.Collection),
-            ReadingShelfBackStack = new[] { new NavigationEntry(@"D:\", "D:", BookSourceKind.Collection) }
+            ReadingShelfBackStack = new[] { new NavigationEntry(@"D:\", "D:", BookSourceKind.Collection) },
+            ReadingContainerCurrent = new NavigationEntry(@"D:\Manga", "Manga", BookSourceKind.Collection),
+            ReadingContainerBackStack = new[] { new NavigationEntry(@"D:\", "D:", BookSourceKind.Collection) },
+            ReadingParentShelfCurrent = new NavigationEntry(@"D:\Manga", "Manga", BookSourceKind.Collection),
+            ReadingParentShelfBackStack = new[] { new NavigationEntry(@"D:\", "D:", BookSourceKind.Collection) },
+            ReadingParentCollectionCurrent = new NavigationEntry(@"D:\Manga", "Manga", BookSourceKind.Collection),
+            ReadingParentCollectionBackStack = new[] { new NavigationEntry(@"D:\", "D:", BookSourceKind.Collection) }
         };
 
         store.SaveSession(session);
@@ -36,9 +42,10 @@ public sealed class JsonAppStateStoreTests : IDisposable
 
         Assert.Equal("A.cbz", loaded.Current?.DisplayName);
         Assert.Equal(100, loaded.Current?.LastPageIndex);
-        Assert.Equal("Manga", loaded.ReadingShelfCurrent?.DisplayName);
-        Assert.Single(loaded.ReadingShelfBackStack);
-        Assert.Equal("D:", loaded.ReadingShelfBackStack[0].DisplayName);
+        Assert.Equal("Manga", loaded.ReadingContainerCurrent?.DisplayName);
+        Assert.Single(loaded.ReadingContainerBackStack);
+        Assert.Equal("Manga", loaded.ReadingParentCollectionCurrent?.DisplayName);
+        Assert.Single(loaded.ReadingParentCollectionBackStack);
         Assert.Equal("Manga", loaded.ShelfCurrent?.DisplayName);
         Assert.Single(loaded.BackStack);
         Assert.Equal("Manga", loaded.BackStack[0].DisplayName);
@@ -70,6 +77,12 @@ public sealed class JsonAppStateStoreTests : IDisposable
         Assert.Equal(12, loaded.Current?.LastPageIndex);
         Assert.Null(loaded.ReadingShelfCurrent);
         Assert.Empty(loaded.ReadingShelfBackStack);
+        Assert.Null(loaded.ReadingContainerCurrent);
+        Assert.Empty(loaded.ReadingContainerBackStack);
+        Assert.Null(loaded.ReadingParentShelfCurrent);
+        Assert.Empty(loaded.ReadingParentShelfBackStack);
+        Assert.Null(loaded.ReadingParentCollectionCurrent);
+        Assert.Empty(loaded.ReadingParentCollectionBackStack);
         Assert.Null(loaded.ShelfCurrent);
     }
 
@@ -122,7 +135,7 @@ public sealed class JsonAppStateStoreTests : IDisposable
 
         Assert.Null(store.FindProgress(book.Path));
         Assert.Equal("A.cbz", store.LoadSession().Current?.DisplayName);
-        Assert.Equal(@"D:\Manga", store.LoadSession().ReadingShelfCurrent?.Path);
+        Assert.Equal(@"D:\Manga", store.LoadSession().ReadingParentCollectionCurrent?.Path);
     }
 
     [Fact]
@@ -145,7 +158,37 @@ public sealed class JsonAppStateStoreTests : IDisposable
 
         Assert.Equal(50, store.FindProgress(book.Path)?.LastPageIndex);
         Assert.Equal(99, store.LoadSession().Current?.LastPageIndex);
-        Assert.Equal(@"D:\Manga", store.LoadSession().ReadingShelfCurrent?.Path);
+        Assert.Equal(@"D:\Manga", store.LoadSession().ReadingParentCollectionCurrent?.Path);
+    }
+
+    [Fact]
+    public void SaveReadingStateStoresFolderBookContainerSeparatelyFromParentCollection()
+    {
+        var store = new JsonAppStateStore(_tempDirectory);
+        var rootPath = Path.Combine(_tempDirectory, "Manga");
+        var bookPath = Path.Combine(rootPath, "Volume");
+        Directory.CreateDirectory(bookPath);
+        var book = new BookEntry(bookPath, "Volume", BookSourceKind.Folder, bookPath);
+        var history = new NavigationHistory();
+        history.StartAt(new NavigationEntry(rootPath, "Manga", BookSourceKind.Collection));
+        history.NavigateTo(new NavigationEntry(bookPath, "Volume", BookSourceKind.Collection));
+
+        store.SaveReadingState(
+            book,
+            pageIndex: 12,
+            pageCount: 100,
+            ReadingDirection.RightToLeft,
+            ViewMode.SinglePage,
+            history,
+            deleteCompletedProgress: false);
+
+        var session = store.LoadSession();
+
+        Assert.Equal(Path.GetFullPath(bookPath), session.ReadingContainerCurrent?.Path);
+        Assert.Single(session.ReadingContainerBackStack);
+        Assert.Equal(Path.GetFullPath(rootPath), session.ReadingContainerBackStack[0].Path);
+        Assert.Equal(Path.GetFullPath(rootPath), session.ReadingParentCollectionCurrent?.Path);
+        Assert.Empty(session.ReadingParentCollectionBackStack);
     }
 
     public void Dispose()

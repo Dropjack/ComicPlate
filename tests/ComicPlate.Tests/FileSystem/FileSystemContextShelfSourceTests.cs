@@ -38,8 +38,11 @@ public sealed class FileSystemContextShelfSourceTests : IDisposable
             new[] { "Book 1.cbz", "Book 2", "Book 4.cbr", "Book 5.rar", "Collection" },
             contextShelf.Entries.Select(book => book.DisplayName));
         Assert.Equal(
-            new[] { BookSourceKind.Zip, BookSourceKind.Folder, BookSourceKind.Rar, BookSourceKind.Rar, BookSourceKind.Collection },
-            contextShelf.Entries.Select(book => book.SourceKind));
+            new[] { ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Collection },
+            contextShelf.Entries.Select(entry => entry.Kind));
+        Assert.Equal(
+            new BookSourceKind?[] { BookSourceKind.Zip, BookSourceKind.Folder, BookSourceKind.Rar, BookSourceKind.Rar, null },
+            contextShelf.Entries.Select(entry => entry.BookSourceKind));
     }
 
     [Fact]
@@ -60,8 +63,8 @@ public sealed class FileSystemContextShelfSourceTests : IDisposable
             new[] { "Book 1.cbz", "Book 2" },
             contextShelf.Entries.Select(book => book.DisplayName));
         Assert.Equal(
-            new[] { BookSourceKind.Zip, BookSourceKind.Folder },
-            contextShelf.Entries.Select(book => book.SourceKind));
+            new BookSourceKind?[] { BookSourceKind.Zip, BookSourceKind.Folder },
+            contextShelf.Entries.Select(entry => entry.BookSourceKind));
     }
 
     public void Dispose()
