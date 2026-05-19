@@ -99,6 +99,7 @@ Navigation Pane / Shelf View MVP 项：
 - Shelf 顶部不放 Reveal、搜索、排序或视图设置，避免变成文件管理器工具栏。
 - 当前阶段不做右键 action 菜单；右键不应改变当前阅读项，也不应触发打开。
 - Shelf entry 只通过左键点击进入。
+- `Up` / `Down` 是 Navigation Pane 选择移动，不是 Reader 翻页。即使键盘焦点在阅读区，按 `Up` / `Down` 也应移动当前 Shelf/History 列表选择；选中高亮随之移动，Reader 自动打开新的选中项。
 - Reveal in Explorer 保留为未来对象操作，但当前不放在 Shelf 顶部，也不做右键菜单入口。
 - Shelf 宽度暂定固定。可拖拽宽度和 Cover/Compact 视图切换后续再评估。
 
@@ -274,6 +275,7 @@ MVP 不做快捷键设置界面，只保留固定核心快捷键。V1 做独立�
 - `Home`：第一页。
 - `End`：最后一页。
 - `Tab`：显示/隐藏 Shelf。
+- `Up` / `Down`：移动当前 Navigation Pane 选择。Shelf View 中切换上一/下一 Shelf entry；History View 中切换上一/下一 History Book；Reader 跟随当前选中项刷新。
 - `Q`：单页/双页切换。
 - `R`：阅读方向切换。
 - `F`：全屏。

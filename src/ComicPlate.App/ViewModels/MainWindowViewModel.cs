@@ -193,6 +193,16 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         await OpenPathAsSessionStartAsync(path);
     }
 
+    public bool MoveNavigationSelection(int delta)
+    {
+        if (!IsReaderNavigationPaneVisible || IsLoading)
+        {
+            return false;
+        }
+
+        return ContextShelf.MoveSelection(delta);
+    }
+
     private BookEntry? CurrentBook
     {
         get => _currentBook;
@@ -265,7 +275,6 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void OnReaderReadingStateChanged()
     {
-        ContextShelf.SetCurrentIndexSilently(-1);
         SetMessage("");
         PersistCurrentReadingState(deleteCompletedProgress: false);
     }

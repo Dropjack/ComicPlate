@@ -45,6 +45,24 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _locateRequestVersion, value);
     }
 
+    public bool MoveSelection(int delta)
+    {
+        if (delta == 0 || Items.Count == 0)
+        {
+            return false;
+        }
+
+        var nextIndex = GetMoveStartIndex(delta) + delta;
+        if (nextIndex < 0 || nextIndex >= Items.Count)
+        {
+            return false;
+        }
+
+        CurrentIndex = nextIndex;
+        LocateRequestVersion++;
+        return true;
+    }
+
     public void ReplaceItems(IEnumerable<ShelfEntry> entries)
     {
         _thumbnailCancellationTokenSource.Cancel();
@@ -144,5 +162,24 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
     private static string? NormalizePath(string? path)
     {
         return string.IsNullOrWhiteSpace(path) ? null : Path.GetFullPath(path);
+    }
+
+    private int GetMoveStartIndex(int delta)
+    {
+        if (_currentIndex >= 0 && _currentIndex < Items.Count)
+        {
+            return _currentIndex;
+        }
+
+        var readingIndex = Items
+            .Select((item, itemIndex) => new { item, itemIndex })
+            .FirstOrDefault(candidate => candidate.item.IsReading)
+            ?.itemIndex;
+        if (readingIndex.HasValue)
+        {
+            return readingIndex.Value;
+        }
+
+        return delta > 0 ? -1 : Items.Count;
     }
 }

@@ -239,6 +239,7 @@ Context Shelf 中的缩略图规则：
 - 双页模式的当前阅读组包含 2 页；第 1 页封面可以单独成组。
 - 当前阅读组在吸附动作完成后应在阅读画布中居中或作为视觉焦点。
 - 左右键和底部 Left/Right 按钮移动的是当前阅读组，并触发吸附。
+- `Up` / `Down` 不属于翻页语义。阅读区获得焦点时，`Up` / `Down` 仍然控制左侧 Navigation Pane 的当前选择：Shelf 模式下移动 Shelf 选择并打开对应 entry；History 模式下移动 History 选择并打开对应 Book。Reader 只跟随 Navigation Pane 的选中项自动刷新。
 - 鼠标拖拽和连续滚动移动的是阅读带 offset，不应强制当前阅读组立刻居中。
 
 吸附与自由移动：
@@ -264,6 +265,7 @@ Context Shelf 中的缩略图规则：
 - LeftToRight 下：`Right Arrow`：下一页，`Left Arrow`：上一页。
 - `Space`：下一页。
 - `Backspace`：上一页。
+- `Up` / `Down`：移动当前 Navigation Pane 选择；Shelf 模式选择 Shelf 上/下一项，History 模式选择 History 上/下一本，Reader 跟随选中项打开。
 - `Home`：第一页。
 - `End`：最后一页。
 - `O` 或平台菜单：打开。

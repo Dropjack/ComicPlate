@@ -124,6 +124,7 @@ public interface IBookSource
 - Shelf 只显示当前 Collection 的一层 children。
 - 文件夹路径可以同时成为 Book 的来源和 Collection 的路径，但这两个语义必须分开处理。
 - `NavigateUp` 只在 Collection 链路上移动，不改变当前 Book；显式导航栈为空时可以按当前 Collection 的父目录继续向上一级。
+- Navigation Pane selection 是 Shelf/History 键盘上下移动的主状态。`Up` / `Down` 应显式路由到当前 pane mode 的 selection move action，再由选中项激活 Reader；不要依赖 ListBox 是否获得键盘焦点来触发打开。
 
 ### PageEntry
 

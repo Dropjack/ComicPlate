@@ -66,31 +66,45 @@ public partial class ContextShelfView : UserControl
         }
 
         _lastLocateRequestVersion = requestVersion;
-        Dispatcher.UIThread.Post(ScrollSelectedItemToTop);
+        Dispatcher.UIThread.Post(ScrollSelectedItemIntoView);
     }
 
-    private void ScrollSelectedItemToTop()
+    private void ScrollSelectedItemIntoView()
     {
         if (ShelfList.SelectedIndex < 0)
         {
             return;
         }
 
+        if (ShelfList.SelectedItem is not null)
+        {
+            ShelfList.ScrollIntoView(ShelfList.SelectedItem);
+        }
+
         var scrollViewer = ShelfList.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
         if (scrollViewer is null)
         {
-            if (ShelfList.SelectedItem is not null)
-            {
-                ShelfList.ScrollIntoView(ShelfList.SelectedItem);
-            }
-
             return;
         }
 
         const double estimatedItemHeight = 70;
-        var offsetY = Math.Min(
-            ShelfList.SelectedIndex * estimatedItemHeight,
-            scrollViewer.Extent.Height - scrollViewer.Viewport.Height);
-        scrollViewer.Offset = new Vector(scrollViewer.Offset.X, Math.Max(0, offsetY));
+        var itemTop = ShelfList.SelectedIndex * estimatedItemHeight;
+        var itemBottom = itemTop + estimatedItemHeight;
+        var viewportTop = scrollViewer.Offset.Y;
+        var viewportBottom = viewportTop + scrollViewer.Viewport.Height;
+
+        if (itemTop < viewportTop)
+        {
+            scrollViewer.Offset = new Vector(scrollViewer.Offset.X, Math.Max(0, itemTop));
+            return;
+        }
+
+        if (itemBottom > viewportBottom)
+        {
+            var maxOffset = Math.Max(0, scrollViewer.Extent.Height - scrollViewer.Viewport.Height);
+            scrollViewer.Offset = new Vector(
+                scrollViewer.Offset.X,
+                Math.Min(maxOffset, itemBottom - scrollViewer.Viewport.Height));
+        }
     }
 }

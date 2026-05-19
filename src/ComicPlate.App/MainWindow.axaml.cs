@@ -179,6 +179,14 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (e.KeyModifiers == KeyModifiers.None
+            && e.Key is Key.Up or Key.Down
+            && _viewModel.MoveNavigationSelection(e.Key == Key.Down ? 1 : -1))
+        {
+            e.Handled = true;
+            return;
+        }
+
         switch (ShortcutRegistry.GetAction(e))
         {
             case ShortcutActionId.NextPage:
