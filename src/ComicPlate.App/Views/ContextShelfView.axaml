@@ -32,6 +32,20 @@
         <Style Selector="ListBox.context-shelf-list ListBoxItem:pointerover Grid.context-shelf-item">
             <Setter Property="Background" Value="{StaticResource ShelfHoverHighlight}" />
         </Style>
+
+        <Style Selector="Button.pane-toggle">
+            <Setter Property="MinWidth" Value="28" />
+            <Setter Property="MinHeight" Value="24" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <Style Selector="Button.pane-toggle.active">
+            <Setter Property="Background" Value="{StaticResource ShelfReadingHighlight}" />
+        </Style>
     </UserControl.Styles>
 
     <Border MinWidth="220"
@@ -39,28 +53,43 @@
             Background="Transparent"
             BorderBrush="{StaticResource BorderBrushSoft}"
             BorderThickness="0">
-        <Grid RowDefinitions="40,*,58">
+        <Grid RowDefinitions="72,*,58">
             <Border Grid.Row="0"
                     BorderBrush="{StaticResource BorderBrushSoft}"
                     BorderThickness="0,0,0,1">
-                <Grid ColumnDefinitions="Auto,*,Auto"
-                      Margin="8,0"
-                      ColumnSpacing="8"
+                <Grid RowDefinitions="*,Auto"
+                      Margin="8,6"
+                      RowSpacing="6"
                       VerticalAlignment="Center">
-                <Button Command="{Binding BackCommand}"
-                            Content="Back"
-                            Padding="10,3"
-                        CornerRadius="4" />
-                    <TextBlock Grid.Column="1"
-                               Text="{Binding ShelfTitle}"
-                               Foreground="{StaticResource TextBrush}"
-                               FontWeight="SemiBold"
-                               TextTrimming="CharacterEllipsis"
-                               VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="2"
-                               Text="{Binding ContextShelf.ItemCount}"
-                               Foreground="{StaticResource MutedTextBrush}"
-                               VerticalAlignment="Center" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{Binding ShelfTitle}"
+                                   Foreground="{StaticResource TextBrush}"
+                                   FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding ContextShelf.ItemCount}"
+                                   Foreground="{StaticResource MutedTextBrush}"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+                    <StackPanel Grid.Row="1"
+                                Orientation="Horizontal"
+                                Spacing="6">
+                        <Button Command="{Binding ShowShelfCommand}"
+                                Content="S"
+                                Classes="pane-toggle"
+                                Classes.active="{Binding IsShelfPaneActive}"
+                                ToolTip.Tip="Shelf" />
+                        <Button Command="{Binding ShowHistoryCommand}"
+                                Content="H"
+                                Classes="pane-toggle"
+                                Classes.active="{Binding IsHistoryPaneActive}"
+                                ToolTip.Tip="History" />
+                        <Button Command="{Binding BackCommand}"
+                                Content="B"
+                                Classes="pane-toggle"
+                                ToolTip.Tip="Back" />
+                    </StackPanel>
                 </Grid>
             </Border>
 

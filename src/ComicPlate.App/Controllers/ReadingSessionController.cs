@@ -34,6 +34,47 @@ public sealed class ReadingSessionController
         return _stateStore.FindProgress(bookPath);
     }
 
+    public IReadOnlyList<BookEntry> GetRecentBooks(int limit)
+    {
+        if (limit <= 0)
+        {
+            return Array.Empty<BookEntry>();
+        }
+
+        var books = new List<BookEntry>();
+        var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (_lastSession.Current is not null)
+        {
+            AddBook(
+                new BookEntry(
+                    _lastSession.Current.Path,
+                    _lastSession.Current.DisplayName,
+                    _lastSession.Current.SourceKind,
+                    _lastSession.Current.Path));
+        }
+
+        foreach (var entry in _stateStore.GetRecentProgressEntries(limit))
+        {
+            AddBook(new BookEntry(entry.Path, entry.DisplayName, entry.SourceKind, entry.Path));
+            if (books.Count >= limit)
+            {
+                break;
+            }
+        }
+
+        return books;
+
+        void AddBook(BookEntry book)
+        {
+            var normalizedPath = Path.GetFullPath(book.Path);
+            if (seenPaths.Add(normalizedPath))
+            {
+                books.Add(book with { Id = normalizedPath, Path = normalizedPath });
+            }
+        }
+    }
+
     public void StartAtContentFolder(string folderPath)
     {
         _navigationHistory.StartAt(CreateNavigationEntry(folderPath, BookSourceKind.Collection));

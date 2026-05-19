@@ -78,6 +78,19 @@ public sealed class JsonAppStateStore
         }
     }
 
+    public IReadOnlyList<ProgressEntry> GetRecentProgressEntries(int limit)
+    {
+        lock (FileGate)
+        {
+            return LoadProgressCore()
+                .Books
+                .Values
+                .OrderByDescending(entry => entry.LastOpenedAt)
+                .Take(Math.Max(0, limit))
+                .ToArray();
+        }
+    }
+
     public void SaveProgress(ProgressEntry entry)
     {
         lock (FileGate)

@@ -11,13 +11,17 @@ namespace ComicPlate.App.ViewModels;
 public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 {
     private const string AppTitle = "ComicPlate";
+    private const int HistoryBookLimit = 25;
 
     private readonly IFolderPickerService _folderPickerService;
     private readonly ContentOpenService _contentOpenService = new();
     private readonly ReaderImageCache _readerImageCache;
     private readonly ReadingSessionController _readingSession;
+    private IReadOnlyList<BookEntry> _shelfBooks = Array.Empty<BookEntry>();
     private BookEntry? _currentBook;
     private string? _navigationHighlightPath;
+    private string _shelfRootPath = "";
+    private NavigationPaneMode _navigationPaneMode = NavigationPaneMode.Shelf;
     private string _readerTitle = "";
     private string _shelfTitle = "";
     private bool _isNavigationPaneVisible = true;
@@ -44,6 +48,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         ShowStartCommand = new RelayCommand(ShowStart);
         ToggleNavigationPaneCommand = new RelayCommand(ToggleNavigationPane);
         BackCommand = new RelayCommand(GoBack, () => CanGoBack);
+        ShowShelfCommand = new RelayCommand(ShowShelfPane);
+        ShowHistoryCommand = new RelayCommand(ShowHistoryPane);
     }
 
     public ContextShelfViewModel ContextShelf { get; }
@@ -59,6 +65,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     public ICommand ToggleNavigationPaneCommand { get; }
 
     public RelayCommand BackCommand { get; }
+
+    public ICommand ShowShelfCommand { get; }
+
+    public ICommand ShowHistoryCommand { get; }
 
     public string StatusMessage
     {
@@ -107,6 +117,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _shelfTitle, value);
     }
 
+    public bool IsShelfPaneActive => _navigationPaneMode == NavigationPaneMode.Shelf;
+
+    public bool IsHistoryPaneActive => _navigationPaneMode == NavigationPaneMode.History;
+
     public bool IsStartVisible
     {
         get => _isStartVisible;
@@ -145,7 +159,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool IsReaderNavigationPaneVisible => IsReaderVisible && IsNavigationPaneVisible;
 
-    public bool CanGoBack => _readingSession.CanGoBack && !IsLoading;
+    public bool CanGoBack => IsShelfPaneActive && _readingSession.CanGoBack && !IsLoading;
 
     public bool CanOpenLastReadingPosition => _readingSession.CanOpenLastReadingPosition && !IsLoading;
 
@@ -254,10 +268,13 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         IReadOnlyList<BookEntry> books,
         string? navigationHighlightPath)
     {
-        ShelfTitle = Path.GetFileName(rootPath);
-        ContextShelf.ReplaceItems(books);
+        _shelfRootPath = rootPath;
+        _shelfBooks = books;
         _navigationHighlightPath = navigationHighlightPath;
-        UpdateContextShelfVisualState();
+        if (IsShelfPaneActive)
+        {
+            RenderShelfPane();
+        }
     }
 
     private async Task ActivateBookItemAsync(BookEntry book)
@@ -273,7 +290,21 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private async Task ActivateContentItemAsync(ContentListItemViewModel item)
     {
+        if (IsHistoryPaneActive)
+        {
+            await ActivateHistoryBookAsync(item.Book);
+            return;
+        }
+
         await ActivateBookItemAsync(item.Book);
+    }
+
+    private async Task ActivateHistoryBookAsync(BookEntry book)
+    {
+        ShowReader();
+        _readingSession.StartAtBook(book);
+        RaiseCommandStates();
+        await OpenBookAsync(book);
     }
 
     private async Task LoadContentFolderAsync(
@@ -471,6 +502,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         RaiseCommandStates();
+        SetNavigationPaneMode(NavigationPaneMode.Shelf);
         _ = OpenShelfCollectionAsync(entry.Path, navigationHighlightPath);
     }
 
@@ -561,14 +593,62 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void ClearContextShelfItems()
     {
-        ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
+        _shelfRootPath = "";
+        _shelfBooks = Array.Empty<BookEntry>();
         _navigationHighlightPath = null;
-        UpdateContextShelfVisualState();
+        if (IsShelfPaneActive)
+        {
+            ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
+            UpdateContextShelfVisualState();
+        }
     }
 
     private void UpdateContextShelfVisualState()
     {
         ContextShelf.SetVisualState(CurrentBook?.Id, _navigationHighlightPath);
+    }
+
+    private void ShowShelfPane()
+    {
+        SetNavigationPaneMode(NavigationPaneMode.Shelf);
+        RenderShelfPane();
+    }
+
+    private void ShowHistoryPane()
+    {
+        SetNavigationPaneMode(NavigationPaneMode.History);
+        RenderHistoryPane();
+    }
+
+    private void RenderShelfPane()
+    {
+        ShelfTitle = string.IsNullOrWhiteSpace(_shelfRootPath)
+            ? "Shelf"
+            : Path.GetFileName(_shelfRootPath);
+        ContextShelf.ReplaceItems(_shelfBooks);
+        UpdateContextShelfVisualState();
+        _ = ContextShelf.LoadThumbnailsAsync();
+    }
+
+    private void RenderHistoryPane()
+    {
+        ShelfTitle = "History";
+        ContextShelf.ReplaceItems(_readingSession.GetRecentBooks(HistoryBookLimit));
+        UpdateContextShelfVisualState();
+        _ = ContextShelf.LoadThumbnailsAsync();
+    }
+
+    private void SetNavigationPaneMode(NavigationPaneMode mode)
+    {
+        if (_navigationPaneMode == mode)
+        {
+            return;
+        }
+
+        _navigationPaneMode = mode;
+        OnPropertyChanged(nameof(IsShelfPaneActive));
+        OnPropertyChanged(nameof(IsHistoryPaneActive));
+        RaiseCommandStates();
     }
 
     private void RaiseCommandStates()
@@ -583,5 +663,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
         OpenLastReadingPositionCommand.RaiseCanExecuteChanged();
         BackCommand.RaiseCanExecuteChanged();
+    }
+
+    private enum NavigationPaneMode
+    {
+        Shelf,
+        History
     }
 }
