@@ -18,15 +18,15 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var books = EnumerateBookEntries(cancellationToken)
-            .OrderBy(book => book.DisplayName, NaturalPathComparer.Instance)
-            .ThenBy(book => book.Path, NaturalPathComparer.Instance)
+        var entries = EnumerateShelfEntries(cancellationToken)
+            .OrderBy(entry => entry.DisplayName, NaturalPathComparer.Instance)
+            .ThenBy(entry => entry.Path, NaturalPathComparer.Instance)
             .ToArray();
 
-        return Task.FromResult(new ContextShelf(_rootPath, books));
+        return Task.FromResult(new ContextShelf(_rootPath, entries));
     }
 
-    private IEnumerable<BookEntry> EnumerateBookEntries(CancellationToken cancellationToken)
+    private IEnumerable<BookEntry> EnumerateShelfEntries(CancellationToken cancellationToken)
     {
         foreach (var archive in EnumerateArchiveFiles(_rootPath, cancellationToken))
         {

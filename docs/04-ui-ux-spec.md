@@ -11,7 +11,7 @@
 
 阅读页基础布局：
 
-- 左侧：当前容器的 Context Shelf。
+- 左侧：Navigation Pane，显示当前 Collection 的 Shelf View 或最近阅读的 History View。
 - 中央：横向阅读画布。
 - 顶部：轻量工具栏。
 - 底部：页码/进度区。
@@ -19,7 +19,7 @@
 Windows 版主布局采用 WinUI 3-style layered layout。它是 Windows 工作区的优先方向，不默认约束 macOS 版：
 
 - 最左侧是固定 Command Rail，放当前窗口级的阅读操作入口。
-- 中左侧是可隐藏的 Context Shelf，只显示当前容器一层可打开项。
+- 中左侧是可隐藏的 Navigation Pane；Shelf View 只显示当前 Collection 一层可打开项。
 - 右侧是 Reader Stage，尽量占据窗口剩余空间，接近窗口态下的专注阅读。
 - Reader Stage 顶部只保留当前阅读内容名称等轻量状态，不作为复杂工具栏。
 - Reader Stage 底部保留页码和进度条。
@@ -29,9 +29,11 @@ Windows 主窗口区域职责：
 
 - Window Shell：只负责承载窗口级布局，不把业务逻辑塞进窗口壳。
 - Command Rail：固定窄栏，参考 Teams / Obsidian 一类 Windows 工具应用的侧边命令区。第一轮按图标化窄栏预留，最终图标、文字和 logo 后续 polish。
-- Context Shelf：当前容器列表。由 Command Rail 的 Shelf 按钮显示或隐藏；隐藏后 Reader Stage 占据剩余空间。
+- Navigation Pane：左侧上下文导航区域。它可以显示 Shelf View 或 History View，但不是书架或文件管理器。
+- Shelf View：当前 Collection 的一层列表。由 Command Rail 的 Shelf 按钮显示或隐藏；隐藏后 Reader Stage 占据剩余空间。
+- History View：最近阅读 Book 列表。它来自进度/会话记录，不扫描目录，不产生 Collection 导航授权。
 - Reader Stage：漫画阅读主区域。它包含顶部书名条、中央横向阅读带、底部页码和进度条。
-- Reader Title Bar：只显示当前正在阅读的 Book 名称，不随 Context Shelf 浏览层级变化。没有正在阅读的 Book 时为空，不显示当前容器名。
+- Reader Title Bar：只显示当前正在阅读的 Book 名称，不随 Shelf View 浏览层级变化。没有正在阅读的 Book 时为空，不显示当前 Collection 名。
 - Reader Progress Bar：只显示页码和阅读进度，后续可以承接拖动定位等交互。
 
 macOS 版可以复用信息结构，但视觉和平台习惯单独评估。除非后续明确决定，否则不要因为 Windows 的 Command Rail 方案强制 macOS 使用同样的外观。
@@ -62,8 +64,8 @@ Continue Reading 行为：
 - 点击后直接打开上次正在阅读的内容，并恢复到上次页码。
 - 没有可恢复会话时按钮不可用，不额外显示说明文字。
 - 不展示完整书架，不扫描上层目录，不展示历史列表。
-- 如果上次阅读状态保存了轻量导航上下文，进入阅读页后 Back 可以回到上层容器。
-- 如果上层路径已经不存在或无法读取，保留当前内容阅读，并用轻量状态提示说明 Back 不可用。
+- 如果上次阅读状态保存了轻量 Collection 上下文，进入阅读页后 `U` 可以沿 Collection 栈向上一级。
+- 如果上层路径已经不存在或无法读取，保留当前内容阅读，并用轻量状态提示说明 `U` 不可用。
 - 动态名称优先显示有意义的文件夹/压缩包名；单张图片通常文件名无意义，后续 UX 可以显示上层一到两级目录。
 
 Open Comics 行为：
@@ -81,16 +83,19 @@ Open Comics 行为：
 - 顶部：轻量工具栏。
 - 底部：页码/进度条。
 
-Context Shelf MVP 项：
+Navigation Pane / Shelf View MVP 项：
 
-- 显示当前容器一层可打开项。
-- Shelf entry：当前层文件夹、ZIP/CBZ。
+- Shelf View 显示当前 Collection 一层可打开项。
+- Shelf entry：当前层 Book entry 和子 Collection entry。
 - 每项显示缩略图或类型占位图。
-- ZIP/CBZ 和文件夹 Shelf entry 展示封面缩略图，并叠加类型遮罩或角标。
-- 点击 Shelf entry 打开该项或进入该容器。
+- ZIP/CBZ、RAR/CBR、文件夹 Book 和子 Collection entry 展示封面缩略图，并叠加类型遮罩或角标。
+- 点击 Book entry 打开 Book；点击 Collection entry 进入子 Collection。
 - 当前层图片不进入左侧栏；它们显示在主阅读/预览面板。
-- Shelf 顶部暂定只放导航上下文：Back、当前容器名、当前层可打开项数量。
-- Shelf 顶部的当前容器名只属于 Context Shelf，不负责 Reader Stage 标题。
+- Shelf 顶部暂定两行：状态行显示当前 Collection/History 标题和条目数量；操作行放 `S`、`H`、定位、`U` 等占位按钮。
+- `S` 切到 Shelf View；`H` 切到 History View。
+- 定位按钮服务于 Shelf：从 History 触发时先切回 Shelf，再定位当前正在阅读的 Book 在父 Collection 中的 entry。
+- `U` 表示 Up One Level，只在 Shelf View 中可用，只沿 Collection 导航栈向上，不改变当前 Book。
+- Shelf 顶部的当前 Collection 名只属于 Navigation Pane，不负责 Reader Stage 标题。
 - Shelf 顶部不放 Reveal、搜索、排序或视图设置，避免变成文件管理器工具栏。
 - 当前阶段不做右键 action 菜单；右键不应改变当前阅读项，也不应触发打开。
 - Shelf entry 只通过左键点击进入。
@@ -99,12 +104,14 @@ Context Shelf MVP 项：
 
 左侧栏关系：
 
-- 左侧导航面板只显示当前容器的一层 Context Shelf。
-- 最近打开列表不进入 MVP，也不放进阅读页侧栏作为书架。
-- 当前 Book 可以是文件夹、ZIP/CBZ，或后续支持的其他漫画压缩包。
+- 左侧 Navigation Pane 可以在 Shelf View 和 History View 之间切换。
+- Shelf View 只显示当前 Collection 的一层 children。
+- History View 显示最近阅读 Book，当前展示上限为 25 条；它不是书架，不扫描目录。
+- 当前 Book 可以是文件夹图片集、ZIP/CBZ、RAR/CBR、单页图片，或后续支持的其他漫画压缩包。
 - 左侧导航面板可以隐藏和显示；MVP 先做简单切换，不做动画、不做停靠、不做持久化。
-- 左侧导航面板不承担完整文件浏览器职责。MVP 可以有轻量 Back，但不做面包屑路径、树形目录或全量递归播放列表。
-- Back 只改变左侧 Context Shelf 的当前容器，不强制清空或重置主阅读面板；它不等同于系统文件浏览器历史。
+- 左侧导航面板不承担完整文件浏览器职责。不做面包屑路径、树形目录或全量递归播放列表。
+- `U` 只改变左侧 Shelf View 的当前 Collection，不强制清空或重置主阅读面板；它不等同于系统文件浏览器历史。
+- Book 不参与 `U`；Book 只影响阅读页、进度、当前高亮和定位目标。
 
 左侧栏暂不做：
 
@@ -271,7 +278,7 @@ MVP 不做快捷键设置界面，只保留固定核心快捷键。V1 做独立�
 - `R`：阅读方向切换。
 - `F`：全屏。
 - `Esc`：退出全屏或返回普通状态。
-- 平台主修饰键 + `W`：按当前焦点窗口执行关闭。主窗口中回到启动面板并关闭设置相关窗口；设置窗口中只关闭设置窗口；快捷键窗口中只关闭快捷键窗口。这不是 Back，不改变 Context Shelf 导航历史。
+- 平台主修饰键 + `W`：按当前焦点窗口执行关闭。主窗口中回到启动面板并关闭设置相关窗口；设置窗口中只关闭设置窗口；快捷键窗口中只关闭快捷键窗口。这不是 Up，不改变 Collection 导航历史。
 
 macOS 差异：
 
@@ -322,7 +329,7 @@ Windows：
 - 不在第一版追求 Mica。
 - Command Rail、Context Shelf、书名条和进度区可以采用浅灰分区、细边框、小控件、低圆角。
 - Command Rail 是当前窗口的显式阅读控制区，不是设置页，也不是书架导航。
-- Context Shelf 是当前容器上下文，可以隐藏和显示；隐藏后 Reader Stage 应继续扩展为主要阅读区域。
+- Navigation Pane 是当前 Collection/History 上下文，可以隐藏和显示；隐藏后 Reader Stage 应继续扩展为主要阅读区域。
 - 顶部书名条保持轻量，不重新塞回完整工具栏。
 - 图片区域仍然是视觉主角，工具区不喧宾夺主。
 

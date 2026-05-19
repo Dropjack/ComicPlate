@@ -17,10 +17,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly ContentOpenService _contentOpenService = new();
     private readonly ReaderImageCache _readerImageCache;
     private readonly ReadingSessionController _readingSession;
-    private IReadOnlyList<BookEntry> _shelfBooks = Array.Empty<BookEntry>();
+    private IReadOnlyList<BookEntry> _collectionShelfEntries = Array.Empty<BookEntry>();
     private BookEntry? _currentBook;
     private string? _navigationHighlightPath;
-    private string _shelfRootPath = "";
+    private string _collectionShelfRootPath = "";
     private NavigationPaneMode _navigationPaneMode = NavigationPaneMode.Shelf;
     private string _readerTitle = "";
     private string _shelfTitle = "";
@@ -47,9 +47,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         OpenLastReadingPositionCommand = new RelayCommand(OpenLastReadingPosition, () => CanOpenLastReadingPosition);
         ShowStartCommand = new RelayCommand(ShowStart);
         ToggleNavigationPaneCommand = new RelayCommand(ToggleNavigationPane);
-        BackCommand = new RelayCommand(GoBack, () => CanGoBack);
+        NavigateUpCommand = new RelayCommand(NavigateUp, () => CanNavigateUp);
         ShowShelfCommand = new RelayCommand(ShowShelfPane);
         ShowHistoryCommand = new RelayCommand(ShowHistoryPane);
+        LocateCurrentBookCommand = new AsyncRelayCommand(LocateCurrentBookInShelfAsync, () => CanLocateCurrentBookInShelf);
     }
 
     public ContextShelfViewModel ContextShelf { get; }
@@ -64,11 +65,13 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     public ICommand ToggleNavigationPaneCommand { get; }
 
-    public RelayCommand BackCommand { get; }
+    public RelayCommand NavigateUpCommand { get; }
 
     public ICommand ShowShelfCommand { get; }
 
     public ICommand ShowHistoryCommand { get; }
+
+    public AsyncRelayCommand LocateCurrentBookCommand { get; }
 
     public string StatusMessage
     {
@@ -121,6 +124,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool IsHistoryPaneActive => _navigationPaneMode == NavigationPaneMode.History;
 
+    public bool CanLocateCurrentBookInShelf => CurrentBook is not null && IsReaderVisible && !IsLoading;
+
     public bool IsStartVisible
     {
         get => _isStartVisible;
@@ -159,7 +164,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool IsReaderNavigationPaneVisible => IsReaderVisible && IsNavigationPaneVisible;
 
-    public bool CanGoBack => IsShelfPaneActive && _readingSession.CanGoBack && !IsLoading;
+    public bool CanNavigateUp => IsShelfPaneActive && _readingSession.CanNavigateUp && !IsLoading;
 
     public bool CanOpenLastReadingPosition => _readingSession.CanOpenLastReadingPosition && !IsLoading;
 
@@ -195,6 +200,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         {
             _currentBook = value;
             UpdateContextShelfVisualState();
+            OnPropertyChanged(nameof(CanLocateCurrentBookInShelf));
+            LocateCurrentBookCommand.RaiseCanExecuteChanged();
         }
     }
 
@@ -219,7 +226,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             Reader.ClearPages();
-            ClearContextShelfItems();
+            ClearCollectionShelfItems();
             SetMessage("ComicPlate could not read this folder.");
         }
         finally
@@ -263,17 +270,17 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         PersistCurrentReadingState(deleteCompletedProgress: false);
     }
 
-    private void LoadContextShelfEntries(
+    private void LoadCollectionShelfEntries(
         string rootPath,
-        IReadOnlyList<BookEntry> books,
+        IReadOnlyList<BookEntry> entries,
         string? navigationHighlightPath)
     {
-        _shelfRootPath = rootPath;
-        _shelfBooks = books;
+        _collectionShelfRootPath = rootPath;
+        _collectionShelfEntries = entries;
         _navigationHighlightPath = navigationHighlightPath;
         if (IsShelfPaneActive)
         {
-            RenderShelfPane();
+            RenderCollectionShelfPane();
         }
     }
 
@@ -302,9 +309,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private async Task ActivateHistoryBookAsync(BookEntry book)
     {
         ShowReader();
+        PersistCurrentReadingState(deleteCompletedProgress: true);
         _readingSession.StartAtBook(book);
         RaiseCommandStates();
-        await OpenBookAsync(book);
+        await OpenBookAsync(book, persistBeforeOpen: false);
+        await OpenCurrentCollectionShelfAsync();
     }
 
     private async Task LoadContentFolderAsync(
@@ -318,7 +327,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         var result = await _contentOpenService.OpenContentFolderAsync(folderPath, CancellationToken.None);
-        LoadContextShelfEntries(result.FolderPath, result.ContextShelfEntries, navigationHighlightPath);
+        LoadCollectionShelfEntries(result.FolderPath, result.ContextShelfEntries, navigationHighlightPath);
 
         if (updateReaderFromDirectPages)
         {
@@ -364,7 +373,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
                 Reader.ClearPages();
             }
 
-            ClearContextShelfItems();
+            ClearCollectionShelfItems();
             SetMessage("ComicPlate could not read this folder.");
         }
         finally
@@ -373,9 +382,15 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private async Task OpenBookAsync(BookEntry book, int? initialPageIndex = null)
+    private async Task OpenBookAsync(
+        BookEntry book,
+        int? initialPageIndex = null,
+        bool persistBeforeOpen = true)
     {
-        PersistCurrentReadingState(deleteCompletedProgress: true);
+        if (persistBeforeOpen)
+        {
+            PersistCurrentReadingState(deleteCompletedProgress: true);
+        }
 
         IsLoading = true;
         ReaderTitle = book.DisplayName;
@@ -416,17 +431,18 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private async Task StartAtBookAsync(BookEntry book)
     {
+        PersistCurrentReadingState(deleteCompletedProgress: true);
         _readingSession.StartAtBook(book);
         RaiseCommandStates();
-        await OpenBookAsync(book);
-        await OpenCurrentShelfAsync();
+        await OpenBookAsync(book, persistBeforeOpen: false);
+        await OpenCurrentCollectionShelfAsync();
     }
 
     private async Task NavigateToContentFolderAsync(string folderPath)
     {
         _readingSession.NavigateToContentFolder(folderPath);
         RaiseCommandStates();
-        await OpenShelfCollectionAsync(folderPath);
+        await OpenCollectionShelfAsync(folderPath);
     }
 
     private async Task NavigateToBookAsync(BookEntry book)
@@ -457,7 +473,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             }
 
             Reader.ClearPages();
-            ClearContextShelfItems();
+            ClearCollectionShelfItems();
             SetMessage(result.Kind == OpenPathKind.Missing
                 ? "ComicPlate could not find this path."
                 : "ComicPlate cannot open this file type yet.");
@@ -465,7 +481,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
         {
             Reader.ClearPages();
-            ClearContextShelfItems();
+            ClearCollectionShelfItems();
             SetMessage("ComicPlate could not open this path.");
         }
         finally
@@ -492,10 +508,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         IsNavigationPaneVisible = !IsNavigationPaneVisible;
     }
 
-    private void GoBack()
+    private void NavigateUp()
     {
-        var navigationHighlightPath = _readingSession.CurrentShelf?.Path;
-        var entry = _readingSession.Back();
+        var navigationHighlightPath = _readingSession.CurrentCollection?.Path;
+        var entry = _readingSession.NavigateUp();
         if (entry is null)
         {
             return;
@@ -503,7 +519,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
         RaiseCommandStates();
         SetNavigationPaneMode(NavigationPaneMode.Shelf);
-        _ = OpenShelfCollectionAsync(entry.Path, navigationHighlightPath);
+        _ = OpenCollectionShelfAsync(entry.Path, navigationHighlightPath);
     }
 
     private void OpenLastReadingPosition()
@@ -526,7 +542,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         await OpenBookAsync(
             new BookEntry(current.Path, current.DisplayName, current.SourceKind, current.Path),
             current.LastPageIndex);
-        await OpenCurrentShelfAsync();
+        await OpenCurrentCollectionShelfAsync();
     }
 
     private void PersistCurrentReadingState(bool deleteCompletedProgress)
@@ -549,19 +565,19 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         StatusMessage = message;
     }
 
-    private async Task OpenCurrentShelfAsync()
+    private async Task OpenCurrentCollectionShelfAsync()
     {
-        var shelf = _readingSession.CurrentShelf;
-        if (shelf is null)
+        var collection = _readingSession.CurrentCollection;
+        if (collection is null)
         {
-            ClearContextShelfItems();
+            ClearCollectionShelfItems();
             return;
         }
 
-        await OpenShelfCollectionAsync(shelf.Path);
+        await OpenCollectionShelfAsync(collection.Path);
     }
 
-    private async Task OpenShelfCollectionAsync(string folderPath, string? navigationHighlightPath = null)
+    private async Task OpenCollectionShelfAsync(string folderPath, string? navigationHighlightPath = null)
     {
         IsLoading = true;
         ShelfTitle = Path.GetFileName(folderPath);
@@ -579,7 +595,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            ClearContextShelfItems();
+            ClearCollectionShelfItems();
             if (!Reader.HasPages)
             {
                 SetMessage("ComicPlate could not read this folder.");
@@ -591,10 +607,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private void ClearContextShelfItems()
+    private void ClearCollectionShelfItems()
     {
-        _shelfRootPath = "";
-        _shelfBooks = Array.Empty<BookEntry>();
+        _collectionShelfRootPath = "";
+        _collectionShelfEntries = Array.Empty<BookEntry>();
         _navigationHighlightPath = null;
         if (IsShelfPaneActive)
         {
@@ -608,10 +624,31 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         ContextShelf.SetVisualState(CurrentBook?.Id, _navigationHighlightPath);
     }
 
+    private async Task LocateCurrentBookInShelfAsync()
+    {
+        if (CurrentBook is null)
+        {
+            return;
+        }
+
+        SetNavigationPaneMode(NavigationPaneMode.Shelf);
+        var collection = _readingSession.CurrentCollection;
+        if (collection is not null && !CollectionShelfContains(CurrentBook))
+        {
+            await OpenCollectionShelfAsync(collection.Path);
+        }
+        else
+        {
+            RenderCollectionShelfPane();
+        }
+
+        ContextShelf.LocateBook(CurrentBook.Id);
+    }
+
     private void ShowShelfPane()
     {
         SetNavigationPaneMode(NavigationPaneMode.Shelf);
-        RenderShelfPane();
+        RenderCollectionShelfPane();
     }
 
     private void ShowHistoryPane()
@@ -620,12 +657,12 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         RenderHistoryPane();
     }
 
-    private void RenderShelfPane()
+    private void RenderCollectionShelfPane()
     {
-        ShelfTitle = string.IsNullOrWhiteSpace(_shelfRootPath)
+        ShelfTitle = string.IsNullOrWhiteSpace(_collectionShelfRootPath)
             ? "Shelf"
-            : Path.GetFileName(_shelfRootPath);
-        ContextShelf.ReplaceItems(_shelfBooks);
+            : Path.GetFileName(_collectionShelfRootPath);
+        ContextShelf.ReplaceItems(_collectionShelfEntries);
         UpdateContextShelfVisualState();
         _ = ContextShelf.LoadThumbnailsAsync();
     }
@@ -653,7 +690,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void RaiseCommandStates()
     {
-        OnPropertyChanged(nameof(CanGoBack));
+        OnPropertyChanged(nameof(CanNavigateUp));
         OnPropertyChanged(nameof(CanOpenLastReadingPosition));
 
         if (OpenContentCommand is AsyncRelayCommand openContentCommand)
@@ -662,7 +699,21 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         OpenLastReadingPositionCommand.RaiseCanExecuteChanged();
-        BackCommand.RaiseCanExecuteChanged();
+        NavigateUpCommand.RaiseCanExecuteChanged();
+        LocateCurrentBookCommand.RaiseCanExecuteChanged();
+    }
+
+    private bool CollectionShelfContains(BookEntry book)
+    {
+        return _collectionShelfEntries.Any(entry => PathsEqual(entry.Id, book.Id));
+    }
+
+    private static bool PathsEqual(string first, string second)
+    {
+        return string.Equals(
+            Path.GetFullPath(first),
+            Path.GetFullPath(second),
+            StringComparison.OrdinalIgnoreCase);
     }
 
     private enum NavigationPaneMode

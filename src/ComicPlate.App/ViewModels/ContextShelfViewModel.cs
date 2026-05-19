@@ -10,6 +10,7 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
     private readonly SidebarThumbnailLoader _thumbnailLoader = new();
     private CancellationTokenSource _thumbnailCancellationTokenSource = new();
     private int _currentIndex = -1;
+    private int _locateRequestVersion;
 
     public ContextShelfViewModel(Func<ContentListItemViewModel, Task> activateItemAsync)
     {
@@ -37,6 +38,12 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
     public bool IsEmpty => Items.Count == 0;
 
     public int ItemCount => Items.Count;
+
+    public int LocateRequestVersion
+    {
+        get => _locateRequestVersion;
+        private set => SetProperty(ref _locateRequestVersion, value);
+    }
 
     public void ReplaceItems(IEnumerable<BookEntry> books)
     {
@@ -92,6 +99,22 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
 
         _currentIndex = index;
         OnPropertyChanged(nameof(CurrentIndex));
+    }
+
+    public bool LocateBook(string bookId)
+    {
+        var index = Items
+            .Select((item, itemIndex) => new { item, itemIndex })
+            .FirstOrDefault(candidate => PathsEqual(candidate.item.Book.Id, bookId))
+            ?.itemIndex ?? -1;
+        if (index < 0)
+        {
+            return false;
+        }
+
+        SetCurrentIndexSilently(index);
+        LocateRequestVersion++;
+        return true;
     }
 
     public void Dispose()

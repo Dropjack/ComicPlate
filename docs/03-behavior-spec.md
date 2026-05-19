@@ -26,16 +26,17 @@ ComicPlate MVP 是只读阅读器。
 
 ## 1. Book 身份
 
-本文中的 Book 是工程统一概念，对用户来说就是“当前正在阅读的一本漫画/一个图片范围”。
+本文中的 Book 是工程统一概念，对用户来说就是“当前正在阅读的一本漫画/一个图片范围”。Book 是可阅读 Page 序列，可以只有 1 页，也可以有多页；Book 不承担 Collection/Shelf 导航层级。
 
 - 文件夹 = 一个可阅读单元，可以作为一本 Book 打开。
 - ZIP/CBZ = 一个可阅读单元，可以作为一本 Book 打开。
 - RAR/CBR = V1 可阅读单元候选；CBR 按 RAR 漫画扩展处理，RAR 只作为手动打开兼容。
-- 单张图片可以作为一本 Book 打开。
+- 单张图片可以作为一本 1-page Book 打开，但 ComicPlate 不是单张图片查看器，不因单图打开自动串联同目录图片。
 - 单张图片 = 一个单页 Book，居中显示。
 - Book 里面的图片 = Page。
 - ComicPlate 不识别漫画作品，也不维护漫画库；它只解释用户显式打开或文件关联传入的路径。
-- 容器 = 当前正在浏览的一层目录或压缩包目录。容器可以包含可打开项和图片页。
+- Collection = 当前正在浏览的一层可导航容器。Collection 可以包含 Book entry 和子 Collection entry。
+- Shelf = Collection 在左侧 Navigation Pane 中的 UI 呈现；Shelf 本身不是书架或全局库。
 
 - 文件夹 Book ID：规范化后的绝对路径。
 - ZIP/CBZ/RAR/CBR Book ID：规范化后的绝对路径。
@@ -61,20 +62,26 @@ ComicPlate 有两种启动路径：
 
 命令行/文件关联路径入口只接收路径并打开，不负责注册文件关联，不修改系统默认程序，不写 Windows 注册表。CLI 只是开发测试方式；资源管理器、Everything、拖到 exe、未来文件关联都会复用同一个路径参数入口。
 
-## 1.2 当前容器和可阅读单元
+## 1.2 Collection、Shelf 和 Book
 
-可阅读单元是用户主动选择打开或文件关联传入的路径。ComicPlate 对它的行为取决于路径类型。
+Book 是用户主动选择打开、文件关联传入，或从 Shelf View/History View 点开的可阅读路径。ComicPlate 对它的阅读行为取决于路径类型。
+
+Collection 是左侧可导航的一层容器。Shelf View 是当前 Collection 在 Navigation Pane 里的 UI 呈现。History View 是最近阅读 Book 列表，不产生 Collection 导航授权。
+
+打开 Book 只改变主阅读面板、当前进度、当前高亮和定位目标；不把 Book 放进 Up 栈。进入 Collection 才改变 Shelf View 的当前层级和 NavigateUp 栈。
+
+同一个物理文件夹路径可以同时作为“文件夹 Book 的 Page 来源”和“Collection 的导航路径”，但这两个语义必须分开处理：作为 Book 时读取当前层图片形成 Page 流；作为 Collection 时列出当前层 Book entry 和子 Collection entry。
 
 当用户选择一个文件夹时：
 
-1. ComicPlate 把这个文件夹作为当前容器。
+1. ComicPlate 把这个文件夹作为当前 Collection。
 2. 只扫描当前文件夹一层，不全量递归。
 3. 当前层支持格式图片进入主阅读/预览面板的 Page 流。
 4. 当前层支持的压缩包显示为左侧 Context Shelf entry。
 5. 当前层子文件夹显示为左侧 Context Shelf entry。
 6. 如果当前层只有图片且没有子文件夹/压缩包，可以直接作为文件夹漫画阅读。
 7. 如果当前层没有可显示内容，显示空状态。
-8. 当前容器列表中的每个条目都应有缩略图或占位图。
+8. 当前 Collection 列表中的每个条目都应有缩略图或占位图。
 
 当用户选择一个 ZIP/CBZ 时：
 
@@ -86,7 +93,7 @@ ComicPlate 有两种启动路径：
 当用户选择一个包含多个卷册压缩包或多个子文件夹的文件夹时：
 
 - MVP 不把它们串联进同一本 Book。
-- MVP 在当前容器列表中显示这些直接子项。
+- MVP 在当前 Collection 列表中显示这些直接子项。
 - 用户选择某个子项后再进入阅读。
 - 文件夹内压缩包串联、7z/CB7 和压缩包套压缩包不属于当前 V1。
 - RAR/CBR 属于当前 V1 候选：实现后与 ZIP/CBZ 一样作为单独 Book 打开，不和父文件夹内容串联。
@@ -160,9 +167,9 @@ MVP 默认：
 - 单张图片解码失败：显示错误占位页，可继续翻页。
 - 密码 ZIP/RAR：当前不支持密码输入，显示“不支持加密压缩包”或等价错误状态。
 
-## 4.1 当前容器中的压缩包
+## 4.1 当前 Collection 中的压缩包
 
-当用户打开一个文件夹容器时，MVP 只扫描当前层的 `.zip` 和 `.cbz`。当前 V1 加入 RAR/CBR 后，也只扫描当前层的 `.rar` 和 `.cbr`。
+当用户打开一个文件夹 Collection 时，MVP 只扫描当前层的 `.zip` 和 `.cbz`。当前 V1 加入 RAR/CBR 后，也只扫描当前层的 `.rar` 和 `.cbr`。
 
 排序规则：
 
@@ -179,7 +186,7 @@ BookFolder/
   Vol.02.zip
 ```
 
-当前容器列表：
+当前 Collection 列表：
 
 ```text
 Vol.01.zip
@@ -205,8 +212,8 @@ Vol.02.zip
 
 Context Shelf 中的缩略图规则：
 
-- ZIP/CBZ/RAR/CBR Book-like entry：读取压缩包内第一张可读图片作为缩略图。
-- 文件夹 Book-like entry：优先使用该文件夹当前层第一张可读图片；如果没有直接图片，可以使用该文件夹当前层第一个可读子项的封面；找不到时显示文件夹占位图。
+- ZIP/CBZ/RAR/CBR Book entry：读取压缩包内第一张可读图片作为缩略图。
+- 文件夹 Book entry 或子 Collection entry：优先使用该文件夹当前层第一张可读图片；如果没有直接图片，可以使用该文件夹当前层第一个可读子项的封面；找不到时显示文件夹占位图。
 - 缩略图应保持图片比例并居中显示，不裁切关键内容。
 - ZIP/CBZ 和文件夹缩略图必须叠加类型遮罩或角标，让用户能区分它是容器而不是普通图片。
 
@@ -400,6 +407,8 @@ MVP 不做：
 - 总页数快照。
 - 来源类型：folder 或 zip。
 - 启动来源：manual open 或 file association，可选记录。
+- ReadingContainer：当前 Book 所在的可导航容器；文件夹 Book 自身可以是它的 reading container。
+- ReadingParentCollection：能在 Shelf View 里高亮当前 Book 的父 Collection，是 Locate 和 Continue Reading 恢复 Shelf 的主依据。
 - 阅读方向。
 - 显示模式：single 或 double。
 
@@ -409,7 +418,7 @@ MVP 不做：
 - 多窗口同时存在时，最后更新或最后关闭的窗口写入 lastSession；MVP 使用最后写入胜出。
 - 每本 Book 可以保存一个 progress 记录，用于用户再次从资源管理器、Everything、CLI 或 Open Comics 打开同一路径时恢复页码。
 - progress 查找发生在最终 Book 打开时，而不是在启动入口或父容器打开时；例如先从 `A.cbz` 启动读到第 100 页，下次打开 `manga` 文件夹再从 shelf 点进 `A.cbz`，仍应恢复到第 100 页。
-- progress 记录不展示给用户，不形成最近打开列表，不作为书架。
+- History View 可以从 lastSession/progress 派生最近阅读 Book 列表，当前显示上限为 25 条；它不是书架，不扫描目录，也不改变 Collection 导航栈。
 - progress 记录必须有硬上限，例如 500 条；超过上限按最后访问时间删除最旧记录。
 - 如果关闭时停在最后一页，MVP 可以删除该 Book 的 progress 记录，视为已读完；后续优化时再评估完成状态是否更温和。
 - ComicPlate 不扫描 progress 路径的父目录，也不自动发现同目录其他漫画。
@@ -453,7 +462,7 @@ MVP 不提供快捷键设置界面。V1 做快捷键预设或少量自定义。
 阅读状态：
 
 - 主区域显示横向阅读带。
-- 左侧显示 Context Shelf，只包含当前容器的一层可打开项。
+- 左侧显示 Navigation Pane；Shelf View 只包含当前 Collection 的一层可打开项，History View 只包含最近阅读 Book。
 - 底部或顶部显示当前页码。
 - 有错误页时显示错误信息。
 

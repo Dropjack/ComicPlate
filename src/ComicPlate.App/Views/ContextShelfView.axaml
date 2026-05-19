@@ -85,15 +85,20 @@
                                 Classes="pane-toggle"
                                 Classes.active="{Binding IsHistoryPaneActive}"
                                 ToolTip.Tip="History" />
-                        <Button Command="{Binding BackCommand}"
-                                Content="B"
+                        <Button Command="{Binding LocateCurrentBookCommand}"
+                                Content="L"
                                 Classes="pane-toggle"
-                                ToolTip.Tip="Back" />
+                                ToolTip.Tip="Locate in Shelf" />
+                        <Button Command="{Binding NavigateUpCommand}"
+                                Content="U"
+                                Classes="pane-toggle"
+                                ToolTip.Tip="Up One Level" />
                     </StackPanel>
                 </Grid>
             </Border>
 
-            <ListBox Grid.Row="1"
+            <ListBox x:Name="ShelfList"
+                     Grid.Row="1"
                      Classes="context-shelf-list"
                      ItemsSource="{Binding ContextShelf.Items}"
                      SelectedIndex="{Binding ContextShelf.CurrentIndex, Mode=TwoWay}"

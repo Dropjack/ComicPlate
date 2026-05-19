@@ -23,8 +23,8 @@
 建议项目结构：
 
 - `ComicPlate.App`：Avalonia UI、窗口、视图、ViewModel。
-- `ComicPlate.Core`：Book、Page、ReadableUnit、ReaderState、ReaderStrip、排序、文件来源接口。
-- `ComicPlate.Infrastructure`：可阅读单元打开、文件夹/ZIP BookSource、JSON 持久化、平台路径。
+- `ComicPlate.Core`：Book、Page、Collection、ReaderState、ReaderStrip、排序、文件来源接口。
+- `ComicPlate.Infrastructure`：BookSource、CollectionSource、文件夹/ZIP 打开、JSON 持久化、平台路径。
 - `ComicPlate.Tests`：核心逻辑测试。
 
 MVP 可以先用单项目起步，但命名空间按上述边界分组。等代码稳定后再拆项目。
@@ -42,19 +42,26 @@ MVP 可以先用单项目起步，但命名空间按上述边界分组。等代�
 
 工程命名说明：
 
-- 用户打开的文件夹、ZIP/CBZ 和后续支持的漫画压缩包在代码里都统一称为 Book。
-- Book 内部的图片页面称为 Page。
-- Book 是用户选择路径形成的可阅读单元，不是书架条目。
-- 用户界面文案可以写“漫画”“文件夹”“ZIP/CBZ”，不强迫用户理解 Book 这个工程词。
+- Book 是可阅读的 Page 序列，一本 Book 可以有 1 页或多页。
+- Page 是 Book 内部的图片页面。
+- Collection 是可导航容器，负责承载子 Collection 和 Book entry。
+- Shelf 是 Collection 在 UI 中的呈现，不是数据模型本体，也不是全局书架。
+- 用户界面文案可以写“漫画”“文件夹”“ZIP/CBZ”“History”，不强迫用户理解 Book/Collection 这组工程词。
 
-### ReadableUnitOpener
+重要边界：
+
+- Book 不承担导航层级；打开 Book 只改变阅读对象、进度、高亮和定位目标。
+- Collection 不承担阅读页流；即使某个物理文件夹既包含图片又包含子项，也要在语义上区分“这个路径作为 Book 的 Page 来源”和“这个路径作为 Collection 的导航容器”。
+- 单张图片可以作为 1-page Book 打开，但 ComicPlate 不是单张图片查看器，不因单图打开而自动串联同目录图片。
+
+### BookOpener
 
 责任：
 
 - 接收用户主动选择的路径。
-- 判断该路径是否能作为可阅读单元打开。
+- 判断该路径是否能作为 Book 打开。
 - 为该路径创建 BookEntry 和对应 IBookSource。
-- 支持文件夹作为 Book。
+- 支持文件夹图片集作为 Book。
 - 支持 `.zip` 和 `.cbz` 作为 Book。
 - 当前 V1 只计划新增 RAR/CBR 作为 Book；7z/CB7 和嵌套压缩包不在当前 V1。
 - 支持单张图片作为单页 Book。
@@ -74,11 +81,11 @@ public sealed record BookEntry(
 注意：
 
 - PageList 是当前 Book 内的 Page 列表。
-- BookEntry 描述当前打开范围，不描述书架中的一项。
+- BookEntry 描述可阅读对象，不描述 Collection 导航层级。
 - Book 打开和 Page 收集可以分开：ReadableUnitOpener 负责按路径选择 IBookSource，IBookSource 负责收集 Page。
 - 当前最新口径以 `02-scope-cut.md`、`03-behavior-spec.md` 和 `06-todo-list.md` 为准：文件夹打开后只扫描当前层。
 - 文件夹 Book 只收集当前层直接图片，并按文件名自然排序；不递归收集子文件夹图片。
-- 当前层子文件夹和 ZIP/CBZ 作为 Context Shelf entry 暴露，用户点击后才进入该容器或把该 ZIP/CBZ 单独作为 Book 打开。
+- 当前层子文件夹和 ZIP/CBZ 作为当前 Collection 的 Shelf entry 暴露；用户点击 Collection entry 才进入子 Collection，点击 Book entry 才打开 Book。
 - ZIP/CBZ 内部子目录属于这本 ZIP/CBZ Book 的 Page 结构。
 - RAR/CBR 实现后也应复用同一套 Book/Page/PageEntry 语义：只读取图片条目，按逻辑路径自然排序，不修改用户压缩包。
 - 文件夹内 ZIP/CBZ 串联阅读不是 MVP；它已经调整为 V1 候选，不应在当前架构里自动生成同一个 Book 的 Page 流。
@@ -93,6 +100,22 @@ public interface IBookSource
     Task<IReadOnlyList<PageEntry>> LoadPagesAsync(CancellationToken cancellationToken);
 }
 ```
+
+### CollectionSource
+
+责任：
+
+- 根据 Collection 路径枚举当前层可显示 entry。
+- Entry 可以是 Book，也可以是子 Collection。
+- 不递归扫描深层目录。
+- 不保存扫描结果，不生成全局书库。
+- 不负责打开 Book 的 Page 流。
+
+规则：
+
+- Shelf 只显示当前 Collection 的一层 children。
+- 文件夹路径可以同时成为 Book 的来源和 Collection 的路径，但这两个语义必须分开处理。
+- `NavigateUp` 只在 Collection 链路上移动，不改变当前 Book。
 
 ### PageEntry
 
@@ -197,24 +220,24 @@ MVP 策略：
 - 不直接解码图片。
 - 可单元测试。
 
-### NavigationHistory
+### CollectionNavigation
 
 责任：
 
-- 保存当前阅读流的轻量导航栈。
-- 记录用户从哪个容器进入当前内容。
-- 支持 Back 回到上一个 shelf 容器或上一本书所在的上层上下文。
-- 区分“浏览 shelf 容器/打开 Book”和“跳转 Page”：前两者进入导航历史，Page 跳转只更新阅读进度。
+- 保存当前窗口的轻量 Collection 导航栈。
+- 记录用户实际显示过的 Collection。
+- 支持 NavigateUp 回到上一个 Collection。
+- 区分“进入 Collection”和“打开 Book”：进入 Collection 会改变导航栈，打开 Book 不进入 Collection 栈。
 - 可单元测试。
 
 规则：
 
-- NavigationHistory 不是书架，不保存扫描结果，不保存缩略图，不保存目录内容。
-- 空启动的 Continue Reading 可以恢复少量历史 entry，让用户读完当前内容后继续 Back 回上层。
+- CollectionNavigation 不是书架，不保存扫描结果，不保存缩略图，不保存目录内容。
+- 空启动的 Continue Reading 可以恢复少量 Collection entry，让用户读完当前内容后继续 NavigateUp 回上层。
 - 手动 Open 新内容时重置当前窗口的导航栈。
-- Back 默认只刷新左侧 Context Shelf，不强制清空或重置主阅读面板。
+- NavigateUp 默认只刷新左侧 Shelf，不强制清空或重置主阅读面板。
 - 导航栈应设置上限，例如 8 层，避免长期积累成文件浏览器历史。
-- MVP 只做 Back；Forward 留到确认真实需求后再评估。
+- MVP 只做 NavigateUp；Forward 留到确认真实需求后再评估。
 
 建议模型：
 
@@ -227,10 +250,10 @@ public sealed record NavigationEntry(
 public sealed class NavigationHistory
 {
     public NavigationEntry? Current { get; }
-    public bool CanGoBack { get; }
+    public bool CanNavigateUp { get; }
     public void StartAt(NavigationEntry entry);
     public void NavigateTo(NavigationEntry entry);
-    public NavigationEntry? Back();
+    public NavigationEntry? NavigateUp();
 }
 ```
 
@@ -302,7 +325,7 @@ public sealed class NavigationHistory
 
 - 记录用于同一路径再次打开时恢复页码，不展示为历史列表。
 - progress key 使用最终打开的可阅读单元规范化路径，而不是启动入口路径或父容器路径。
-- 打开父文件夹只加载该容器和 shelf；用户从 shelf 点进某个 ZIP/CBZ/文件夹漫画时，才用该最终 Book 路径查询并应用 progress。
+- 打开父文件夹只加载该 Collection 和 Shelf View；用户从 Shelf View 点进某个 ZIP/CBZ/文件夹漫画时，才用该最终 Book 路径查询并应用 progress。
 - 记录数量必须有上限，MVP 默认 500 条；超过上限按 `lastOpenedAt` 删除最旧记录。
 - 关闭时如果当前 Book 停在最后一页，MVP 可以删除该 Book 的 progress 记录。
 - 路径变化视为新书；MVP 不做内容 hash 或跨盘符匹配。
@@ -327,6 +350,16 @@ public sealed class NavigationHistory
         "sourceKind": "Collection"
       }
     ],
+    "readingContainer": {
+      "path": "D:\\Comics\\Series\\Vol03",
+      "displayName": "Vol03",
+      "sourceKind": "Collection"
+    },
+    "readingParentCollection": {
+      "path": "D:\\Comics\\Series",
+      "displayName": "Series",
+      "sourceKind": "Collection"
+    },
     "savedAt": "2026-05-13T10:30:00Z"
   }
 }
@@ -336,8 +369,10 @@ public sealed class NavigationHistory
 
 - 配置文件格式当前仍按 JSON 草案记录。
 - 不为书架排序、分组、过滤预留配置；ComicPlate 不做漫画库管理。
-- `session.json` 只保存路径、类型、页码和少量 Back 栈；不保存容器扫描结果、缩略图缓存、全库索引或 UI 展开状态。
-- Continue Reading 只读取 `session.json` 的当前内容并打开；只有用户触发 Back 时才重新读取上层路径。
+- `session.json` 只保存路径、类型、页码、当前阅读上下文和少量 Collection 栈；不保存容器扫描结果、缩略图缓存、全库索引或 UI 展开状态。
+- `readingContainer` 表示当前 Book 所在的可导航容器。
+- `readingParentCollection` 表示能在 Shelf 里高亮当前 Book 的父 Collection。
+- Continue Reading 只读取 `session.json` 的当前内容并打开；只有用户触发 NavigateUp 或切换/定位 Shelf 时才重新读取相关 Collection 路径。
 - 多窗口场景下，`lastSession` 表示最后更新或最后关闭的窗口，不表示窗口组或标签页系统。
 - 如果后续决定使用 TOML，应先作为单独决策记录，不和当前结构草案混用。
 
@@ -444,7 +479,7 @@ ComicPlate 的窗口级图标使用“源文件清楚、运行时轻量”的规
 
 1. 双页模式。
 2. 阅读方向设置 UI。
-3. 当前容器 Context Shelf。
+3. 当前 Collection 的 Shelf View。
 4. 阅读进度保存。
 5. 多窗口：每个窗口是一套完整独立阅读器。
 

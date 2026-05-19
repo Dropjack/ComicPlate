@@ -17,9 +17,9 @@ public sealed class ReadingSessionController
         _lastSession = _stateStore.LoadSession();
     }
 
-    public bool CanGoBack => _navigationHistory.CanGoBack;
+    public bool CanNavigateUp => _navigationHistory.CanNavigateUp;
 
-    public NavigationEntry? CurrentShelf => _navigationHistory.Current?.SourceKind == BookSourceKind.Collection
+    public NavigationEntry? CurrentCollection => _navigationHistory.Current?.SourceKind == BookSourceKind.Collection
         ? _navigationHistory.Current
         : null;
 
@@ -104,9 +104,9 @@ public sealed class ReadingSessionController
         StartAtBook(book);
     }
 
-    public NavigationEntry? Back()
+    public NavigationEntry? NavigateUp()
     {
-        return _navigationHistory.Back();
+        return _navigationHistory.NavigateUp();
     }
 
     public ReadableUnitState? PrepareOpenLastReadingPosition()
@@ -117,12 +117,21 @@ public sealed class ReadingSessionController
             return null;
         }
 
-        var shelfCurrent = _lastSession.ReadingShelfCurrent?.SourceKind == BookSourceKind.Collection
-            ? _lastSession.ReadingShelfCurrent
-            : CreateParentCollectionEntry(current.Path);
-        if (shelfCurrent is not null)
+        var parentCollection = _lastSession.ReadingParentCollectionCurrent?.SourceKind == BookSourceKind.Collection
+            ? _lastSession.ReadingParentCollectionCurrent
+            : _lastSession.ReadingParentShelfCurrent?.SourceKind == BookSourceKind.Collection
+                ? _lastSession.ReadingParentShelfCurrent
+                : _lastSession.ReadingShelfCurrent?.SourceKind == BookSourceKind.Collection
+                    ? _lastSession.ReadingShelfCurrent
+                    : CreateParentCollectionEntry(current.Path);
+        if (parentCollection is not null)
         {
-            _navigationHistory.Restore(shelfCurrent, _lastSession.ReadingShelfBackStack);
+            var backStack = _lastSession.ReadingParentCollectionBackStack.Count > 0
+                ? _lastSession.ReadingParentCollectionBackStack
+                : _lastSession.ReadingParentShelfBackStack.Count > 0
+                    ? _lastSession.ReadingParentShelfBackStack
+                    : _lastSession.ReadingShelfBackStack;
+            _navigationHistory.Restore(parentCollection, backStack);
         }
         return current;
     }

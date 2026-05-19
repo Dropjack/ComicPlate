@@ -126,6 +126,10 @@ public sealed class JsonAppStateStore
     {
         var normalizedPath = NormalizePath(book.Path);
         var savedAt = DateTimeOffset.UtcNow;
+        var readingContainer = CreateReadingContainerEntry(book);
+        var readingParentCollection = CreateReadingParentCollectionEntry(book);
+        var readingContainerBackStack = CreateNavigationBackStack(readingContainer, navigationHistory);
+        var readingParentCollectionBackStack = CreateNavigationBackStack(readingParentCollection, navigationHistory);
 
         lock (FileGate)
         {
@@ -138,8 +142,14 @@ public sealed class JsonAppStateStore
                 navigationHistory.BackStack,
                 savedAt)
             {
-                ReadingShelfCurrent = CreateReadingShelfEntry(book),
-                ReadingShelfBackStack = CreateReadingShelfBackStack(book, navigationHistory)
+                ReadingShelfCurrent = readingParentCollection,
+                ReadingShelfBackStack = readingParentCollectionBackStack,
+                ReadingContainerCurrent = readingContainer,
+                ReadingContainerBackStack = readingContainerBackStack,
+                ReadingParentShelfCurrent = readingParentCollection,
+                ReadingParentShelfBackStack = readingParentCollectionBackStack,
+                ReadingParentCollectionCurrent = readingParentCollection,
+                ReadingParentCollectionBackStack = readingParentCollectionBackStack
             });
 
             if (pageCount > 0 && pageIndex >= pageCount - 1)
@@ -177,6 +187,10 @@ public sealed class JsonAppStateStore
         NavigationHistory navigationHistory)
     {
         var normalizedPath = NormalizePath(book.Path);
+        var readingContainer = CreateReadingContainerEntry(book);
+        var readingParentCollection = CreateReadingParentCollectionEntry(book);
+        var readingContainerBackStack = CreateNavigationBackStack(readingContainer, navigationHistory);
+        var readingParentCollectionBackStack = CreateNavigationBackStack(readingParentCollection, navigationHistory);
         lock (FileGate)
         {
             WriteJson(SessionPath, new SessionState(
@@ -188,8 +202,14 @@ public sealed class JsonAppStateStore
                 navigationHistory.BackStack,
                 DateTimeOffset.UtcNow)
             {
-                ReadingShelfCurrent = CreateReadingShelfEntry(book),
-                ReadingShelfBackStack = CreateReadingShelfBackStack(book, navigationHistory)
+                ReadingShelfCurrent = readingParentCollection,
+                ReadingShelfBackStack = readingParentCollectionBackStack,
+                ReadingContainerCurrent = readingContainer,
+                ReadingContainerBackStack = readingContainerBackStack,
+                ReadingParentShelfCurrent = readingParentCollection,
+                ReadingParentShelfBackStack = readingParentCollectionBackStack,
+                ReadingParentCollectionCurrent = readingParentCollection,
+                ReadingParentCollectionBackStack = readingParentCollectionBackStack
             });
         }
     }
@@ -199,46 +219,64 @@ public sealed class JsonAppStateStore
         return Path.GetFullPath(path);
     }
 
-    private static NavigationEntry? CreateReadingShelfEntry(BookEntry book)
+    private static NavigationEntry? CreateReadingContainerEntry(BookEntry book)
     {
         var fullPath = Path.GetFullPath(book.Path);
-        var shelfPath = Directory.Exists(fullPath)
+        if (Directory.Exists(fullPath) && book.SourceKind == BookSourceKind.Folder)
+        {
+            return CreateCollectionEntry(fullPath);
+        }
+
+        var parentPath = Directory.Exists(fullPath)
             ? Directory.GetParent(fullPath)?.FullName
             : Path.GetDirectoryName(fullPath);
 
-        if (string.IsNullOrWhiteSpace(shelfPath))
-        {
-            return null;
-        }
+        return string.IsNullOrWhiteSpace(parentPath)
+            ? null
+            : CreateCollectionEntry(parentPath);
+    }
 
-        var displayName = Path.GetFileName(shelfPath);
+    private static NavigationEntry? CreateReadingParentCollectionEntry(BookEntry book)
+    {
+        var fullPath = Path.GetFullPath(book.Path);
+        var parentCollectionPath = Directory.Exists(fullPath)
+            ? Directory.GetParent(fullPath)?.FullName
+            : Path.GetDirectoryName(fullPath);
+
+        return string.IsNullOrWhiteSpace(parentCollectionPath)
+            ? null
+            : CreateCollectionEntry(parentCollectionPath);
+    }
+
+    private static NavigationEntry CreateCollectionEntry(string path)
+    {
+        var displayName = Path.GetFileName(path);
         return new NavigationEntry(
-            shelfPath,
-            string.IsNullOrWhiteSpace(displayName) ? shelfPath : displayName,
+            path,
+            string.IsNullOrWhiteSpace(displayName) ? path : displayName,
             BookSourceKind.Collection);
     }
 
-    private static IReadOnlyList<NavigationEntry> CreateReadingShelfBackStack(
-        BookEntry book,
+    private static IReadOnlyList<NavigationEntry> CreateNavigationBackStack(
+        NavigationEntry? current,
         NavigationHistory navigationHistory)
     {
-        var readingShelf = CreateReadingShelfEntry(book);
-        if (readingShelf is null)
+        if (current is null)
         {
             return Array.Empty<NavigationEntry>();
         }
 
-        if (IsSameNavigationEntry(navigationHistory.Current, readingShelf))
+        if (IsSameNavigationEntry(navigationHistory.Current, current))
         {
             return navigationHistory.BackStack;
         }
 
         var backStack = navigationHistory.BackStack;
-        var readingShelfIndex = Array.FindIndex(
+        var collectionIndex = Array.FindIndex(
             backStack.ToArray(),
-            entry => IsSameNavigationEntry(entry, readingShelf));
-        return readingShelfIndex >= 0
-            ? backStack.Skip(readingShelfIndex + 1).ToArray()
+            entry => IsSameNavigationEntry(entry, current));
+        return collectionIndex >= 0
+            ? backStack.Skip(collectionIndex + 1).ToArray()
             : Array.Empty<NavigationEntry>();
     }
 

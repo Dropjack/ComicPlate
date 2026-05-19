@@ -8,7 +8,7 @@ public sealed class NavigationHistory
 
     public NavigationEntry? Current { get; private set; }
 
-    public bool CanGoBack => _backStack.Count > 0;
+    public bool CanNavigateUp => _backStack.Count > 0;
 
     public IReadOnlyList<NavigationEntry> BackStack => _backStack
         .AsEnumerable()
@@ -55,9 +55,9 @@ public sealed class NavigationHistory
         Current = entry;
     }
 
-    public NavigationEntry? Back()
+    public NavigationEntry? NavigateUp()
     {
-        if (!CanGoBack)
+        if (!CanNavigateUp)
         {
             return null;
         }
