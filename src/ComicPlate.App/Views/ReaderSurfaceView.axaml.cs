@@ -19,6 +19,7 @@ public partial class ReaderSurfaceView : UserControl
     private bool _isProgressDragging;
     private Point _readerDragStartPoint;
     private bool _isFullscreenChromeHidden;
+    private bool _isFullscreenShelfPinned;
     private readonly DispatcherTimer _fullscreenOverlayHideTimer;
 
     public ReaderSurfaceView()
@@ -52,7 +53,36 @@ public partial class ReaderSurfaceView : UserControl
         MacFullscreenBottomOverlay.IsVisible = false;
         FullscreenShelfOverlay.IsVisible = false;
         MacFullscreenShelfOverlay.IsVisible = false;
+        _isFullscreenShelfPinned = false;
         _fullscreenOverlayHideTimer.Stop();
+    }
+
+    public bool IsFullscreenShelfOverlayVisible =>
+        FullscreenShelfOverlay.IsVisible || MacFullscreenShelfOverlay.IsVisible;
+
+    public void ToggleFullscreenShelfOverlay()
+    {
+        SetFullscreenShelfOverlayPinned(!_isFullscreenShelfPinned);
+    }
+
+    public void SetFullscreenShelfOverlayPinned(bool isVisible)
+    {
+        if (!_isFullscreenChromeHidden)
+        {
+            _isFullscreenShelfPinned = false;
+            FullscreenShelfOverlay.IsVisible = false;
+            MacFullscreenShelfOverlay.IsVisible = false;
+            return;
+        }
+
+        _isFullscreenShelfPinned = isVisible;
+        FullscreenShelfOverlay.IsVisible = isVisible && ShouldUseWindowsFullscreenShelfOverlay();
+        MacFullscreenShelfOverlay.IsVisible = isVisible && ShouldUseMacFullscreenShelfOverlay();
+
+        if (isVisible)
+        {
+            _fullscreenOverlayHideTimer.Stop();
+        }
     }
 
     private void OnReaderViewportSizeChanged(object? sender, SizeChangedEventArgs e)
@@ -210,8 +240,11 @@ public partial class ReaderSurfaceView : UserControl
 
         FullscreenBottomOverlay.IsVisible = false;
         MacFullscreenBottomOverlay.IsVisible = false;
-        FullscreenShelfOverlay.IsVisible = false;
-        MacFullscreenShelfOverlay.IsVisible = false;
+        if (!_isFullscreenShelfPinned)
+        {
+            FullscreenShelfOverlay.IsVisible = false;
+            MacFullscreenShelfOverlay.IsVisible = false;
+        }
     }
 
     private void OnFullscreenOverlayPointerEntered(object? sender, PointerEventArgs e)
@@ -293,10 +326,11 @@ public partial class ReaderSurfaceView : UserControl
         {
             FullscreenShelfOverlay.IsVisible = false;
             MacFullscreenShelfOverlay.IsVisible = false;
+            _isFullscreenShelfPinned = false;
             return;
         }
 
-        if (_isProgressDragging)
+        if (_isProgressDragging || _isFullscreenShelfPinned)
         {
             return;
         }

@@ -193,9 +193,9 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         await OpenPathAsSessionStartAsync(path);
     }
 
-    public bool MoveNavigationSelection(int delta)
+    public bool MoveNavigationSelection(int delta, bool allowHiddenNavigationPane = false)
     {
-        if (!IsReaderNavigationPaneVisible || IsLoading)
+        if (!IsReaderVisible || (!allowHiddenNavigationPane && !IsNavigationPaneVisible) || IsLoading)
         {
             return false;
         }

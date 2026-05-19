@@ -179,9 +179,13 @@ public partial class MainWindow : Window
             return;
         }
 
+        var canMoveNavigationSelection = !_isFullscreen || ReaderSurface.IsFullscreenShelfOverlayVisible;
         if (e.KeyModifiers == KeyModifiers.None
             && e.Key is Key.Up or Key.Down
-            && _viewModel.MoveNavigationSelection(e.Key == Key.Down ? 1 : -1))
+            && canMoveNavigationSelection
+            && _viewModel.MoveNavigationSelection(
+                e.Key == Key.Down ? 1 : -1,
+                allowHiddenNavigationPane: _isFullscreen))
         {
             e.Handled = true;
             return;
@@ -222,7 +226,15 @@ public partial class MainWindow : Window
                 e.Handled = true;
                 break;
             case ShortcutActionId.ToggleNavigationPane:
-                _viewModel.ToggleNavigationPaneCommand.Execute(null);
+                if (_isFullscreen)
+                {
+                    ReaderSurface.ToggleFullscreenShelfOverlay();
+                }
+                else
+                {
+                    _viewModel.ToggleNavigationPaneCommand.Execute(null);
+                }
+
                 e.Handled = true;
                 break;
             case ShortcutActionId.ToggleViewMode:
