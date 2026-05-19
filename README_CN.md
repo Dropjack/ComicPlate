@@ -1,6 +1,6 @@
 # ComicPlate
 
-[English README](README_EN.md)
+[README](README.md)
 
 ComicPlate 是一个面向 Windows 和 macOS 的轻量本地漫画阅读器，使用 C# 和 Avalonia 构建。
 
