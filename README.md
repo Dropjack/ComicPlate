@@ -1,4 +1,4 @@
-ComicPlate
+# ComicPlate
 
 [中文 README](README_CN.md)
 
@@ -6,37 +6,31 @@ ComicPlate is a lightweight local comic reader for Windows and macOS, built with
 
 It opens local folders and comic archives as readable books, restores reading progress, and does not touch the user’s original files.
 
-Current public version: 0.1.1.
+Current public version: `0.1.1`.
 
-Status
+## Status
 
-0.1.1 is the first public release.
+`0.1.1` is the first public release.
 
 The app is distributed as self-contained builds for now, not as installers. File association, platform integration, and release packaging are still being refined.
 
-Supported platforms
+## Supported platforms
 
 Current release targets:
 
-Windows x64
+* Windows x64
+* macOS Apple Silicon
 
-macOS Apple Silicon
+## Features
 
-Features
+* Open local folders, ZIP / CBZ, and RAR / CBR archives.
+* Single-page and double-page reading.
+* Right-to-left and left-to-right reading directions.
+* Horizontal reading strip.
+* Context Shelf for current-folder navigation.
+* Continue Reading.
 
-Open local folders, ZIP / CBZ, and RAR / CBR archives.
-
-Single-page and double-page reading.
-
-Right-to-left and left-to-right reading directions.
-
-Horizontal reading strip.
-
-Context Shelf for current-folder navigation.
-
-Continue Reading.
-
-Scope
+## Scope
 
 ComicPlate is a reader, not a library manager.
 
@@ -44,109 +38,104 @@ It reads user content, builds a page list, displays it, and saves ComicPlate-own
 
 It must not delete, move, rename, rewrite, or edit user comic files.
 
-Supported formats
+## Supported formats
 
-Folder images
-
-.zip / .cbz
-
-.rar / .cbr
-
-.jpg / .jpeg
-
-.png
-
-.webp
-
-.bmp
-
-.gif first frame only
+* Folder images
+* `.zip` / `.cbz`
+* `.rar` / `.cbr`
+* `.jpg` / `.jpeg`
+* `.png`
+* `.webp`
+* `.bmp`
+* `.gif` first frame only
 
 Not in scope:
 
-PDF
+* PDF
+* EPUB / MOBI
+* video / audio
+* nested archives
+* 7z / CB7
+* metadata management
+* full-library scanning
+* file editing or file management actions
 
-EPUB / MOBI
-
-video / audio
-
-nested archives
-
-7z / CB7
-
-metadata management
-
-full-library scanning
-
-file editing or file management actions
-
-UI model
+## UI model
 
 ComicPlate starts with a small entry screen, then moves into the reader window.
 
 The reader window has a left Context Shelf, a central Reader Stage, and a bottom progress bar. The Shelf is only for nearby navigation inside the current container. It is not a bookshelf.
 
-Run from source
+## Run from source
 
 Requirements:
 
-.NET SDK
+* .NET SDK
 
+```bash
 dotnet restore
 dotnet run --project src/ComicPlate.App
+```
 
 Debug configuration:
 
+```bash
 dotnet run --project src/ComicPlate.App -c Debug
+```
 
-Build
+## Build
 
 Basic Release publish:
 
+```bash
 dotnet publish src/ComicPlate.App -c Release
+```
 
 macOS app bundle script:
 
+```bash
 bash scripts/package-macos-app.sh
+```
 
-Release outputs are self-contained builds. Build outputs should stay outside Git. Use artifacts/, publish/, or other ignored output folders.
+Release outputs are self-contained builds. Build outputs should stay outside Git. Use `artifacts/`, `publish/`, or other ignored output folders.
 
-Project layout
+## Project layout
 
+```text
 src/ComicPlate.App              Avalonia UI, windows, views, view models
 src/ComicPlate.Core             Book, Page, reading state, sorting, domain rules
 src/ComicPlate.Infrastructure   File system, archives, persistence, platform services
 tests/                          Tests
 platform/                       Platform-specific files
 scripts/                        Build and packaging scripts
+```
 
-Architecture
+## Architecture
 
 ComicPlate uses a small App / Core / Infrastructure split.
 
+```text
 App              Avalonia UI, windows, views, view models
 Core             Book, Page, reading state, sorting, domain rules
 Infrastructure  File system, archives, persistence, platform services
+```
 
 The reader should not decode the whole book at once. Image decode, cache, and memory behavior are treated as part of the reading core, not as a later polish step.
 
-Roadmap
+## Roadmap
 
 Near-term work:
 
-Improve image decode, cache, and memory behavior.
+* Improve image decode, cache, and memory behavior.
+* Improve file association and platform integration.
+* Add multilingual UI support.
+* Refine release packaging for Windows and macOS.
 
-Improve file association and platform integration.
-
-Add multilingual UI support.
-
-Refine release packaging for Windows and macOS.
-
-Boundaries
+## Boundaries
 
 ComicPlate is not a PDF reader, EPUB reader, image editor, metadata editor, batch rename tool, file manager, or full library manager.
 
-Contributing
+## Contributing
 
 Issues are welcome, especially for unreadable archives, wrong page order, broken image decoding, double-page layout problems, reading direction problems, platform differences, memory issues, and performance issues.
 
@@ -154,6 +143,6 @@ Large feature PRs should start with an issue first.
 
 Core rule: ComicPlate should not modify user comic files or turn into a library manager.
 
-License
+## License
 
-See LICENSE.
+See `LICENSE`.
