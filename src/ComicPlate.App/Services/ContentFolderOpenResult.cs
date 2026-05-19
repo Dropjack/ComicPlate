@@ -4,6 +4,6 @@ namespace ComicPlate.App.Services;
 
 public sealed record ContentFolderOpenResult(
     string FolderPath,
-    IReadOnlyList<BookEntry> ContextShelfEntries,
+    IReadOnlyList<ShelfEntry> ContextShelfEntries,
     BookEntry DirectFolderBook,
     IReadOnlyList<PageEntry> DirectPages);

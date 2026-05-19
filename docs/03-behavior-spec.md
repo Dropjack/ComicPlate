@@ -68,7 +68,7 @@ Book 是用户主动选择打开、文件关联传入，或从 Shelf View/Histor
 
 Collection 是左侧可导航的一层容器。Shelf View 是当前 Collection 在 Navigation Pane 里的 UI 呈现。History View 是最近阅读 Book 列表，不产生 Collection 导航授权。
 
-打开 Book 只改变主阅读面板、当前进度、当前高亮和定位目标；不把 Book 放进 Up 栈。进入 Collection 才改变 Shelf View 的当前层级和 NavigateUp 栈。
+打开 Book 只改变主阅读面板、当前进度、当前高亮和定位目标；不把 Book 放进 Up 栈。进入 Collection 才改变 Shelf View 的当前层级和 NavigateUp 栈。`U` 优先沿这个栈向上，栈为空时按当前 Collection 的真实父目录继续向上一级。
 
 同一个物理文件夹路径可以同时作为“文件夹 Book 的 Page 来源”和“Collection 的导航路径”，但这两个语义必须分开处理：作为 Book 时读取当前层图片形成 Page 流；作为 Collection 时列出当前层 Book entry 和子 Collection entry。
 

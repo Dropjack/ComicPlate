@@ -14,12 +14,12 @@ public sealed class ContentListItemViewModel : ViewModelBase
         ContentListItemKind kind,
         string displayName,
         string detail,
-        BookEntry book)
+        ShelfEntry entry)
     {
         Kind = kind;
         DisplayName = displayName;
         Detail = detail;
-        Book = book;
+        Entry = entry;
     }
 
     public ContentListItemKind Kind { get; }
@@ -28,7 +28,7 @@ public sealed class ContentListItemViewModel : ViewModelBase
 
     public string Detail { get; }
 
-    public BookEntry Book { get; }
+    public ShelfEntry Entry { get; }
 
     public bool HasThumbnail => Thumbnail is not null;
 
@@ -80,20 +80,21 @@ public sealed class ContentListItemViewModel : ViewModelBase
 
     public bool HasPlaceholder => Thumbnail is null;
 
-    public static ContentListItemViewModel FromBook(BookEntry book)
+    public static ContentListItemViewModel FromShelfEntry(ShelfEntry entry)
     {
-        var kind = book.SourceKind is BookSourceKind.Zip or BookSourceKind.Rar
+        var kind = entry.BookSourceKind is BookSourceKind.Zip or BookSourceKind.Rar
             ? ContentListItemKind.Archive
             : ContentListItemKind.Folder;
-        var detail = book.SourceKind switch
+        var detail = entry.Kind == ShelfEntryKind.Collection
+            ? "Folder"
+            : entry.BookSourceKind switch
         {
-            BookSourceKind.Collection => "Folder",
             BookSourceKind.Image => "Image",
             BookSourceKind.Zip => "ZIP/CBZ",
             BookSourceKind.Rar => "RAR/CBR",
             _ => "Comic folder"
         };
 
-        return new ContentListItemViewModel(kind, book.DisplayName, detail, book);
+        return new ContentListItemViewModel(kind, entry.DisplayName, detail, entry);
     }
 }

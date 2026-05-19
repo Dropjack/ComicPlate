@@ -64,7 +64,7 @@ Continue Reading 行为：
 - 点击后直接打开上次正在阅读的内容，并恢复到上次页码。
 - 没有可恢复会话时按钮不可用，不额外显示说明文字。
 - 不展示完整书架，不扫描上层目录，不展示历史列表。
-- 如果上次阅读状态保存了轻量 Collection 上下文，进入阅读页后 `U` 可以沿 Collection 栈向上一级。
+- 如果上次阅读状态保存了轻量 Collection 上下文，进入阅读页后 `U` 优先沿 Collection 栈向上一级；栈为空时按当前 Collection 的真实父目录继续向上一级。
 - 如果上层路径已经不存在或无法读取，保留当前内容阅读，并用轻量状态提示说明 `U` 不可用。
 - 动态名称优先显示有意义的文件夹/压缩包名；单张图片通常文件名无意义，后续 UX 可以显示上层一到两级目录。
 
@@ -94,7 +94,7 @@ Navigation Pane / Shelf View MVP 项：
 - Shelf 顶部暂定两行：状态行显示当前 Collection/History 标题和条目数量；操作行放 `S`、`H`、定位、`U` 等占位按钮。
 - `S` 切到 Shelf View；`H` 切到 History View。
 - 定位按钮服务于 Shelf：从 History 触发时先切回 Shelf，再定位当前正在阅读的 Book 在父 Collection 中的 entry。
-- `U` 表示 Up One Level，只在 Shelf View 中可用，只沿 Collection 导航栈向上，不改变当前 Book。
+- `U` 表示 Up One Level，只在 Shelf View 中可用；它优先沿 Collection 导航栈向上，栈为空时按当前 Collection 的父目录向上，不改变当前 Book。
 - Shelf 顶部的当前 Collection 名只属于 Navigation Pane，不负责 Reader Stage 标题。
 - Shelf 顶部不放 Reveal、搜索、排序或视图设置，避免变成文件管理器工具栏。
 - 当前阶段不做右键 action 菜单；右键不应改变当前阅读项，也不应触发打开。

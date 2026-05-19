@@ -39,12 +39,33 @@
             <Setter Property="Padding" Value="0" />
             <Setter Property="CornerRadius" Value="4" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderThickness" Value="0" />
         </Style>
 
         <Style Selector="Button.pane-toggle.active">
-            <Setter Property="Background" Value="{StaticResource ShelfReadingHighlight}" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="Path.navi-icon">
+            <Setter Property="Stroke" Value="{StaticResource TextBrush}" />
+            <Setter Property="Fill" Value="Transparent" />
+            <Setter Property="StrokeThickness" Value="1.8" />
+            <Setter Property="StrokeLineCap" Value="Round" />
+            <Setter Property="StrokeJoin" Value="Round" />
+        </Style>
+
+        <Style Selector="Ellipse.navi-icon">
+            <Setter Property="Stroke" Value="{StaticResource TextBrush}" />
+            <Setter Property="Fill" Value="Transparent" />
+            <Setter Property="StrokeThickness" Value="1.8" />
+        </Style>
+
+        <Style Selector="Button:disabled Path.navi-icon">
+            <Setter Property="Stroke" Value="{StaticResource DisabledTextBrush}" />
+        </Style>
+
+        <Style Selector="Button:disabled Ellipse.navi-icon">
+            <Setter Property="Stroke" Value="{StaticResource DisabledTextBrush}" />
         </Style>
     </UserControl.Styles>
 
@@ -76,23 +97,45 @@
                                 Orientation="Horizontal"
                                 Spacing="6">
                         <Button Command="{Binding ShowShelfCommand}"
-                                Content="S"
                                 Classes="pane-toggle"
                                 Classes.active="{Binding IsShelfPaneActive}"
-                                ToolTip.Tip="Shelf" />
+                                ToolTip.Tip="Shelf">
+                            <Viewbox Width="18" Height="18">
+                                <Canvas Width="24" Height="24">
+                                    <Path Classes="navi-icon" Data="M4.5 19V5.5 M8 18.5v-13 M11.5 18.5v-13 M15 18.5 13.4 5.8 M18.8 18.5 17.2 6.2 M3.8 19h16.4" />
+                                </Canvas>
+                            </Viewbox>
+                        </Button>
                         <Button Command="{Binding ShowHistoryCommand}"
-                                Content="H"
                                 Classes="pane-toggle"
                                 Classes.active="{Binding IsHistoryPaneActive}"
-                                ToolTip.Tip="History" />
+                                ToolTip.Tip="History">
+                            <Viewbox Width="18" Height="18">
+                                <Canvas Width="24" Height="24">
+                                    <Path Classes="navi-icon" Data="M5.2 7.8a8 8 0 1 1 .1 8.5 M5.2 7.8V4.6 M5.2 7.8h3.3 M12 8.2v4.3l3 1.8" />
+                                </Canvas>
+                            </Viewbox>
+                        </Button>
                         <Button Command="{Binding LocateCurrentBookCommand}"
-                                Content="L"
                                 Classes="pane-toggle"
-                                ToolTip.Tip="Locate in Shelf" />
+                                ToolTip.Tip="Locate in Shelf">
+                            <Viewbox Width="18" Height="18">
+                                <Canvas Width="24" Height="24">
+                                    <Ellipse Classes="navi-icon" Width="12.4" Height="12.4" Canvas.Left="5.8" Canvas.Top="5.8" />
+                                    <Ellipse Classes="navi-icon" Width="4.4" Height="4.4" Canvas.Left="9.8" Canvas.Top="9.8" />
+                                    <Path Classes="navi-icon" Data="M12 3.8v2.1 M12 18.1v2.1 M3.8 12h2.1 M18.1 12h2.1" />
+                                </Canvas>
+                            </Viewbox>
+                        </Button>
                         <Button Command="{Binding NavigateUpCommand}"
-                                Content="U"
                                 Classes="pane-toggle"
-                                ToolTip.Tip="Up One Level" />
+                                ToolTip.Tip="Up One Level">
+                            <Viewbox Width="18" Height="18">
+                                <Canvas Width="24" Height="24">
+                                    <Path Classes="navi-icon" Data="M4.5 19V6.8c0-.8.6-1.4 1.4-1.4h4.1l1.8 2.1h6.3c.8 0 1.4.6 1.4 1.4V19z M8.3 13.2 12 9.5l3.7 3.7 M12 9.5v6.2" />
+                                </Canvas>
+                            </Viewbox>
+                        </Button>
                     </StackPanel>
                 </Grid>
             </Border>

@@ -76,12 +76,20 @@ public sealed record BookEntry(
     string DisplayName,
     BookSourceKind SourceKind,
     string Path);
+
+public sealed record ShelfEntry(
+    string Id,
+    string DisplayName,
+    ShelfEntryKind Kind,
+    string Path,
+    BookSourceKind? BookSourceKind = null);
 ```
 
 注意：
 
 - PageList 是当前 Book 内的 Page 列表。
 - BookEntry 描述可阅读对象，不描述 Collection 导航层级。
+- ShelfEntry 描述 Shelf View 中的一行，可以是 Book，也可以是子 Collection；只有 Book 型 ShelfEntry 可以转换成 BookEntry 打开。
 - Book 打开和 Page 收集可以分开：ReadableUnitOpener 负责按路径选择 IBookSource，IBookSource 负责收集 Page。
 - 当前最新口径以 `02-scope-cut.md`、`03-behavior-spec.md` 和 `06-todo-list.md` 为准：文件夹打开后只扫描当前层。
 - 文件夹 Book 只收集当前层直接图片，并按文件名自然排序；不递归收集子文件夹图片。
@@ -115,7 +123,7 @@ public interface IBookSource
 
 - Shelf 只显示当前 Collection 的一层 children。
 - 文件夹路径可以同时成为 Book 的来源和 Collection 的路径，但这两个语义必须分开处理。
-- `NavigateUp` 只在 Collection 链路上移动，不改变当前 Book。
+- `NavigateUp` 只在 Collection 链路上移动，不改变当前 Book；显式导航栈为空时可以按当前 Collection 的父目录继续向上一级。
 
 ### PageEntry
 
@@ -235,7 +243,7 @@ MVP 策略：
 - CollectionNavigation 不是书架，不保存扫描结果，不保存缩略图，不保存目录内容。
 - 空启动的 Continue Reading 可以恢复少量 Collection entry，让用户读完当前内容后继续 NavigateUp 回上层。
 - 手动 Open 新内容时重置当前窗口的导航栈。
-- NavigateUp 默认只刷新左侧 Shelf，不强制清空或重置主阅读面板。
+- NavigateUp 默认只刷新左侧 Shelf，不强制清空或重置主阅读面板；当 BackStack 为空时，使用当前 Collection 的父目录作为 fallback。
 - 导航栈应设置上限，例如 8 层，避免长期积累成文件浏览器历史。
 - MVP 只做 NavigateUp；Forward 留到确认真实需求后再评估。
 

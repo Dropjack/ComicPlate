@@ -17,7 +17,7 @@ public sealed class ReadingSessionController
         _lastSession = _stateStore.LoadSession();
     }
 
-    public bool CanNavigateUp => _navigationHistory.CanNavigateUp;
+    public bool CanNavigateUp => _navigationHistory.CanNavigateUp || CreateParentCollectionEntry(CurrentCollection?.Path) is not null;
 
     public NavigationEntry? CurrentCollection => _navigationHistory.Current?.SourceKind == BookSourceKind.Collection
         ? _navigationHistory.Current
@@ -106,7 +106,20 @@ public sealed class ReadingSessionController
 
     public NavigationEntry? NavigateUp()
     {
-        return _navigationHistory.NavigateUp();
+        var previous = _navigationHistory.NavigateUp();
+        if (previous is not null)
+        {
+            return previous;
+        }
+
+        var parent = CreateParentCollectionEntry(CurrentCollection?.Path);
+        if (parent is null)
+        {
+            return null;
+        }
+
+        _navigationHistory.ReplaceCurrent(parent);
+        return parent;
     }
 
     public ReadableUnitState? PrepareOpenLastReadingPosition()
@@ -168,8 +181,13 @@ public sealed class ReadingSessionController
         return new NavigationEntry(path, string.IsNullOrWhiteSpace(displayName) ? path : displayName, sourceKind);
     }
 
-    private static NavigationEntry? CreateParentCollectionEntry(string path)
+    private static NavigationEntry? CreateParentCollectionEntry(string? path)
     {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
         var fullPath = Path.GetFullPath(path);
         var parentPath = Directory.Exists(fullPath)
             ? Directory.GetParent(fullPath)?.FullName

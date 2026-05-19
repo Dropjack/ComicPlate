@@ -26,7 +26,7 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
         return Task.FromResult(new ContextShelf(_rootPath, entries));
     }
 
-    private IEnumerable<BookEntry> EnumerateShelfEntries(CancellationToken cancellationToken)
+    private IEnumerable<ShelfEntry> EnumerateShelfEntries(CancellationToken cancellationToken)
     {
         foreach (var archive in EnumerateArchiveFiles(_rootPath, cancellationToken))
         {
@@ -36,40 +36,42 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
                 continue;
             }
 
-            yield return new BookEntry(
+            yield return new ShelfEntry(
                 fullPath,
                 Path.GetFileName(fullPath),
-                archiveFormat.SourceKind,
-                fullPath);
+                ShelfEntryKind.Book,
+                fullPath,
+                archiveFormat.SourceKind);
         }
 
         foreach (var childDirectory in EnumerateDirectories(_rootPath, cancellationToken))
         {
             var fullPath = Path.GetFullPath(childDirectory);
-            var sourceKind = GetDirectorySourceKind(fullPath, cancellationToken);
-            if (sourceKind is null)
+            var entryKind = GetDirectoryEntryKind(fullPath, cancellationToken);
+            if (entryKind is null)
             {
                 continue;
             }
 
-            yield return new BookEntry(
+            yield return new ShelfEntry(
                 fullPath,
                 Path.GetFileName(fullPath),
-                sourceKind.Value,
-                fullPath);
+                entryKind.Value,
+                fullPath,
+                entryKind == ShelfEntryKind.Book ? BookSourceKind.Folder : null);
         }
     }
 
-    private static BookSourceKind? GetDirectorySourceKind(string directory, CancellationToken cancellationToken)
+    private static ShelfEntryKind? GetDirectoryEntryKind(string directory, CancellationToken cancellationToken)
     {
         if (ContainsDirectPageFiles(directory, cancellationToken))
         {
-            return BookSourceKind.Folder;
+            return ShelfEntryKind.Book;
         }
 
         if (ContainsChildContentCandidates(directory, cancellationToken))
         {
-            return BookSourceKind.Collection;
+            return ShelfEntryKind.Collection;
         }
 
         return null;

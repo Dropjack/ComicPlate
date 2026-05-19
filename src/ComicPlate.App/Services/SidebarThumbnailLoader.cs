@@ -59,12 +59,13 @@ public sealed class SidebarThumbnailLoader : IDisposable
 
     private async Task<Bitmap?> LoadThumbnailAsync(ContentListItemViewModel item, CancellationToken cancellationToken)
     {
-        return item.Book.SourceKind switch
+        return item.Entry.Kind == ShelfEntryKind.Collection
+            ? await LoadFolderThumbnailAsync(item.Entry.Path, cancellationToken)
+            : item.Entry.BookSourceKind switch
         {
-            BookSourceKind.Zip => await LoadArchiveThumbnailAsync(item.Book, cancellationToken),
-            BookSourceKind.Rar => await LoadArchiveThumbnailAsync(item.Book, cancellationToken),
-            BookSourceKind.Folder => await LoadFolderThumbnailAsync(item.Book.Path, cancellationToken),
-            BookSourceKind.Collection => await LoadFolderThumbnailAsync(item.Book.Path, cancellationToken),
+            BookSourceKind.Zip => await LoadArchiveThumbnailAsync(item.Entry.ToBookEntry(), cancellationToken),
+            BookSourceKind.Rar => await LoadArchiveThumbnailAsync(item.Entry.ToBookEntry(), cancellationToken),
+            BookSourceKind.Folder => await LoadFolderThumbnailAsync(item.Entry.Path, cancellationToken),
             _ => null
         };
     }

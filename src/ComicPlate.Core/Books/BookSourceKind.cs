@@ -2,8 +2,8 @@ namespace ComicPlate.Core.Books;
 
 public enum BookSourceKind
 {
-    // Navigation-pane entry for a child Collection. It is kept in this enum
-    // while Shelf entries still share BookEntry as their transport shape.
+    // Compatibility value for persisted NavigationEntry/session data. Shelf
+    // rows now use ShelfEntryKind.Collection instead.
     Collection,
     Folder,
     Image,

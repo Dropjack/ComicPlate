@@ -17,7 +17,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly ContentOpenService _contentOpenService = new();
     private readonly ReaderImageCache _readerImageCache;
     private readonly ReadingSessionController _readingSession;
-    private IReadOnlyList<BookEntry> _collectionShelfEntries = Array.Empty<BookEntry>();
+    private IReadOnlyList<ShelfEntry> _collectionShelfEntries = Array.Empty<ShelfEntry>();
     private BookEntry? _currentBook;
     private string? _navigationHighlightPath;
     private string _collectionShelfRootPath = "";
@@ -272,7 +272,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void LoadCollectionShelfEntries(
         string rootPath,
-        IReadOnlyList<BookEntry> entries,
+        IReadOnlyList<ShelfEntry> entries,
         string? navigationHighlightPath)
     {
         _collectionShelfRootPath = rootPath;
@@ -284,26 +284,26 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private async Task ActivateBookItemAsync(BookEntry book)
+    private async Task ActivateShelfEntryAsync(ShelfEntry entry)
     {
-        if (book.SourceKind == BookSourceKind.Collection)
+        if (entry.Kind == ShelfEntryKind.Collection)
         {
-            await NavigateToContentFolderAsync(book.Path);
+            await NavigateToContentFolderAsync(entry.Path);
             return;
         }
 
-        await NavigateToBookAsync(book);
+        await NavigateToBookAsync(entry.ToBookEntry());
     }
 
     private async Task ActivateContentItemAsync(ContentListItemViewModel item)
     {
         if (IsHistoryPaneActive)
         {
-            await ActivateHistoryBookAsync(item.Book);
+            await ActivateHistoryBookAsync(item.Entry.ToBookEntry());
             return;
         }
 
-        await ActivateBookItemAsync(item.Book);
+        await ActivateShelfEntryAsync(item.Entry);
     }
 
     private async Task ActivateHistoryBookAsync(BookEntry book)
@@ -610,11 +610,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private void ClearCollectionShelfItems()
     {
         _collectionShelfRootPath = "";
-        _collectionShelfEntries = Array.Empty<BookEntry>();
+        _collectionShelfEntries = Array.Empty<ShelfEntry>();
         _navigationHighlightPath = null;
         if (IsShelfPaneActive)
         {
-            ContextShelf.ReplaceItems(Array.Empty<BookEntry>());
+            ContextShelf.ReplaceItems(Array.Empty<ShelfEntry>());
             UpdateContextShelfVisualState();
         }
     }
@@ -670,7 +670,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private void RenderHistoryPane()
     {
         ShelfTitle = "History";
-        ContextShelf.ReplaceItems(_readingSession.GetRecentBooks(HistoryBookLimit));
+        ContextShelf.ReplaceItems(_readingSession.GetRecentBooks(HistoryBookLimit).Select(ShelfEntry.FromBook));
         UpdateContextShelfVisualState();
         _ = ContextShelf.LoadThumbnailsAsync();
     }
@@ -705,7 +705,9 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private bool CollectionShelfContains(BookEntry book)
     {
-        return _collectionShelfEntries.Any(entry => PathsEqual(entry.Id, book.Id));
+        return _collectionShelfEntries.Any(entry =>
+            entry.Kind == ShelfEntryKind.Book
+            && PathsEqual(entry.Id, book.Id));
     }
 
     private static bool PathsEqual(string first, string second)

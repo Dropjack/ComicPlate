@@ -45,7 +45,7 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _locateRequestVersion, value);
     }
 
-    public void ReplaceItems(IEnumerable<BookEntry> books)
+    public void ReplaceItems(IEnumerable<ShelfEntry> entries)
     {
         _thumbnailCancellationTokenSource.Cancel();
         _thumbnailCancellationTokenSource.Dispose();
@@ -53,9 +53,9 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
         _thumbnailLoader.Clear();
         Items.Clear();
 
-        foreach (var book in books)
+        foreach (var entry in entries)
         {
-            Items.Add(ContentListItemViewModel.FromBook(book));
+            Items.Add(ContentListItemViewModel.FromShelfEntry(entry));
         }
 
         SetCurrentIndexSilently(-1);
@@ -70,10 +70,12 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
 
         foreach (var item in Items)
         {
-            item.IsReading = PathsEqual(item.Book.Id, normalizedReadingBookId);
+            item.IsReading =
+                item.Entry.Kind == ShelfEntryKind.Book
+                && PathsEqual(item.Entry.Id, normalizedReadingBookId);
             item.IsNavigationCurrent =
-                item.Book.SourceKind == BookSourceKind.Collection
-                && PathsEqual(item.Book.Path, normalizedNavigationCollectionPath);
+                item.Entry.Kind == ShelfEntryKind.Collection
+                && PathsEqual(item.Entry.Path, normalizedNavigationCollectionPath);
         }
     }
 
@@ -105,7 +107,9 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
     {
         var index = Items
             .Select((item, itemIndex) => new { item, itemIndex })
-            .FirstOrDefault(candidate => PathsEqual(candidate.item.Book.Id, bookId))
+            .FirstOrDefault(candidate =>
+                candidate.item.Entry.Kind == ShelfEntryKind.Book
+                && PathsEqual(candidate.item.Entry.Id, bookId))
             ?.itemIndex ?? -1;
         if (index < 0)
         {
