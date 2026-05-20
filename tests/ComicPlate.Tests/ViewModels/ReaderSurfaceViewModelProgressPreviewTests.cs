@@ -47,6 +47,119 @@ public sealed class ReaderSurfaceViewModelProgressPreviewTests
         Assert.Equal(1, viewModel.DisplayPageProgressIndex);
     }
 
+    [Fact]
+    public async Task MagnifierIsHoldOnlyAndRemembersScaleForCurrentRun()
+    {
+        using var viewModel = CreateViewModel();
+        viewModel.SetReaderViewportSize(1000, 800);
+        await viewModel.LoadPagesAsync(CreatePages(3));
+
+        Assert.Equal("1.0x", viewModel.MagnifierScaleText);
+
+        Assert.True(viewModel.BeginMagnifier());
+        Assert.Equal(1.5, viewModel.MagnifierScale);
+
+        Assert.True(viewModel.AdjustMagnifierScale(2));
+        Assert.Equal(1.6, viewModel.MagnifierScale, precision: 3);
+
+        viewModel.EndMagnifier();
+
+        Assert.Equal(1.0, viewModel.MagnifierScale);
+        Assert.Equal("1.0x", viewModel.MagnifierScaleText);
+
+        Assert.True(viewModel.BeginMagnifier());
+
+        Assert.Equal(1.6, viewModel.MagnifierScale, precision: 3);
+    }
+
+    [Fact]
+    public async Task DisabledMagnifierDoesNotStartOrConsumeWheel()
+    {
+        using var viewModel = CreateViewModel();
+        await viewModel.LoadPagesAsync(CreatePages(3));
+        viewModel.SetMagnifierEnabled(false);
+
+        Assert.False(viewModel.BeginMagnifier());
+        Assert.False(viewModel.AdjustMagnifierScale(1));
+        Assert.Equal("1.0x", viewModel.MagnifierScaleText);
+    }
+
+    [Fact]
+    public async Task MagnifierScaleIsClamped()
+    {
+        using var viewModel = CreateViewModel();
+        await viewModel.LoadPagesAsync(CreatePages(3));
+
+        viewModel.BeginMagnifier();
+        viewModel.AdjustMagnifierScale(100);
+
+        Assert.Equal(2.5, viewModel.MagnifierScale);
+
+        viewModel.AdjustMagnifierScale(-100);
+
+        Assert.Equal(1.5, viewModel.MagnifierScale);
+    }
+
+    [Fact]
+    public async Task MagnifierPointerUsesSlightlyHigherSensitivity()
+    {
+        using var viewModel = CreateViewModel();
+        viewModel.SetReaderViewportSize(1000, 800);
+        await viewModel.LoadPagesAsync(CreatePages(10), initialPageIndex: 5);
+
+        viewModel.UpdateMagnifierPointer(600, 400);
+        Assert.True(viewModel.BeginMagnifier());
+
+        var projectedPointerX = 615.0;
+        var contentXUnderPointer = projectedPointerX - viewModel.ReaderStripTranslateX;
+        var scaledPointerX = viewModel.MagnifiedReaderStripTranslateX
+            + (contentXUnderPointer * viewModel.MagnifierScale);
+
+        Assert.Equal(projectedPointerX, scaledPointerX, precision: 3);
+    }
+
+    [Fact]
+    public async Task MagnifierKeepsPointerAnchoredWhenContentBoundsAllowIt()
+    {
+        using var viewModel = CreateViewModel();
+        viewModel.SetReaderViewportSize(1000, 800);
+        await viewModel.LoadPagesAsync(CreatePages(10), initialPageIndex: 5);
+
+        viewModel.UpdateMagnifierPointer(500, 400);
+        Assert.True(viewModel.BeginMagnifier());
+
+        var contentXUnderPointer = 500 - viewModel.ReaderStripTranslateX;
+        var contentYUnderPointer = 400;
+        var scaledPointerX = viewModel.MagnifiedReaderStripTranslateX
+            + (contentXUnderPointer * viewModel.MagnifierScale);
+        var scaledPointerY = viewModel.MagnifierContentTranslateY
+            + (contentYUnderPointer * viewModel.MagnifierScale);
+
+        Assert.Equal(500, scaledPointerX, precision: 3);
+        Assert.Equal(400, scaledPointerY, precision: 3);
+    }
+
+    [Fact]
+    public async Task MagnifierOffsetIsClampedToScaledContentBounds()
+    {
+        using var viewModel = CreateViewModel();
+        viewModel.SetReaderViewportSize(1000, 800);
+        await viewModel.LoadPagesAsync(CreatePages(3), initialPageIndex: 0);
+
+        viewModel.UpdateMagnifierPointer(500, 400);
+        Assert.True(viewModel.BeginMagnifier());
+
+        var scaledContentWidth = viewModel.ReaderStripItems.Sum(item => item.DisplayWidth)
+            * viewModel.MagnifierScale;
+        var scaledContentHeight = viewModel.ReaderStripItems.Max(item => item.DisplayHeight)
+            * viewModel.MagnifierScale;
+
+        Assert.True(viewModel.MagnifiedReaderStripTranslateX <= 0);
+        Assert.True(viewModel.MagnifiedReaderStripTranslateX + scaledContentWidth >= 1000);
+        Assert.True(viewModel.MagnifierContentTranslateY <= 0);
+        Assert.True(viewModel.MagnifierContentTranslateY + scaledContentHeight >= 800);
+    }
+
     private static ReaderSurfaceViewModel CreateViewModel()
     {
         return new ReaderSurfaceViewModel(new ReaderImageCache(new ImagePageLoader()));

@@ -16,7 +16,8 @@ public static class FileAssociationService
             return new MacOSFileAssociationService();
         }
 
-        return new UnsupportedFileAssociationService("当前平台暂不支持在 ComicPlate 内修改文件关联。");
+        return new UnsupportedFileAssociationService(
+            LocalizationService.Current.GetString("FileAssociation.Status.PlatformUnsupported"));
     }
 
     internal static IReadOnlyList<FileAssociationOption> CreateOptions(

@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using ComicPlate.App.Input;
+using ComicPlate.App.Services;
 
 namespace ComicPlate.App.Views;
 
@@ -19,7 +20,7 @@ public partial class ShortcutWindow : Window
 
     private void ApplyPlatformShortcutText()
     {
-        ShortcutIntroText.Text = $"当前阶段仅展示 {ShortcutRegistry.PlatformName} 版本固定快捷键，不提供编辑。";
+        ShortcutIntroText.Text = LocalizationService.Current.GetString("Shortcuts.Intro");
         NextPageShortcutText.Text = ShortcutRegistry.GetDisplayText(ShortcutActionId.NextPage);
         PreviousPageShortcutText.Text = ShortcutRegistry.GetDisplayText(ShortcutActionId.PreviousPage);
         FirstPageShortcutText.Text = ShortcutRegistry.GetDisplayText(ShortcutActionId.FirstPage);

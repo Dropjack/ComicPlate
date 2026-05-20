@@ -8,8 +8,6 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
 {
     private const string ClassesRoot = @"Software\Classes";
     private const string ShellVerbName = "ComicPlate.Open";
-    private const string MenuText = "在 ComicPlate 中打开";
-
     private readonly IWindowsRegistry _registry;
     private readonly string _executablePath;
 
@@ -33,7 +31,7 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
             true,
             IsRegistered(),
             IsRegistered()
-                ? "右键菜单已注册。"
+                ? LocalizationService.Current.GetString("ExplorerContextMenu.Status.Registered")
                 : "");
     }
 
@@ -46,7 +44,9 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
                 true,
                 IsRegistered(format.Extension),
                 IsRegistered(format.Extension)
-                    ? $"{format.DisplayName} 右键菜单已注册。"
+                    ? LocalizationService.Current.Format(
+                        "ExplorerContextMenu.Status.FormatRegistered",
+                        format.DisplayName)
                     : ""))
             .ToArray();
     }
@@ -59,18 +59,28 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
             {
                 Register();
                 return IsRegistered()
-                    ? new ExplorerContextMenuResult(true, "右键菜单已注册。")
-                    : new ExplorerContextMenuResult(false, "右键菜单注册失败。");
+                    ? new ExplorerContextMenuResult(
+                        true,
+                        LocalizationService.Current.GetString("ExplorerContextMenu.Status.Registered"))
+                    : new ExplorerContextMenuResult(
+                        false,
+                        LocalizationService.Current.GetString("ExplorerContextMenu.Error.RegistrationFailed"));
             }
 
             Unregister();
             return IsRegistered()
-                ? new ExplorerContextMenuResult(false, "右键菜单移除失败。")
-                : new ExplorerContextMenuResult(true, "右键菜单已移除。");
+                ? new ExplorerContextMenuResult(
+                    false,
+                    LocalizationService.Current.GetString("ExplorerContextMenu.Error.RemovalFailed"))
+                : new ExplorerContextMenuResult(
+                    true,
+                    LocalizationService.Current.GetString("ExplorerContextMenu.Status.Removed"));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
-            return new ExplorerContextMenuResult(false, "右键菜单设置失败，请检查系统权限。");
+            return new ExplorerContextMenuResult(
+                false,
+                LocalizationService.Current.GetString("ExplorerContextMenu.Error.SettingFailed"));
         }
     }
 
@@ -78,7 +88,9 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
     {
         if (!ComicArchiveFormats.TryGetByExtension(extension, out var format))
         {
-            return new ExplorerContextMenuResult(false, "不支持的文件格式。");
+            return new ExplorerContextMenuResult(
+                false,
+                LocalizationService.Current.GetString("ExplorerContextMenu.Error.UnsupportedFormat"));
         }
 
         try
@@ -87,18 +99,36 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
             {
                 Register(format);
                 return IsRegistered(format.Extension)
-                    ? new ExplorerContextMenuResult(true, $"{format.DisplayName} 右键菜单已注册。")
-                    : new ExplorerContextMenuResult(false, $"{format.DisplayName} 右键菜单注册失败。");
+                    ? new ExplorerContextMenuResult(
+                        true,
+                        LocalizationService.Current.Format(
+                            "ExplorerContextMenu.Status.FormatRegistered",
+                            format.DisplayName))
+                    : new ExplorerContextMenuResult(
+                        false,
+                        LocalizationService.Current.Format(
+                            "ExplorerContextMenu.Error.FormatRegistrationFailed",
+                            format.DisplayName));
             }
 
             Unregister(format);
             return IsRegistered(format.Extension)
-                ? new ExplorerContextMenuResult(false, $"{format.DisplayName} 右键菜单移除失败。")
-                : new ExplorerContextMenuResult(true, $"{format.DisplayName} 右键菜单已移除。");
+                ? new ExplorerContextMenuResult(
+                    false,
+                    LocalizationService.Current.Format(
+                        "ExplorerContextMenu.Error.FormatRemovalFailed",
+                        format.DisplayName))
+                : new ExplorerContextMenuResult(
+                    true,
+                    LocalizationService.Current.Format(
+                        "ExplorerContextMenu.Status.FormatRemoved",
+                        format.DisplayName));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
-            return new ExplorerContextMenuResult(false, "右键菜单设置失败，请检查系统权限。");
+            return new ExplorerContextMenuResult(
+                false,
+                LocalizationService.Current.GetString("ExplorerContextMenu.Error.SettingFailed"));
         }
     }
 
@@ -127,8 +157,9 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
     {
         var shellKeyPath = GetShellKeyPath(format.Extension);
         var commandKeyPath = GetCommandKeyPath(format.Extension);
-        _registry.WriteDefaultValue(shellKeyPath, MenuText);
-        _registry.WriteValue(shellKeyPath, "MUIVerb", MenuText);
+        var menuText = LocalizationService.Current.GetString("ExplorerContextMenu.Verb.OpenInComicPlate");
+        _registry.WriteDefaultValue(shellKeyPath, menuText);
+        _registry.WriteValue(shellKeyPath, "MUIVerb", menuText);
         _registry.WriteValue(shellKeyPath, "Icon", CreateIconReference());
         _registry.WriteDefaultValue(commandKeyPath, CreateOpenCommand());
     }

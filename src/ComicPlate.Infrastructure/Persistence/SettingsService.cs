@@ -14,11 +14,21 @@ public sealed class SettingsService
         Converters = { new JsonStringEnumConverter() }
     };
 
-    private readonly IUserDataPathProvider _userDataPathProvider;
+    private readonly string _userDataDirectory;
 
     public SettingsService(IUserDataPathProvider userDataPathProvider)
+        : this(userDataPathProvider.GetUserDataDirectory())
     {
-        _userDataPathProvider = userDataPathProvider;
+    }
+
+    public SettingsService(string userDataDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(userDataDirectory))
+        {
+            throw new ArgumentException("User data directory cannot be empty.", nameof(userDataDirectory));
+        }
+
+        _userDataDirectory = userDataDirectory;
     }
 
     public static SettingsService CreateDefault()
@@ -26,9 +36,9 @@ public sealed class SettingsService
         return new SettingsService(new DefaultUserDataPathProvider());
     }
 
-    public string SettingsPath => Path.Combine(_userDataPathProvider.GetUserDataDirectory(), "settings.json");
+    public string SettingsPath => Path.Combine(_userDataDirectory, "settings.json");
 
-    public string UserDataDirectory => _userDataPathProvider.GetUserDataDirectory();
+    public string UserDataDirectory => _userDataDirectory;
 
     public AppSettings Load()
     {

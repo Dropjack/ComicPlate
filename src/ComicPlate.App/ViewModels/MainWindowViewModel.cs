@@ -17,6 +17,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly ContentOpenService _contentOpenService = new();
     private readonly ReaderImageCache _readerImageCache;
     private readonly ReadingSessionController _readingSession;
+    private readonly SettingsService _settingsService;
     private IReadOnlyList<ShelfEntry> _collectionShelfEntries = Array.Empty<ShelfEntry>();
     private BookEntry? _currentBook;
     private string? _navigationHighlightPath;
@@ -33,12 +34,19 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     public MainWindowViewModel(
         IFolderPickerService folderPickerService,
         ImagePageLoader imagePageLoader,
-        JsonAppStateStore? stateStore = null)
+        JsonAppStateStore? stateStore = null,
+        SettingsService? settingsService = null)
     {
         _folderPickerService = folderPickerService;
+        _settingsService = settingsService ?? SettingsService.CreateDefault();
+        var settings = _settingsService.Load();
         _readerImageCache = new ReaderImageCache(imagePageLoader);
         _readingSession = new ReadingSessionController(stateStore ?? JsonAppStateStore.CreateDefault());
-        Reader = new ReaderSurfaceViewModel(_readerImageCache);
+        Reader = new ReaderSurfaceViewModel(
+            _readerImageCache,
+            settings.ReadingDirection,
+            settings.ViewMode,
+            settings.IsMagnifierEnabled);
         Reader.PropertyChanged += OnReaderPropertyChanged;
         Reader.ReadingStateChanged += OnReaderReadingStateChanged;
         ContextShelf = new ContextShelfViewModel(ActivateContentItemAsync);
@@ -158,7 +166,9 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public string NavigationPaneToggleText => IsNavigationPaneVisible ? "隐藏 Shelf" : "显示 Shelf";
+    public string NavigationPaneToggleText => IsNavigationPaneVisible
+        ? LocalizationService.Current.GetString("Shelf.Hide")
+        : LocalizationService.Current.GetString("Shelf.Show");
 
     public bool IsNavigationPaneHidden => !IsNavigationPaneVisible;
 
@@ -203,6 +213,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         return ContextShelf.MoveSelection(delta);
     }
 
+    public void SetMagnifierEnabled(bool isEnabled)
+    {
+        Reader.SetMagnifierEnabled(isEnabled);
+    }
+
     private BookEntry? CurrentBook
     {
         get => _currentBook;
@@ -227,7 +242,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         ReaderTitle = "";
         ShelfTitle = Path.GetFileName(folderPath);
         ShowReader();
-        SetMessage("Loading contents...");
+        SetMessageKey("Status.LoadingContents");
 
         try
         {
@@ -237,7 +252,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         {
             Reader.ClearPages();
             ClearCollectionShelfItems();
-            SetMessage("ComicPlate could not read this folder.");
+            SetMessageKey("Status.CannotReadFolder");
         }
         finally
         {
@@ -270,6 +285,12 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             or nameof(ReaderSurfaceViewModel.PageText))
         {
             OnPropertyChanged(nameof(WindowTitle));
+        }
+
+        if (e.PropertyName is nameof(ReaderSurfaceViewModel.ReadingDirection)
+            or nameof(ReaderSurfaceViewModel.ViewMode))
+        {
+            PersistReaderPreferences();
         }
     }
 
@@ -348,13 +369,13 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
         if (ContextShelf.IsEmpty && result.DirectPages.Count == 0 && Reader.ReaderStripItems.Count == 0)
         {
-            SetMessage("This folder has no readable contents.");
+            SetMessageKey("Status.FolderNoReadableContents");
             return;
         }
 
         if (updateReaderFromDirectPages && result.DirectPages.Count == 0 && Reader.ReaderStripItems.Count == 0)
         {
-            SetMessage("Select an item from the current folder.");
+            SetMessageKey("Status.SelectItemFromCurrentFolder");
         }
 
         _ = ContextShelf.LoadThumbnailsAsync();
@@ -369,7 +390,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         ShelfTitle = Path.GetFileName(folderPath);
-        SetMessage("Loading contents...");
+        SetMessageKey("Status.LoadingContents");
 
         try
         {
@@ -383,7 +404,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             }
 
             ClearCollectionShelfItems();
-            SetMessage("ComicPlate could not read this folder.");
+            SetMessageKey("Status.CannotReadFolder");
         }
         finally
         {
@@ -403,7 +424,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
         IsLoading = true;
         ReaderTitle = book.DisplayName;
-        SetMessage("Loading pages...");
+        SetMessageKey("Status.LoadingPages");
 
         try
         {
@@ -415,7 +436,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
             if (pages.Count == 0)
             {
-                SetMessage("This comic has no readable images.");
+                SetMessageKey("Status.ComicNoReadableImages");
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
@@ -423,7 +444,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             CurrentBook = null;
             Reader.ClearPages();
             ReaderTitle = "";
-            SetMessage("ComicPlate could not read this comic.");
+            SetMessageKey("Status.CannotReadComic");
         }
         finally
         {
@@ -464,7 +485,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private async Task OpenPathAsSessionStartAsync(string path)
     {
         IsLoading = true;
-        SetMessage("Loading contents...");
+        SetMessageKey("Status.LoadingContents");
 
         try
         {
@@ -483,15 +504,15 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
             Reader.ClearPages();
             ClearCollectionShelfItems();
-            SetMessage(result.Kind == OpenPathKind.Missing
-                ? "ComicPlate could not find this path."
-                : "ComicPlate cannot open this file type yet.");
+            SetMessageKey(result.Kind == OpenPathKind.Missing
+                ? "Status.PathMissing"
+                : "Status.FileTypeUnsupported");
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
         {
             Reader.ClearPages();
             ClearCollectionShelfItems();
-            SetMessage("ComicPlate could not open this path.");
+            SetMessageKey("Status.CannotOpenPath");
         }
         finally
         {
@@ -569,9 +590,24 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         RaiseCommandStates();
     }
 
+    private void PersistReaderPreferences()
+    {
+        var settings = _settingsService.Load();
+        _settingsService.Save(settings with
+        {
+            ReadingDirection = Reader.ReadingDirection,
+            ViewMode = Reader.ViewMode,
+        });
+    }
+
     private void SetMessage(string message)
     {
         StatusMessage = message;
+    }
+
+    private void SetMessageKey(string key)
+    {
+        SetMessage(LocalizationService.Current.GetString(key));
     }
 
     private async Task OpenCurrentCollectionShelfAsync()
@@ -607,7 +643,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             ClearCollectionShelfItems();
             if (!Reader.HasPages)
             {
-                SetMessage("ComicPlate could not read this folder.");
+                SetMessageKey("Status.CannotReadFolder");
             }
         }
         finally
@@ -669,7 +705,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private void RenderCollectionShelfPane()
     {
         ShelfTitle = string.IsNullOrWhiteSpace(_collectionShelfRootPath)
-            ? "Shelf"
+            ? LocalizationService.Current.GetString("Shelf.Title")
             : Path.GetFileName(_collectionShelfRootPath);
         ContextShelf.ReplaceItems(_collectionShelfEntries);
         UpdateContextShelfVisualState();
@@ -678,7 +714,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void RenderHistoryPane()
     {
-        ShelfTitle = "History";
+        ShelfTitle = LocalizationService.Current.GetString("Shelf.History");
         ContextShelf.ReplaceItems(_readingSession.GetRecentBooks(HistoryBookLimit).Select(ShelfEntry.FromBook));
         UpdateContextShelfVisualState();
         _ = ContextShelf.LoadThumbnailsAsync();

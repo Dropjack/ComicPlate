@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
@@ -19,6 +20,7 @@ public partial class MainWindow : Window
     private readonly MainWindowViewModel _viewModel;
     private readonly SettingsService _settingsService;
     private readonly IReaderWindowService _readerWindowService;
+    private readonly AppRestartService _restartService = new();
     private AppSettings _appSettings;
     private readonly string? _startupPath;
     private SettingsWindow? _settingsWindow;
@@ -73,7 +75,8 @@ public partial class MainWindow : Window
         _startupPath = startupPath;
         _viewModel = new MainWindowViewModel(
             new FolderPickerService(this),
-            new ImagePageLoader());
+            new ImagePageLoader(),
+            settingsService: _settingsService);
         DataContext = _viewModel;
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         Opened += OnOpened;
@@ -172,6 +175,16 @@ public partial class MainWindow : Window
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
+        if (e.KeyModifiers == KeyModifiers.None
+            && e.Key == Key.Z
+            && IsReaderVisibleForMagnifier()
+            && _viewModel.Reader.BeginMagnifier())
+        {
+            ReaderSurface.UpdateMagnifierPointer();
+            e.Handled = true;
+            return;
+        }
+
         if (_isFullscreen && e.Key == Key.Escape)
         {
             ExitFullscreen();
@@ -252,8 +265,23 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnKeyUp(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Z)
+        {
+            _viewModel.Reader.EndMagnifier();
+            e.Handled = true;
+        }
+    }
+
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
+        if (_viewModel.Reader.AdjustMagnifierScale(e.Delta.Y))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (OperatingSystem.IsMacOS() && Math.Abs(e.Delta.X) > Math.Abs(e.Delta.Y))
         {
             if (e.Delta.X > 0)
@@ -311,6 +339,7 @@ public partial class MainWindow : Window
         }
 
         _settingsWindow = new SettingsWindow(new PlatformLauncher(), _settingsService);
+        _settingsWindow.RestartRequested += OnSettingsRestartRequested;
         _settingsWindow.Closed += OnSettingsWindowClosed;
         _settingsWindow.Show();
     }
@@ -326,16 +355,40 @@ public partial class MainWindow : Window
     {
         if (_settingsWindow is not null)
         {
+            _settingsWindow.RestartRequested -= OnSettingsRestartRequested;
             _settingsWindow.Closed -= OnSettingsWindowClosed;
             _settingsWindow = null;
             RefreshSettings();
         }
     }
 
+    private void OnSettingsRestartRequested(object? sender, EventArgs e)
+    {
+        _viewModel.SaveCurrentState();
+        if (!_restartService.TryRestart(AppRestartService.GetCurrentArguments()))
+        {
+            return;
+        }
+
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.Shutdown();
+            return;
+        }
+
+        Close();
+    }
+
     private void RefreshSettings()
     {
         _appSettings = _settingsService.Load();
         CanCreateNewWindow = _appSettings.AllowMultipleWindows;
+        _viewModel.SetMagnifierEnabled(_appSettings.IsMagnifierEnabled);
+    }
+
+    private bool IsReaderVisibleForMagnifier()
+    {
+        return _viewModel.IsReaderVisible && !_viewModel.IsLoading;
     }
 
     private void ToggleFullscreen()

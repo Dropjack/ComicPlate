@@ -37,6 +37,8 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+    <Content Include="Localization\*.json"
+             CopyToOutputDirectory="PreserveNewest" />
     <AvaloniaResource Include="..\..\platform\windows\ComicPlate.ico"
                       Link="!__AvaloniaDefaultWindowIcon"
                       Condition="$([MSBuild]::IsOSPlatform('Windows'))" />

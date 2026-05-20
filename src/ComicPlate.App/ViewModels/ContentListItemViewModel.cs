@@ -1,4 +1,5 @@
 using Avalonia.Media.Imaging;
+using ComicPlate.App.Services;
 using ComicPlate.Core.Books;
 
 namespace ComicPlate.App.ViewModels;
@@ -34,9 +35,9 @@ public sealed class ContentListItemViewModel : ViewModelBase
 
     public string KindLabel => Kind switch
     {
-        ContentListItemKind.Archive => "Archive",
-        ContentListItemKind.Folder => "Folder",
-        _ => "Folder"
+        ContentListItemKind.Archive => LocalizationService.Current.GetString("Shelf.Kind.Archive"),
+        ContentListItemKind.Folder => LocalizationService.Current.GetString("Shelf.Kind.Folder"),
+        _ => LocalizationService.Current.GetString("Shelf.Kind.Folder")
     };
 
     public bool HasKindOverlay => true;
@@ -86,13 +87,13 @@ public sealed class ContentListItemViewModel : ViewModelBase
             ? ContentListItemKind.Archive
             : ContentListItemKind.Folder;
         var detail = entry.Kind == ShelfEntryKind.Collection
-            ? "Folder"
+            ? LocalizationService.Current.GetString("Shelf.Kind.Folder")
             : entry.BookSourceKind switch
         {
-            BookSourceKind.Image => "Image",
-            BookSourceKind.Zip => "ZIP/CBZ",
-            BookSourceKind.Rar => "RAR/CBR",
-            _ => "Comic folder"
+            BookSourceKind.Image => LocalizationService.Current.GetString("Shelf.Kind.Image"),
+            BookSourceKind.Zip => LocalizationService.Current.GetString("Shelf.Kind.ZipCbz"),
+            BookSourceKind.Rar => LocalizationService.Current.GetString("Shelf.Kind.RarCbr"),
+            _ => LocalizationService.Current.GetString("Shelf.Kind.ComicFolder")
         };
 
         return new ContentListItemViewModel(kind, entry.DisplayName, detail, entry);

@@ -1,11 +1,22 @@
 using ComicPlate.App.Services;
 using ComicPlate.App.ViewModels;
 using ComicPlate.Core.Books;
+using ComicPlate.Core.Reading;
+using ComicPlate.Infrastructure.Persistence;
 
 namespace ComicPlate.Tests.ViewModels;
 
-public sealed class MainWindowViewModelWindowTitleTests
+public sealed class MainWindowViewModelWindowTitleTests : IDisposable
 {
+    private readonly string _tempDirectory = Path.Combine(
+        Path.GetTempPath(),
+        $"ComicPlateMainWindowViewModelTests-{Guid.NewGuid():N}");
+
+    public MainWindowViewModelWindowTitleTests()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+    }
+
     [Fact]
     public async Task WindowTitleIncludesReaderTitleAndCurrentPage()
     {
@@ -23,9 +34,64 @@ public sealed class MainWindowViewModelWindowTitleTests
         Assert.Equal("Vol. 01.cbz (2 / 3) - ComicPlate", viewModel.WindowTitle);
     }
 
-    private static MainWindowViewModel CreateViewModel()
+    [Fact]
+    public void ReaderPreferencesAreLoadedAndSavedThroughSettings()
     {
-        return new MainWindowViewModel(new StubFolderPickerService(), new ImagePageLoader());
+        var tempDirectory = Path.Combine(
+            Path.GetTempPath(),
+            $"ComicPlateMainWindowViewModelTests-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDirectory);
+        try
+        {
+            var settingsService = new SettingsService(tempDirectory);
+            settingsService.Save(AppSettings.Default with
+            {
+                ReadingDirection = ReadingDirection.LeftToRight,
+                ViewMode = ViewMode.DoublePage,
+                IsMagnifierEnabled = false,
+            });
+
+            using var viewModel = new MainWindowViewModel(
+                new StubFolderPickerService(),
+                new ImagePageLoader(),
+                new JsonAppStateStore(tempDirectory),
+                settingsService: settingsService);
+
+            Assert.Equal(ReadingDirection.LeftToRight, viewModel.Reader.ReadingDirection);
+            Assert.Equal(ViewMode.DoublePage, viewModel.Reader.ViewMode);
+            Assert.False(viewModel.Reader.IsMagnifierEnabled);
+
+            viewModel.Reader.ToggleReadingDirectionCommand.Execute(null);
+            viewModel.Reader.ToggleViewModeCommand.Execute(null);
+
+            var saved = settingsService.Load();
+            Assert.Equal(ReadingDirection.RightToLeft, saved.ReadingDirection);
+            Assert.Equal(ViewMode.SinglePage, saved.ViewMode);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_tempDirectory))
+        {
+            Directory.Delete(_tempDirectory, recursive: true);
+        }
+    }
+
+    private MainWindowViewModel CreateViewModel()
+    {
+        return new MainWindowViewModel(
+            new StubFolderPickerService(),
+            new ImagePageLoader(),
+            new JsonAppStateStore(_tempDirectory),
+            new SettingsService(_tempDirectory));
     }
 
     private static void SetReaderTitle(MainWindowViewModel viewModel, string title)
@@ -52,4 +118,5 @@ public sealed class MainWindowViewModelWindowTitleTests
             return Task.FromResult<string?>(null);
         }
     }
+
 }

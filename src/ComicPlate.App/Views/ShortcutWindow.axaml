@@ -1,7 +1,8 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:ComicPlate.App.Localization"
         x:Class="ComicPlate.App.Views.ShortcutWindow"
-        Title="快捷键"
+        Title="{loc:Loc Shortcuts.Title}"
         Width="560"
         Height="520"
         MinWidth="460"
@@ -15,18 +16,18 @@
                   VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="24">
             <StackPanel Spacing="4">
-                <TextBlock Text="快捷键"
+                <TextBlock Text="{loc:Loc Shortcuts.Title}"
                            FontSize="28"
                            FontWeight="SemiBold"
                            Foreground="{StaticResource ShortcutTextBrush}" />
                 <TextBlock x:Name="ShortcutIntroText"
-                           Text="当前阶段仅展示 macOS 版本固定快捷键，不提供编辑。"
+                           Text="{loc:Loc Shortcuts.Intro}"
                            Foreground="{StaticResource ShortcutMutedTextBrush}"
                            TextWrapping="Wrap" />
             </StackPanel>
 
             <StackPanel Spacing="10">
-                <TextBlock Text="翻页与定位"
+                <TextBlock Text="{loc:Loc Shortcuts.Group.Navigation}"
                            FontSize="18"
                            FontWeight="SemiBold"
                            Foreground="{StaticResource ShortcutTextBrush}" />
@@ -38,7 +39,7 @@
                         <Grid ColumnDefinitions="*,Auto"
                               Margin="16,14"
                               ColumnSpacing="16">
-                            <TextBlock Text="下一页"
+                            <TextBlock Text="{loc:Loc Shortcuts.NextPage}"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock x:Name="NextPageShortcutText"
                                        Grid.Column="1"
@@ -49,7 +50,7 @@
                         <Grid ColumnDefinitions="*,Auto"
                               Margin="16,14"
                               ColumnSpacing="16">
-                            <TextBlock Text="上一页"
+                            <TextBlock Text="{loc:Loc Shortcuts.PreviousPage}"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock x:Name="PreviousPageShortcutText"
                                        Grid.Column="1"
@@ -60,7 +61,7 @@
                         <Grid ColumnDefinitions="*,Auto"
                               Margin="16,14"
                               ColumnSpacing="16">
-                            <TextBlock Text="第一页"
+                            <TextBlock Text="{loc:Loc Shortcuts.FirstPage}"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock x:Name="FirstPageShortcutText"
                                        Grid.Column="1"
@@ -71,7 +72,7 @@
                         <Grid ColumnDefinitions="*,Auto"
                               Margin="16,14"
                               ColumnSpacing="16">
-                            <TextBlock Text="最后一页"
+                            <TextBlock Text="{loc:Loc Shortcuts.LastPage}"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock x:Name="LastPageShortcutText"
                                        Grid.Column="1"
@@ -83,7 +84,7 @@
             </StackPanel>
 
             <StackPanel Spacing="10">
-                <TextBlock Text="功能操作"
+                <TextBlock Text="{loc:Loc Shortcuts.Group.Actions}"
                            FontSize="18"
                            FontWeight="SemiBold"
                            Foreground="{StaticResource ShortcutTextBrush}" />
@@ -95,7 +96,7 @@
                         <Grid ColumnDefinitions="*,Auto"
                               Margin="16,14"
                               ColumnSpacing="16">
-                            <TextBlock Text="打开漫画"
+                            <TextBlock Text="{loc:Loc Shortcuts.OpenComic}"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock x:Name="OpenContentShortcutText"
                                        Grid.Column="1"
@@ -106,7 +107,7 @@
                         <Grid ColumnDefinitions="*,Auto"
                               Margin="16,14"
                               ColumnSpacing="16">
-                            <TextBlock Text="显示/隐藏 Shelf"
+                            <TextBlock Text="{loc:Loc Shortcuts.ToggleShelf}"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock x:Name="ToggleShelfShortcutText"
                                        Grid.Column="1"
@@ -117,7 +118,7 @@
                         <Grid ColumnDefinitions="*,Auto"
                               Margin="16,14"
                               ColumnSpacing="16">
-                            <TextBlock Text="单页/双页切换"
+                            <TextBlock Text="{loc:Loc Shortcuts.ToggleViewMode}"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock x:Name="ToggleViewModeShortcutText"
                                        Grid.Column="1"
@@ -128,7 +129,7 @@
                         <Grid ColumnDefinitions="*,Auto"
                               Margin="16,14"
                               ColumnSpacing="16">
-                            <TextBlock Text="阅读方向"
+                            <TextBlock Text="{loc:Loc Shortcuts.ToggleReadingDirection}"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock x:Name="ToggleReadingDirectionShortcutText"
                                        Grid.Column="1"
@@ -139,7 +140,7 @@
                         <Grid ColumnDefinitions="*,Auto"
                               Margin="16,14"
                               ColumnSpacing="16">
-                            <TextBlock Text="全屏"
+                            <TextBlock Text="{loc:Loc Shortcuts.Fullscreen}"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock x:Name="FullscreenShortcutText"
                                        Grid.Column="1"
@@ -150,7 +151,7 @@
                         <Grid ColumnDefinitions="*,Auto"
                               Margin="16,14"
                               ColumnSpacing="16">
-                            <TextBlock Text="设置"
+                            <TextBlock Text="{loc:Loc Shortcuts.Settings}"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock x:Name="SettingsShortcutText"
                                        Grid.Column="1"
@@ -161,7 +162,7 @@
                         <Grid ColumnDefinitions="*,Auto"
                               Margin="16,14"
                               ColumnSpacing="16">
-                            <TextBlock Text="回到起始页"
+                            <TextBlock Text="{loc:Loc Shortcuts.BackToStart}"
                                        Foreground="{StaticResource ShortcutTextBrush}" />
                             <TextBlock x:Name="CloseShortcutText"
                                        Grid.Column="1"

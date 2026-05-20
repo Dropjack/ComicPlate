@@ -13,18 +13,18 @@ internal static class ShortcutRegistry
 
     public static IReadOnlyList<ShortcutDefinition> Definitions { get; } = new[]
     {
-        new ShortcutDefinition(ShortcutActionId.NextPage, "下一页", "翻页与定位", Key.Right),
-        new ShortcutDefinition(ShortcutActionId.PreviousPage, "上一页", "翻页与定位", Key.Left),
-        new ShortcutDefinition(ShortcutActionId.FirstPage, "第一页", "翻页与定位", Key.Home),
-        new ShortcutDefinition(ShortcutActionId.LastPage, "最后一页", "翻页与定位", Key.End),
-        new ShortcutDefinition(ShortcutActionId.OpenContent, "打开漫画", "功能操作", Key.O, UsesPlatformCommandModifier: true),
-        new ShortcutDefinition(ShortcutActionId.NewWindow, "新建窗口", "功能操作", Key.N, UsesPlatformCommandModifier: true),
-        new ShortcutDefinition(ShortcutActionId.ToggleNavigationPane, "显示/隐藏 Shelf", "功能操作", Key.Tab),
-        new ShortcutDefinition(ShortcutActionId.ToggleViewMode, "单页/双页切换", "功能操作", Key.Q),
-        new ShortcutDefinition(ShortcutActionId.ToggleReadingDirection, "阅读方向", "功能操作", Key.R),
-        new ShortcutDefinition(ShortcutActionId.ToggleFullscreen, "全屏", "功能操作", Key.F),
-        new ShortcutDefinition(ShortcutActionId.OpenSettings, "设置", "功能操作", Key.OemComma, UsesPlatformCommandModifier: true),
-        new ShortcutDefinition(ShortcutActionId.CloseWindow, "回到起始页", "功能操作", Key.W, UsesPlatformCommandModifier: true),
+        new ShortcutDefinition(ShortcutActionId.NextPage, "Shortcuts.NextPage", "Shortcuts.Group.Navigation", Key.Right),
+        new ShortcutDefinition(ShortcutActionId.PreviousPage, "Shortcuts.PreviousPage", "Shortcuts.Group.Navigation", Key.Left),
+        new ShortcutDefinition(ShortcutActionId.FirstPage, "Shortcuts.FirstPage", "Shortcuts.Group.Navigation", Key.Home),
+        new ShortcutDefinition(ShortcutActionId.LastPage, "Shortcuts.LastPage", "Shortcuts.Group.Navigation", Key.End),
+        new ShortcutDefinition(ShortcutActionId.OpenContent, "Shortcuts.OpenComic", "Shortcuts.Group.Actions", Key.O, UsesPlatformCommandModifier: true),
+        new ShortcutDefinition(ShortcutActionId.NewWindow, "Shortcuts.NewWindow", "Shortcuts.Group.Actions", Key.N, UsesPlatformCommandModifier: true),
+        new ShortcutDefinition(ShortcutActionId.ToggleNavigationPane, "Shortcuts.ToggleShelf", "Shortcuts.Group.Actions", Key.Tab),
+        new ShortcutDefinition(ShortcutActionId.ToggleViewMode, "Shortcuts.ToggleViewMode", "Shortcuts.Group.Actions", Key.Q),
+        new ShortcutDefinition(ShortcutActionId.ToggleReadingDirection, "Shortcuts.ToggleReadingDirection", "Shortcuts.Group.Actions", Key.R),
+        new ShortcutDefinition(ShortcutActionId.ToggleFullscreen, "Shortcuts.Fullscreen", "Shortcuts.Group.Actions", Key.F),
+        new ShortcutDefinition(ShortcutActionId.OpenSettings, "Shortcuts.Settings", "Shortcuts.Group.Actions", Key.OemComma, UsesPlatformCommandModifier: true),
+        new ShortcutDefinition(ShortcutActionId.CloseWindow, "Shortcuts.BackToStart", "Shortcuts.Group.Actions", Key.W, UsesPlatformCommandModifier: true),
     };
 
     public static ShortcutActionId? GetAction(KeyEventArgs e)

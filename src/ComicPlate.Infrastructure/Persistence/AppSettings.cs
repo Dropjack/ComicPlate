@@ -10,7 +10,13 @@ public sealed record AppSettings
 
     public ReadingDirection ReadingDirection { get; init; } = ReadingDirection.RightToLeft;
 
+    public ViewMode ViewMode { get; init; } = ViewMode.SinglePage;
+
     public string DefaultFitMode { get; init; } = "AutoFit";
+
+    public AppColorTheme ColorTheme { get; init; } = AppColorTheme.MistGreen;
+
+    public AppLanguage Language { get; init; } = AppLanguage.System;
 
     public int ProgressLimit { get; init; } = 500;
 
@@ -19,6 +25,8 @@ public sealed record AppSettings
     public bool AllowMultipleWindows { get; init; } = true;
 
     public bool RestoreWindowPlacement { get; init; } = true;
+
+    public bool IsMagnifierEnabled { get; init; } = true;
 
     public WindowPlacementSettings MainWindow { get; init; } = WindowPlacementSettings.Default;
 

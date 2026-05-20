@@ -1,26 +1,22 @@
 # ComicPlate
 
-[中文 README](README.md)
+[中文 README](README.md) / [日本語 README](README_JA.md)
 
 ComicPlate is a lightweight local comic reader for Windows and macOS, built with C# and Avalonia.
 
-It opens local folders and comic archives as readable books, restores reading progress, and does not touch the user’s original files.
+It opens local folders and comic archives as readable books, restores reading progress, and does not touch the user's original files.
 
-**Current public version:** 0.1.1
-
----
+**Current public version:** 1.0.0
 
 ![ComicPlate screenshot](artworks/SamplePhoto.jpg)
 
 Sample comic pages: *Pepper&Carrot* by David Revoy, licensed under CC BY 4.0.
 
-
-
 ## Status
 
-0.1.1 is the first public release.
+1.0.0 is the first complete public release.
 
-The app is distributed as self-contained builds for now, not as installers. File association, platform integration, and release packaging are still being refined.
+The app is distributed as self-contained builds for now, not as installers. Windows and macOS installers, signing, and a fuller release flow will be refined in later versions.
 
 ## Supported platforms
 
@@ -32,17 +28,24 @@ Current release targets:
 ## Features
 
 * Open local folders, ZIP / CBZ, and RAR / CBR archives.
+* Open a single image as a lightweight preview.
 * Single-page and double-page reading.
 * Right-to-left and left-to-right reading directions.
-* Horizontal reading strip.
-* Context Shelf for current-folder navigation.
-* Continue Reading.
+* Horizontal continuous reading strip with keyboard, button, wheel, and drag controls.
+* Context Shelf for current-container navigation.
+* Continue Reading and per-book progress restore.
+* Multiple windows, fullscreen, and auto-hidden toolbar in fullscreen.
+* Built-in light, dark, and reader-friendly color themes.
+* Chinese, English, and Japanese UI.
+* Explicit settings for Windows file associations and Explorer context menu entries.
 
 ## Scope
 
 ComicPlate is a reader, not a library manager.
 
 It reads user content, builds a page list, displays it, and saves ComicPlate-owned state such as settings, session, progress, logs, and cache.
+
+It can remember reading position, restore window state, save language and theme preferences, and register supported file associations or context menu entries when the user explicitly chooses to do so.
 
 It must not delete, move, rename, rewrite, or edit user comic files.
 
@@ -76,25 +79,20 @@ ComicPlate starts with a small entry screen, then moves into the reader window.
 
 The reader window has a left Context Shelf, a central Reader Stage, and a bottom progress bar. The Shelf is only for nearby navigation inside the current container. It is not a bookshelf.
 
+The settings window only controls ComicPlate's own behavior, such as language, theme, reading preferences, data folder, file associations, and shortcut reference. It is not a file manager.
+
 ## Run from source
 
 Requirements:
 
 * .NET SDK
 
-Restore dependencies:
-
 ```bash
 dotnet restore
-```
-
-Run the app:
-
-```bash
 dotnet run --project src/ComicPlate.App
 ```
 
-Run in Debug configuration:
+Debug configuration:
 
 ```bash
 dotnet run --project src/ComicPlate.App -c Debug
@@ -143,10 +141,10 @@ The reader should not decode the whole book at once. Image decode, cache, and me
 
 Near-term work:
 
-* Improve image decode, cache, and memory behavior.
-* Improve file association and platform integration.
-* Add multilingual UI support.
 * Refine release packaging for Windows and macOS.
+* Improve file association, signing, and platform integration.
+* Continue improving image decode, cache, and memory behavior.
+* Tighten reading interaction and settings based on real use.
 
 ## Boundaries
 

@@ -4,8 +4,8 @@ namespace ComicPlate.App.Input;
 
 internal sealed record ShortcutDefinition(
     ShortcutActionId ActionId,
-    string DisplayName,
-    string GroupName,
+    string DisplayNameKey,
+    string GroupNameKey,
     Key Key,
     KeyModifiers Modifiers = KeyModifiers.None,
     bool UsesPlatformCommandModifier = false)

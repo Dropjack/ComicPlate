@@ -1,4 +1,5 @@
 using System.Text;
+using ComicPlate.Core.Reading;
 using ComicPlate.Infrastructure.Persistence;
 
 namespace ComicPlate.Tests.Persistence;
@@ -79,12 +80,22 @@ public sealed class SettingsServiceTests : IDisposable
         {
             AllowMultipleWindows = true,
             RestoreWindowPlacement = false,
+            ReadingDirection = ReadingDirection.LeftToRight,
+            ViewMode = ViewMode.DoublePage,
+            ColorTheme = AppColorTheme.NightGraphite,
+            Language = AppLanguage.SimplifiedChinese,
+            IsMagnifierEnabled = false,
         });
 
         var loaded = service.Load();
 
         Assert.True(loaded.AllowMultipleWindows);
         Assert.False(loaded.RestoreWindowPlacement);
+        Assert.Equal(ReadingDirection.LeftToRight, loaded.ReadingDirection);
+        Assert.Equal(ViewMode.DoublePage, loaded.ViewMode);
+        Assert.Equal(AppColorTheme.NightGraphite, loaded.ColorTheme);
+        Assert.Equal(AppLanguage.SimplifiedChinese, loaded.Language);
+        Assert.False(loaded.IsMagnifierEnabled);
     }
 
     [Fact]
@@ -128,21 +139,6 @@ public sealed class SettingsServiceTests : IDisposable
 
     private SettingsService CreateService()
     {
-        return new SettingsService(new TestUserDataPathProvider(_tempDirectory));
-    }
-
-    private sealed class TestUserDataPathProvider : IUserDataPathProvider
-    {
-        private readonly string _directory;
-
-        public TestUserDataPathProvider(string directory)
-        {
-            _directory = directory;
-        }
-
-        public string GetUserDataDirectory()
-        {
-            return _directory;
-        }
+        return new SettingsService(_tempDirectory);
     }
 }

@@ -19,7 +19,7 @@ public sealed class PageDisplaySizeCalculatorTests
     }
 
     [Fact]
-    public void AutoFitFitsHorizontalPagesInsideViewport()
+    public void AutoFitFitsHorizontalPagesToViewportHeightAndMayOverflowWidth()
     {
         var size = PageDisplaySizeCalculator.Calculate(
             imageWidth: 2000,
@@ -28,8 +28,8 @@ public sealed class PageDisplaySizeCalculatorTests
             viewportHeight: 800,
             FitMode.AutoFit);
 
-        Assert.Equal(1200, size.Width);
-        Assert.Equal(600, size.Height);
+        Assert.Equal(1600, size.Width);
+        Assert.Equal(800, size.Height);
     }
 
     [Fact]

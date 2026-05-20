@@ -20,7 +20,10 @@ public partial class SettingsWindow : Window
     private readonly ThumbnailCacheService _thumbnailCacheService;
     private AppSettings _settings = AppSettings.Default;
     private bool _isLoadingSettings;
+    private bool _isShowingRestartPrompt;
     private ShortcutWindow? _shortcutWindow;
+
+    public event EventHandler? RestartRequested;
 
     public SettingsWindow()
         : this(AppDataService.CreateDefault(), null, null)
@@ -62,7 +65,10 @@ public partial class SettingsWindow : Window
         var isMacOS = OperatingSystem.IsMacOS();
         Classes.Add(isMacOS ? "mac-shell" : "windows-shell");
         ApplyPlatformChrome(isMacOS);
+        ApplyLocalizedText();
         LoadSettingsIntoControls();
+        ColorThemeComboBox.SelectionChanged += OnColorThemeSelectionChanged;
+        LanguageComboBox.SelectionChanged += OnLanguageSelectionChanged;
         LoadFileAssociationOptions();
         LoadExplorerContextMenuState();
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
@@ -80,11 +86,11 @@ public partial class SettingsWindow : Window
             MinWidth = 640;
             MinHeight = 480;
             SettingsRootGrid.ColumnDefinitions = new ColumnDefinitions("190,*");
-            DataFolderOpenButton.Content = "在 Finder 中打开";
+            DataFolderOpenButton.Content = LocalizationService.Current.GetString("Settings.DataFolder.OpenInFinder");
             return;
         }
 
-        DataFolderOpenButton.Content = "在资源管理器中打开";
+        DataFolderOpenButton.Content = LocalizationService.Current.GetString("Settings.DataFolder.OpenInExplorer");
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
@@ -124,6 +130,12 @@ public partial class SettingsWindow : Window
         ScrollToSection(AppearanceSection);
     }
 
+    private void OnReadingNavClick(object? sender, RoutedEventArgs e)
+    {
+        SelectNav(ReadingNavButton);
+        ScrollToSection(ReadingSection);
+    }
+
     private void OnDataNavClick(object? sender, RoutedEventArgs e)
     {
         SelectNav(DataNavButton);
@@ -158,6 +170,40 @@ public partial class SettingsWindow : Window
         SaveSettingsFromControls();
     }
 
+    private async void OnColorThemeSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_isLoadingSettings || _isShowingRestartPrompt)
+        {
+            return;
+        }
+
+        var selectedTheme = GetSelectedColorTheme();
+        if (selectedTheme == _settings.ColorTheme)
+        {
+            return;
+        }
+
+        SaveSettingsFromControls();
+        await PromptRestartForThemeChangeAsync();
+    }
+
+    private async void OnLanguageSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_isLoadingSettings || _isShowingRestartPrompt)
+        {
+            return;
+        }
+
+        var selectedLanguage = GetSelectedLanguage();
+        if (selectedLanguage == _settings.Language)
+        {
+            return;
+        }
+
+        SaveSettingsFromControls();
+        await PromptRestartForLanguageChangeAsync();
+    }
+
     private void OnOpenDataFolderClick(object? sender, RoutedEventArgs e)
     {
         _appDataService.OpenUserDataDirectory();
@@ -167,7 +213,7 @@ public partial class SettingsWindow : Window
     private void OnClearThumbnailCacheClick(object? sender, RoutedEventArgs e)
     {
         _thumbnailCacheService.Clear();
-        ThumbnailCacheStatusText.Text = "缩略图缓存已清理。";
+        ThumbnailCacheStatusText.Text = LocalizationService.Current.GetString("Settings.ThumbnailCache.Cleared");
         e.Handled = true;
     }
 
@@ -207,6 +253,7 @@ public partial class SettingsWindow : Window
         {
             StartupNavButton,
             AppearanceNavButton,
+            ReadingNavButton,
             DataNavButton,
             AssociationNavButton,
             ShortcutsNavButton,
@@ -246,6 +293,8 @@ public partial class SettingsWindow : Window
             MultiWindowRow,
             RestoreWindowRow,
             PaletteRow,
+            LanguageRow,
+            MagnifierRow,
             DataFolderRow,
             ThumbnailCacheRow,
             ShortcutsRow,
@@ -317,11 +366,26 @@ public partial class SettingsWindow : Window
             _settings = _settingsService.Load();
             MultiWindowToggle.IsChecked = _settings.AllowMultipleWindows;
             RestoreWindowToggle.IsChecked = _settings.RestoreWindowPlacement;
+            MagnifierToggle.IsChecked = _settings.IsMagnifierEnabled;
+            ColorThemeComboBox.SelectedIndex = GetColorThemeIndex(_settings.ColorTheme);
+            LanguageComboBox.SelectedIndex = GetLanguageIndex(_settings.Language);
         }
         finally
         {
             _isLoadingSettings = false;
         }
+    }
+
+    private void ApplyLocalizedText()
+    {
+        var localization = LocalizationService.Current;
+        LanguageLabelText.Text = localization.GetString("Settings.Language.Label");
+        LanguageDescriptionText.Text = localization.GetString("Settings.Language.Description");
+
+        SetComboBoxItemContent(LanguageComboBox, 0, localization.GetString("Settings.Language.System"));
+        SetComboBoxItemContent(LanguageComboBox, 1, localization.GetString("Settings.Language.English"));
+        SetComboBoxItemContent(LanguageComboBox, 2, localization.GetString("Settings.Language.SimplifiedChinese"));
+        SetComboBoxItemContent(LanguageComboBox, 3, localization.GetString("Settings.Language.Japanese"));
     }
 
     private void LoadFileAssociationOptions()
@@ -407,8 +471,102 @@ public partial class SettingsWindow : Window
         {
             AllowMultipleWindows = MultiWindowToggle.IsChecked == true,
             RestoreWindowPlacement = RestoreWindowToggle.IsChecked == true,
+            IsMagnifierEnabled = MagnifierToggle.IsChecked == true,
+            ColorTheme = GetSelectedColorTheme(),
+            Language = GetSelectedLanguage(),
         };
 
         _settingsService.Save(_settings);
+    }
+
+    private async Task PromptRestartForThemeChangeAsync()
+    {
+        _isShowingRestartPrompt = true;
+        try
+        {
+            var prompt = new ThemeRestartPromptWindow();
+            var shouldRestart = await prompt.ShowDialog<bool?>(this);
+            if (shouldRestart == true)
+            {
+                RestartRequested?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        finally
+        {
+            _isShowingRestartPrompt = false;
+        }
+    }
+
+    private async Task PromptRestartForLanguageChangeAsync()
+    {
+        _isShowingRestartPrompt = true;
+        try
+        {
+            var localization = LocalizationService.Current;
+            var prompt = new ThemeRestartPromptWindow(
+                localization.GetString("Restart.Language.Title"),
+                localization.GetString("Restart.Language.Message"));
+            var shouldRestart = await prompt.ShowDialog<bool?>(this);
+            if (shouldRestart == true)
+            {
+                RestartRequested?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        finally
+        {
+            _isShowingRestartPrompt = false;
+        }
+    }
+
+    private AppColorTheme GetSelectedColorTheme()
+    {
+        return ColorThemeComboBox.SelectedIndex switch
+        {
+            1 => AppColorTheme.SlateBlue,
+            2 => AppColorTheme.WarmPaper,
+            3 => AppColorTheme.NightGraphite,
+            _ => AppColorTheme.MistGreen,
+        };
+    }
+
+    private static int GetColorThemeIndex(AppColorTheme theme)
+    {
+        return theme switch
+        {
+            AppColorTheme.SlateBlue => 1,
+            AppColorTheme.WarmPaper => 2,
+            AppColorTheme.NightGraphite => 3,
+            _ => 0,
+        };
+    }
+
+    private AppLanguage GetSelectedLanguage()
+    {
+        return LanguageComboBox.SelectedIndex switch
+        {
+            1 => AppLanguage.English,
+            2 => AppLanguage.SimplifiedChinese,
+            3 => AppLanguage.Japanese,
+            _ => AppLanguage.System,
+        };
+    }
+
+    private static int GetLanguageIndex(AppLanguage language)
+    {
+        return language switch
+        {
+            AppLanguage.English => 1,
+            AppLanguage.SimplifiedChinese => 2,
+            AppLanguage.Japanese => 3,
+            _ => 0,
+        };
+    }
+
+    private static void SetComboBoxItemContent(ComboBox comboBox, int index, string content)
+    {
+        if (comboBox.Items[index] is ComboBoxItem item)
+        {
+            item.Content = content;
+        }
     }
 }

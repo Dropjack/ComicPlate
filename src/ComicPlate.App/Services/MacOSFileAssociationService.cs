@@ -7,16 +7,20 @@ public sealed class MacOSFileAssociationService : IFileAssociationService
         return FileAssociationService.CreateOptions(
             _ => false,
             _ => false,
-            _ => "macOS 文件关联需要通过应用包或系统设置处理。");
+            _ => LocalizationService.Current.GetString("FileAssociation.Status.MacUnsupported"));
     }
 
     public FileAssociationResult Associate(string extension)
     {
-        return new FileAssociationResult(false, "macOS 文件关联需要通过应用包或系统设置处理。");
+        return new FileAssociationResult(
+            false,
+            LocalizationService.Current.GetString("FileAssociation.Status.MacUnsupported"));
     }
 
     public FileAssociationResult Disassociate(string extension)
     {
-        return new FileAssociationResult(false, "macOS 文件关联需要通过应用包或系统设置处理。");
+        return new FileAssociationResult(
+            false,
+            LocalizationService.Current.GetString("FileAssociation.Status.MacUnsupported"));
     }
 }

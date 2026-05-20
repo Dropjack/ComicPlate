@@ -1,9 +1,15 @@
 using ComicPlate.App.Services;
+using ComicPlate.Infrastructure.Persistence;
 
 namespace ComicPlate.Tests.Services;
 
 public sealed class ExplorerContextMenuServiceTests
 {
+    public ExplorerContextMenuServiceTests()
+    {
+        LocalizationService.Initialize(AppLanguage.English);
+    }
+
     [Fact]
     public void WindowsServiceReportsUnregisteredByDefault()
     {
@@ -26,7 +32,7 @@ public sealed class ExplorerContextMenuServiceTests
         Assert.True(result.Succeeded);
         Assert.True(service.GetState().IsRegistered);
         Assert.Equal(
-            "在 ComicPlate 中打开",
+            "Open in ComicPlate",
             registry.ReadDefaultValue(@"Software\Classes\SystemFileAssociations\.cbz\shell\ComicPlate.Open"));
         Assert.Equal(
             "\"D:\\Tools\\ComicPlate\\ComicPlate.exe\" \"%1\"",

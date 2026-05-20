@@ -10,19 +10,21 @@ namespace ComicPlate.App.ViewModels;
 public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 {
     private const int NeighborPageLimit = 5;
-    private const int ReaderViewportResizeCommitDelayMilliseconds = 140;
-    private const double ReaderFrameHorizontalPadding = 28;
-    private const double ReaderFrameVerticalPadding = 0;
     private const double ReaderViewportSizeEpsilon = 0.5;
     private const double ReaderTransitionDistanceRatio = 0.32;
+    private static readonly TimeSpan ReaderViewportResizeCommitDelay = TimeSpan.FromMilliseconds(140);
     private static readonly TimeSpan ReaderTransitionDuration = TimeSpan.FromMilliseconds(150);
     private static readonly TimeSpan ReaderTransitionFrameInterval = TimeSpan.FromMilliseconds(16);
 
     private readonly PageImageInfoLoader _pageImageInfoLoader = new();
     private readonly ReaderFrameBuilder _readerFrameBuilder = new();
     private readonly ReaderImageCache _readerImageCache;
+    private readonly ReaderMagnifierController _readerMagnifierController = new();
     private readonly ReaderState _readerState = new();
     private readonly ReaderStripController _readerStripController = new(NeighborPageLimit);
+    private readonly ReaderStripItemBuilder _readerStripItemBuilder = new();
+    private readonly ReaderStripRefreshCoordinator _readerStripRefreshCoordinator =
+        new(ReaderViewportResizeCommitDelay);
     private IReadOnlyList<PageImageInfo> _pageImageInfos = Array.Empty<PageImageInfo>();
     private IReadOnlyList<ReaderFrame> _readerFrames = Array.Empty<ReaderFrame>();
     private int _currentPageIndex;
@@ -33,16 +35,20 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     private int? _progressPreviewPageIndex;
     private string? _progressPreviewPageText;
     private readonly DispatcherTimer _readerTransitionTimer;
-    private CancellationTokenSource? _readerStripImageLoadCts;
-    private int _readerStripRefreshVersion;
-    private CancellationTokenSource? _readerViewportRefreshCts;
     private double _readerTransitionStartOffset;
     private double _readerTransitionOffset;
     private DateTimeOffset _readerTransitionStartedAt;
 
-    public ReaderSurfaceViewModel(ReaderImageCache readerImageCache)
+    public ReaderSurfaceViewModel(
+        ReaderImageCache readerImageCache,
+        ReadingDirection initialReadingDirection = ReadingDirection.RightToLeft,
+        ViewMode initialViewMode = ViewMode.SinglePage,
+        bool isMagnifierEnabled = true)
     {
         _readerImageCache = readerImageCache;
+        _readerMagnifierController.SetEnabled(isMagnifierEnabled);
+        _readerState.SetReadingDirection(initialReadingDirection);
+        _readerState.SetViewMode(initialViewMode);
         _readerTransitionTimer = new DispatcherTimer
         {
             Interval = ReaderTransitionFrameInterval,
@@ -135,17 +141,34 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public string ViewModeText => _readerState.ViewMode == ViewMode.DoublePage ? "双页" : "单页";
+    public string ViewModeText => _readerState.ViewMode == ViewMode.DoublePage
+        ? LocalizationService.Current.GetString("Reader.DoublePage")
+        : LocalizationService.Current.GetString("Reader.SinglePage");
 
     public bool IsSinglePageMode => _readerState.ViewMode == ViewMode.SinglePage;
 
     public bool IsDoublePageMode => _readerState.ViewMode == ViewMode.DoublePage;
 
-    public string ReadingDirectionText => _readerState.ReadingDirection == ReadingDirection.RightToLeft ? "RTL" : "LTR";
+    public string ReadingDirectionText => _readerState.ReadingDirection == ReadingDirection.RightToLeft
+        ? LocalizationService.Current.GetString("Reader.DirectionRightToLeft")
+        : LocalizationService.Current.GetString("Reader.DirectionLeftToRight");
 
     public bool IsLeftToRightReading => _readerState.ReadingDirection == ReadingDirection.LeftToRight;
 
     public bool IsRightToLeftReading => _readerState.ReadingDirection == ReadingDirection.RightToLeft;
+
+    public bool IsMagnifierEnabled => _readerMagnifierController.IsEnabled;
+
+    public bool IsMagnifierActive => _readerMagnifierController.IsActive;
+
+    public double MagnifierScale => _readerMagnifierController.Scale;
+
+    public string MagnifierScaleText => LocalizationService.Current.Format("Reader.ZoomScale", MagnifierScale);
+
+    public double MagnifiedReaderStripTranslateX =>
+        ReaderStripTranslateX + _readerMagnifierController.ContentTranslateX;
+
+    public double MagnifierContentTranslateY => _readerMagnifierController.ContentTranslateY;
 
     public string CurrentLogicalPath
     {
@@ -158,6 +181,20 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     public ReadingDirection ReadingDirection => _readerState.ReadingDirection;
 
     public ViewMode ViewMode => _readerState.ViewMode;
+
+    public void SetMagnifierEnabled(bool isEnabled)
+    {
+        if (!_readerMagnifierController.SetEnabled(isEnabled))
+        {
+            return;
+        }
+
+        OnPropertyChanged(nameof(IsMagnifierEnabled));
+        if (!isEnabled)
+        {
+            EndMagnifier();
+        }
+    }
 
     public void SetReaderViewportSize(double width, double height)
     {
@@ -183,6 +220,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
         _hasReaderViewportSize = true;
         _readerStripController.SetViewportSize(width, height);
+        ClampMagnifier();
 
         if (!_readerState.HasPages)
         {
@@ -196,7 +234,11 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        if (!UpdateVisibleReaderStripItemSizes())
+        if (!_readerStripItemBuilder.UpdateVisibleItemSizes(
+            _readerFrames,
+            ReaderStripItems,
+            _readerStripController,
+            _readerState.ReadingDirection))
         {
             _ = RefreshReaderStripAsync(placement);
             return;
@@ -204,6 +246,68 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
         UpdateReaderStripOffset(placement);
         QueueReaderViewportRefresh(placement);
+    }
+
+    public bool BeginMagnifier()
+    {
+        if (!_readerMagnifierController.Begin(_readerState.HasPages, out var activationChanged))
+        {
+            return false;
+        }
+
+        if (activationChanged)
+        {
+            OnPropertyChanged(nameof(IsMagnifierActive));
+            OnPropertyChanged(nameof(MagnifierScale));
+            OnPropertyChanged(nameof(MagnifierScaleText));
+        }
+
+        UpdateMagnifierTransform();
+        return true;
+    }
+
+    public void EndMagnifier()
+    {
+        if (!_readerMagnifierController.End())
+        {
+            return;
+        }
+
+        OnPropertyChanged(nameof(IsMagnifierActive));
+        OnPropertyChanged(nameof(MagnifierScale));
+        OnPropertyChanged(nameof(MagnifierScaleText));
+        OnPropertyChanged(nameof(MagnifiedReaderStripTranslateX));
+        OnPropertyChanged(nameof(MagnifierContentTranslateY));
+    }
+
+    public void UpdateMagnifierPointer(double x, double y)
+    {
+        _readerMagnifierController.UpdatePointer(
+            x,
+            y,
+            _readerStripController.ViewportWidth,
+            _readerStripController.ViewportHeight);
+        if (_readerMagnifierController.IsActive)
+        {
+            UpdateMagnifierTransform();
+        }
+    }
+
+    public bool AdjustMagnifierScale(double wheelDelta)
+    {
+        if (!_readerMagnifierController.AdjustScale(wheelDelta, out var scaleChanged))
+        {
+            return false;
+        }
+
+        if (scaleChanged)
+        {
+            OnPropertyChanged(nameof(MagnifierScale));
+            OnPropertyChanged(nameof(MagnifierScaleText));
+            UpdateMagnifierTransform();
+        }
+
+        return true;
     }
 
     public void WheelNextReadingGroup()
@@ -253,6 +357,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         var targetPageIndex = _progressPreviewPageIndex ?? RatioToPageIndex(visualRatio);
         GoToProgressPage(targetPageIndex);
         ClearProgressPreview();
+        UpdatePageStatus();
     }
 
     public void CancelProgressPreview()
@@ -366,8 +471,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         int transitionDirection = 0,
         bool clearImageCacheBeforeReplace = false)
     {
-        var refreshVersion = ++_readerStripRefreshVersion;
-        CancelReaderStripImageLoads();
+        var refreshVersion = _readerStripRefreshCoordinator.BeginRefresh();
         StopReaderTransition();
 
         if (!_readerState.HasPages)
@@ -407,34 +511,13 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             return Task.CompletedTask;
         }
 
-        var currentGroupPageIndexes = currentFrame.PageIndexes;
-        var currentGroupPageSet = currentGroupPageIndexes.ToHashSet();
-        var windowFrames = CreateFrameWindow(currentFrame.FrameIndex);
-        var activeIndexes = windowFrames
-            .SelectMany(frame => frame.PageIndexes)
-            .ToHashSet();
-        var nextItems = new ObservableCollection<ReaderStripItemViewModel>();
+        var buildResult = _readerStripItemBuilder.BuildWindowItems(
+            _readerFrames,
+            currentFrame,
+            _readerStripController,
+            _readerState.ReadingDirection);
 
-        foreach (var frame in windowFrames)
-        {
-            var displaySizes = CalculateFrameDisplaySizes(frame);
-            for (var framePageIndex = 0; framePageIndex < frame.Pages.Count; framePageIndex++)
-            {
-                var framePage = frame.Pages[framePageIndex];
-                var slot = new ReaderStripSlot(
-                    framePage.PageIndex,
-                    framePage.DisplayIndex,
-                    framePage.Page,
-                    currentGroupPageSet.Contains(framePage.PageIndex));
-                var item = new ReaderStripItemViewModel(slot, framePage.ImageInfo);
-                item.SetViewportSize(_readerStripController.ViewportWidth, _readerStripController.ViewportHeight);
-                item.SetDisplaySize(displaySizes[framePageIndex].Width, displaySizes[framePageIndex].Height);
-
-                nextItems.Add(item);
-            }
-        }
-
-        if (refreshVersion != _readerStripRefreshVersion)
+        if (!_readerStripRefreshCoordinator.IsCurrent(refreshVersion))
         {
             return Task.CompletedTask;
         }
@@ -444,81 +527,19 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             _readerImageCache.Clear();
         }
 
-        ReplaceReaderStripItems(nextItems, placement);
-        _readerImageCache.TrimToBudget(activeIndexes, _readerState.CurrentPageIndex);
-        StartReaderStripImageLoad(nextItems, refreshVersion);
+        ReplaceReaderStripItems(buildResult.Items, placement);
+        _readerImageCache.TrimToBudget(buildResult.ActivePageIndexes, _readerState.CurrentPageIndex);
+        _readerStripRefreshCoordinator.StartImageLoad(
+            buildResult.Items.ToArray(),
+            refreshVersion,
+            _readerState.CurrentPageIndex,
+            _readerImageCache,
+            ReaderStripItems.Contains);
         UpdatePageStatus();
         ReadingStateChanged?.Invoke();
         RaiseCommandStates();
         StartReaderTransition(transitionDirection);
         return Task.CompletedTask;
-    }
-
-    private IReadOnlyList<ReaderFrame> CreateFrameWindow(int currentFrameIndex)
-    {
-        return _readerStripController.CreateFrameWindow(
-            _readerFrames,
-            currentFrameIndex,
-            _readerState.ReadingDirection);
-    }
-
-    private IReadOnlyList<PageDisplaySize> CalculateFrameDisplaySizes(ReaderFrame frame)
-    {
-        if (frame.Pages.Count == 0)
-        {
-            return Array.Empty<PageDisplaySize>();
-        }
-
-        var rawSizes = frame.Pages
-            .Select(page => GetRawPageSize(page.ImageInfo))
-            .ToArray();
-        var availableWidth = Math.Max(160, _readerStripController.ViewportWidth - ReaderFrameHorizontalPadding);
-        var availableHeight = Math.Max(160, _readerStripController.ViewportHeight - ReaderFrameVerticalPadding);
-        var targetHeight = availableHeight;
-        var totalWidthAtTargetHeight = rawSizes.Sum(size => size.Width * (targetHeight / size.Height));
-        if (totalWidthAtTargetHeight > availableWidth)
-        {
-            targetHeight *= availableWidth / totalWidthAtTargetHeight;
-        }
-
-        return rawSizes
-            .Select(size => new PageDisplaySize(size.Width * (targetHeight / size.Height), targetHeight))
-            .ToArray();
-    }
-
-    private static PageDisplaySize GetRawPageSize(PageImageInfo imageInfo)
-    {
-        return imageInfo.IsValid
-            ? new PageDisplaySize(imageInfo.PixelWidth, imageInfo.PixelHeight)
-            : new PageDisplaySize(720, 1080);
-    }
-
-    private bool UpdateVisibleReaderStripItemSizes()
-    {
-        var currentFrame = _readerFrames.FirstOrDefault(frame => frame.IsCurrent);
-        if (currentFrame is null || ReaderStripItems.Count == 0)
-        {
-            return false;
-        }
-
-        var visibleItems = ReaderStripItems.ToDictionary(item => item.PageIndex);
-        foreach (var frame in CreateFrameWindow(currentFrame.FrameIndex))
-        {
-            var displaySizes = CalculateFrameDisplaySizes(frame);
-            for (var framePageIndex = 0; framePageIndex < frame.Pages.Count; framePageIndex++)
-            {
-                var framePage = frame.Pages[framePageIndex];
-                if (!visibleItems.TryGetValue(framePage.PageIndex, out var item))
-                {
-                    return false;
-                }
-
-                item.SetViewportSize(_readerStripController.ViewportWidth, _readerStripController.ViewportHeight);
-                item.SetDisplaySize(displaySizes[framePageIndex].Width, displaySizes[framePageIndex].Height);
-            }
-        }
-
-        return true;
     }
 
     private void NextPage()
@@ -640,6 +661,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             ? ViewMode.DoublePage
             : ViewMode.SinglePage;
         _readerState.SetViewMode(nextViewMode);
+        OnPropertyChanged(nameof(ViewMode));
         OnPropertyChanged(nameof(ViewModeText));
         OnPropertyChanged(nameof(IsSinglePageMode));
         OnPropertyChanged(nameof(IsDoublePageMode));
@@ -668,110 +690,28 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         UpdateReaderStripOffset(placement);
     }
 
-    private void StartReaderStripImageLoad(
-        ObservableCollection<ReaderStripItemViewModel> items,
-        int refreshVersion)
-    {
-        CancelReaderStripImageLoads();
-        var cancellationTokenSource = new CancellationTokenSource();
-        _readerStripImageLoadCts = cancellationTokenSource;
-        _ = LoadReaderStripImagesAsync(items.ToArray(), refreshVersion, cancellationTokenSource.Token);
-    }
-
     private void QueueReaderViewportRefresh(ReaderStripPlacement? placement)
     {
-        CancelReaderViewportRefresh();
-        var cancellationTokenSource = new CancellationTokenSource();
-        _readerViewportRefreshCts = cancellationTokenSource;
-        _ = CommitReaderViewportRefreshAsync(placement, cancellationTokenSource.Token);
-    }
-
-    private async Task CommitReaderViewportRefreshAsync(
-        ReaderStripPlacement? placement,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            await Task.Delay(ReaderViewportResizeCommitDelayMilliseconds, cancellationToken);
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
-
-            await RefreshReaderStripAsync(placement);
-        }
-        catch (OperationCanceledException)
-        {
-        }
-    }
-
-    private async Task LoadReaderStripImagesAsync(
-        IReadOnlyList<ReaderStripItemViewModel> items,
-        int refreshVersion,
-        CancellationToken cancellationToken)
-    {
-        var currentPageIndex = _readerState.CurrentPageIndex;
-        var orderedItems = items
-            .OrderBy(item => item.IsCurrent ? 0 : 1)
-            .ThenBy(item => Math.Abs(item.PageIndex - currentPageIndex))
-            .ToArray();
-
-        foreach (var item in orderedItems)
-        {
-            try
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var image = await _readerImageCache.GetOrLoadAsync(
-                    item.PageIndex,
-                    item.Slot.Page,
-                    item.DecodeRequest,
-                    cancellationToken);
-
-                if (refreshVersion != _readerStripRefreshVersion
-                    || cancellationToken.IsCancellationRequested
-                    || !ReaderStripItems.Contains(item))
-                {
-                    return;
-                }
-
-                item.Image = image;
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
-            catch (Exception)
-            {
-                if (refreshVersion == _readerStripRefreshVersion
-                    && !cancellationToken.IsCancellationRequested
-                    && ReaderStripItems.Contains(item))
-                {
-                    item.StatusMessage = $"Could not display{Environment.NewLine}{item.Slot.Page.DisplayName}";
-                }
-            }
-        }
+        _readerStripRefreshCoordinator.QueueViewportRefresh(
+            placement,
+            nextPlacement => RefreshReaderStripAsync(nextPlacement));
     }
 
     private void CancelReaderStripImageLoads()
     {
-        _readerStripImageLoadCts?.Cancel();
-        _readerStripImageLoadCts?.Dispose();
-        _readerStripImageLoadCts = null;
+        _readerStripRefreshCoordinator.CancelImageLoads();
     }
 
     private void CancelReaderViewportRefresh()
     {
-        _readerViewportRefreshCts?.Cancel();
-        _readerViewportRefreshCts?.Dispose();
-        _readerViewportRefreshCts = null;
+        _readerStripRefreshCoordinator.CancelViewportRefresh();
     }
 
     public void Dispose()
     {
         StopReaderTransition();
         _readerTransitionTimer.Tick -= OnReaderTransitionTimerTick;
-        CancelReaderViewportRefresh();
-        CancelReaderStripImageLoads();
+        _readerStripRefreshCoordinator.Dispose();
     }
 
     private void UpdateReaderStripOffset(ReaderStripPlacement? placement = null)
@@ -844,6 +784,55 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     private void UpdateReaderStripTransform()
     {
         OnPropertyChanged(nameof(ReaderStripTranslateX));
+        if (_readerMagnifierController.IsActive)
+        {
+            UpdateMagnifierTransform();
+        }
+        else
+        {
+            OnPropertyChanged(nameof(MagnifiedReaderStripTranslateX));
+        }
+    }
+
+    private void UpdateMagnifierTransform()
+    {
+        if (!_readerMagnifierController.IsActive)
+        {
+            return;
+        }
+
+        var normalLeft = ReaderStripTranslateX;
+        _readerMagnifierController.UpdateTransform(
+            normalLeft,
+            _readerStripController.ViewportWidth,
+            _readerStripController.ViewportHeight,
+            GetReaderContentBounds());
+        OnPropertyChanged(nameof(MagnifiedReaderStripTranslateX));
+        OnPropertyChanged(nameof(MagnifierContentTranslateY));
+    }
+
+    private void ClampMagnifier()
+    {
+        if (_readerMagnifierController.IsActive)
+        {
+            UpdateMagnifierTransform();
+        }
+    }
+
+    private ReaderMagnifierContentBounds GetReaderContentBounds()
+    {
+        var right = _readerStripController.LayoutSlots.Count == 0
+            ? _readerStripController.ViewportWidth
+            : _readerStripController.LayoutSlots.Max(slot => slot.StartX + slot.Extent);
+        var bottom = ReaderStripItems.Count == 0
+            ? _readerStripController.ViewportHeight
+            : ReaderStripItems.Max(item => item.DisplayHeight);
+
+        return new ReaderMagnifierContentBounds(
+            0,
+            0,
+            Math.Max(1, right),
+            Math.Max(1, bottom));
     }
 
     private int GetReaderTransitionDirection(int previousPageIndex, int targetPageIndex)
