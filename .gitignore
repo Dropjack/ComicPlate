@@ -9,3 +9,11 @@ debug.log
 artifacts/
 dist/
 publish/
+ComicPlate.exe
+*.exe
+*.dll
+*.pdb
+*.zip
+*.dmg
+*.msi
+*.app/
