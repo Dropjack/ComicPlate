@@ -126,8 +126,8 @@ public sealed class JsonAppStateStore
     {
         var normalizedPath = NormalizePath(book.Path);
         var savedAt = DateTimeOffset.UtcNow;
-        var readingContainer = CreateReadingContainerEntry(book);
-        var readingParentCollection = CreateReadingParentCollectionEntry(book);
+        var readingContainer = CreateReadingContainerEntry(book, navigationHistory);
+        var readingParentCollection = CreateReadingParentCollectionEntry(navigationHistory);
         var readingContainerBackStack = CreateNavigationBackStack(readingContainer, navigationHistory);
         var readingParentCollectionBackStack = CreateNavigationBackStack(readingParentCollection, navigationHistory);
 
@@ -187,8 +187,8 @@ public sealed class JsonAppStateStore
         NavigationHistory navigationHistory)
     {
         var normalizedPath = NormalizePath(book.Path);
-        var readingContainer = CreateReadingContainerEntry(book);
-        var readingParentCollection = CreateReadingParentCollectionEntry(book);
+        var readingContainer = CreateReadingContainerEntry(book, navigationHistory);
+        var readingParentCollection = CreateReadingParentCollectionEntry(navigationHistory);
         var readingContainerBackStack = CreateNavigationBackStack(readingContainer, navigationHistory);
         var readingParentCollectionBackStack = CreateNavigationBackStack(readingParentCollection, navigationHistory);
         lock (FileGate)
@@ -219,7 +219,7 @@ public sealed class JsonAppStateStore
         return Path.GetFullPath(path);
     }
 
-    private static NavigationEntry? CreateReadingContainerEntry(BookEntry book)
+    private static NavigationEntry? CreateReadingContainerEntry(BookEntry book, NavigationHistory navigationHistory)
     {
         var fullPath = Path.GetFullPath(book.Path);
         if (Directory.Exists(fullPath) && book.SourceKind == BookSourceKind.Folder)
@@ -227,25 +227,16 @@ public sealed class JsonAppStateStore
             return CreateCollectionEntry(fullPath);
         }
 
-        var parentPath = Directory.Exists(fullPath)
-            ? Directory.GetParent(fullPath)?.FullName
-            : Path.GetDirectoryName(fullPath);
-
-        return string.IsNullOrWhiteSpace(parentPath)
-            ? null
-            : CreateCollectionEntry(parentPath);
+        return navigationHistory.Current?.SourceKind == BookSourceKind.Collection
+            ? navigationHistory.Current
+            : null;
     }
 
-    private static NavigationEntry? CreateReadingParentCollectionEntry(BookEntry book)
+    private static NavigationEntry? CreateReadingParentCollectionEntry(NavigationHistory navigationHistory)
     {
-        var fullPath = Path.GetFullPath(book.Path);
-        var parentCollectionPath = Directory.Exists(fullPath)
-            ? Directory.GetParent(fullPath)?.FullName
-            : Path.GetDirectoryName(fullPath);
-
-        return string.IsNullOrWhiteSpace(parentCollectionPath)
-            ? null
-            : CreateCollectionEntry(parentCollectionPath);
+        return navigationHistory.Current?.SourceKind == BookSourceKind.Collection
+            ? navigationHistory.Current
+            : null;
     }
 
     private static NavigationEntry CreateCollectionEntry(string path)

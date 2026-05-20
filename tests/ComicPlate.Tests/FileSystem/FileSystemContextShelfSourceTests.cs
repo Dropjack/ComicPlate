@@ -35,13 +35,13 @@ public sealed class FileSystemContextShelfSourceTests : IDisposable
         var contextShelf = await source.LoadAsync(CancellationToken.None);
 
         Assert.Equal(
-            new[] { "Book 1.cbz", "Book 2", "Book 4.cbr", "Book 5.rar", "Collection" },
+            new[] { "Book 1.cbz", "Book 2", "Book 4.cbr", "Book 5.rar", "Collection", "cover.jpg" },
             contextShelf.Entries.Select(book => book.DisplayName));
         Assert.Equal(
-            new[] { ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Collection },
+            new[] { ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Collection, ShelfEntryKind.Book },
             contextShelf.Entries.Select(entry => entry.Kind));
         Assert.Equal(
-            new BookSourceKind?[] { BookSourceKind.Zip, BookSourceKind.Folder, BookSourceKind.Rar, BookSourceKind.Rar, null },
+            new BookSourceKind?[] { BookSourceKind.Zip, BookSourceKind.Folder, BookSourceKind.Rar, BookSourceKind.Rar, null, BookSourceKind.Image },
             contextShelf.Entries.Select(entry => entry.BookSourceKind));
     }
 

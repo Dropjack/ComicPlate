@@ -53,7 +53,9 @@ exe 空启动时显示启动面板。启动面板不是书架，不扫描任何�
 
 - 应用名 ComicPlate。
 - Continue Reading：继续阅读上一次位置；有记录时可显示为 `Continue Reading "BookA.cbz"`。
-- Open Comics：打开漫画。
+- Open Comic File：打开漫画文件。
+- Open Folder / Collection：打开文件夹或合集。
+- Drag hint：提示用户可拖拽文件快速浏览漫画/图片；该提示不可点击。
 
 如果 ComicPlate 由文件关联或命令行路径启动，应跳过启动面板，直接打开传入内容。
 
@@ -68,11 +70,24 @@ Continue Reading 行为：
 - 如果上层路径已经不存在或无法读取，保留当前内容阅读，并用轻量状态提示说明 `U` 不可用。
 - 动态名称优先显示有意义的文件夹/压缩包名；单张图片通常文件名无意义，后续 UX 可以显示上层一到两级目录。
 
-Open Comics 行为：
+Open Comic File 行为：
 
 - 入口位于启动面板中央主操作区。
-- MVP 阶段可以先复用现有文件夹选择器；后续扩展为文件夹、ZIP/CBZ、图片统一打开。
-- 文案先使用英文，UX 阶段再统一本地化。
+- 打开文件选择器，支持 ZIP/CBZ、RAR/CBR 和图片文件。
+- 用户选择文件后，Reader 打开该文件，同时 Navigation Pane 使用文件所在目录作为当前 Collection，显示同层文件夹、压缩包和图片文件。
+- 从该入口打开的文件可被 Locate in Shelf 定位。
+
+Open Folder / Collection 行为：
+
+- 打开文件夹选择器。
+- 用户选择文件夹后，Reader 和 Navigation Pane 使用该文件夹作为当前 Collection。
+- 当前层图片可直接阅读；当前层文件夹、压缩包和图片文件显示在 Context Shelf。
+
+拖拽文件行为：
+
+- 拖入支持的压缩包或图片文件后直接快速浏览该文件。
+- 不自动展示文件所在目录；Navigation Pane 必须关闭且不可用，不能显示空 Shelf。
+- 拖拽快速浏览仍保存阅读进度和历史。
 
 ## 3. 阅读页
 
@@ -86,11 +101,11 @@ Open Comics 行为：
 Navigation Pane / Shelf View MVP 项：
 
 - Shelf View 显示当前 Collection 一层可打开项。
-- Shelf entry：当前层 Book entry 和子 Collection entry。
+- Shelf entry：当前层 Book entry、图片文件 entry 和子 Collection entry。
 - 每项显示缩略图或类型占位图。
 - ZIP/CBZ、RAR/CBR、文件夹 Book 和子 Collection entry 展示封面缩略图，并叠加类型遮罩或角标。
 - 点击 Book entry 打开 Book；点击 Collection entry 进入子 Collection。
-- 当前层图片不进入左侧栏；它们显示在主阅读/预览面板。
+- 当前层图片进入左侧栏，也显示在主阅读/预览面板。
 - Shelf 顶部暂定两行：状态行显示当前 Collection/History 标题和条目数量；操作行放 `S`、`H`、定位、`U` 等占位按钮。
 - `S` 切到 Shelf View；`H` 切到 History View。
 - 定位按钮服务于 Shelf：从 History 触发时先切回 Shelf，再定位当前正在阅读的 Book 在父 Collection 中的 entry。

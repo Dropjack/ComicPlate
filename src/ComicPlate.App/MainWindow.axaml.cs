@@ -79,6 +79,9 @@ public partial class MainWindow : Window
             settingsService: _settingsService);
         DataContext = _viewModel;
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
+        DragDrop.SetAllowDrop(this, true);
+        AddHandler(DragDrop.DragOverEvent, OnDragOver);
+        AddHandler(DragDrop.DropEvent, OnDrop);
         Opened += OnOpened;
         Closed += OnClosed;
     }
@@ -305,6 +308,29 @@ public partial class MainWindow : Window
             _viewModel.Reader.WheelPreviousReadingGroup();
             e.Handled = true;
         }
+    }
+
+    private void OnDragOver(object? sender, DragEventArgs e)
+    {
+        e.DragEffects = e.DataTransfer.Contains(DataFormat.File)
+            ? DragDropEffects.Copy
+            : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void OnDrop(object? sender, DragEventArgs e)
+    {
+        var paths = e.DataTransfer.TryGetFiles()?
+            .Select(item => item.Path.LocalPath)
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .ToArray();
+        if (paths is null || paths.Length == 0)
+        {
+            return;
+        }
+
+        _ = _viewModel.OpenDroppedPathsAsync(paths);
+        e.Handled = true;
     }
 
     private void OnSettingsClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

@@ -81,10 +81,12 @@ Rules:
 
 | Key | en source | zh-Hans | ja | Current/source location | Notes |
 |---|---|---|---|---|---|
-| `Main.OpenComic.Tooltip` | Open comic | 打开漫画 | 漫画を開く | `MainWindow.axaml` | Command rail tooltip |
+| `Main.OpenComic.Tooltip` | Open comic file | 打开漫画文件 | 漫画ファイルを開く | `MainWindow.axaml` | Command rail tooltip |
 | `Main.NewWindow.Tooltip` | New window | 新建窗口 | 新規ウィンドウ | `MainWindow.axaml` | Command rail tooltip |
 | `Main.Settings.Tooltip` | Settings | 设置 | 設定 | `MainWindow.axaml` | Command rail tooltip |
-| `Start.OpenComics` | Open Comics | 打开漫画 | 漫画を開く | `StartView.axaml` | Start page button |
+| `Start.OpenComics` | Open Comic File | 打开漫画文件 | 漫画ファイルを開く | `StartView.axaml` | Start page button |
+| `Start.OpenFolder` | Open Folder / Collection | 打开文件夹 / 合集 | フォルダー / コレクションを開く | `StartView.axaml` | Start page button |
+| `Start.DragHint` | Drag a comic or image here for quick preview | 拖入漫画或图片可快速浏览 | 漫画や画像をドラッグして素早くプレビュー | `StartView.axaml` | Non-clickable start page hint |
 | `Start.ContinueReading` | Continue Reading | 继续阅读 | 続きから読む | `ReadingSessionController.cs` | Button text when no saved item |
 | `Start.ContinueReadingWithTitle` | Continue Reading "{0}" | 继续阅读“{0}” | 「{0}」の続きを読む | `ReadingSessionController.cs` | `{0}` is comic display name; do not localize the inserted title |
 
@@ -147,7 +149,7 @@ Rules:
 | `Shortcuts.PreviousPage` | Previous page | 上一页 | 前のページ | `ShortcutWindow.axaml`, `ShortcutRegistry.cs` | Action label |
 | `Shortcuts.FirstPage` | First page | 首页 | 最初のページ | `ShortcutWindow.axaml`, `ShortcutRegistry.cs` | Action label |
 | `Shortcuts.LastPage` | Last page | 末页 | 最後のページ | `ShortcutWindow.axaml`, `ShortcutRegistry.cs` | Action label |
-| `Shortcuts.OpenComic` | Open comic | 打开漫画 | 漫画を開く | `ShortcutWindow.axaml`, `ShortcutRegistry.cs` | Action label |
+| `Shortcuts.OpenComic` | Open comic file | 打开漫画文件 | 漫画ファイルを開く | `ShortcutWindow.axaml`, `ShortcutRegistry.cs` | Action label |
 | `Shortcuts.NewWindow` | New window | 新建窗口 | 新規ウィンドウ | `ShortcutRegistry.cs` | Action label |
 | `Shortcuts.ToggleShelf` | Show/Hide Shelf | 显示/隐藏书架 | シェルフの表示/非表示 | `ShortcutWindow.axaml`, `ShortcutRegistry.cs` | Action label |
 | `Shortcuts.ToggleViewMode` | Toggle single/double page | 切换单页/双页 | 単ページ/見開きを切り替え | `ShortcutWindow.axaml`, `ShortcutRegistry.cs` | Action label |

@@ -6,7 +6,7 @@
           Background="{StaticResource BackgroundBase}"
           Margin="24">
         <StackPanel Grid.Row="1"
-                    Width="300"
+                    Width="320"
                     HorizontalAlignment="Center"
                     Spacing="12">
             <TextBlock Text="ComicPlate"
@@ -25,6 +25,22 @@
                     HorizontalAlignment="Stretch"
                     Padding="12,10"
                     CornerRadius="6" />
+            <Button Command="{Binding OpenFolderCommand}"
+                    Content="{loc:Loc Start.OpenFolder}"
+                    HorizontalAlignment="Stretch"
+                    Padding="12,10"
+                    CornerRadius="6" />
+            <Border Background="{StaticResource SubtlePanelBrush}"
+                    BorderBrush="{StaticResource BorderBrushSoft}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="12,10"
+                    HorizontalAlignment="Stretch">
+                <TextBlock Text="{loc:Loc Start.DragHint}"
+                           Foreground="{StaticResource MutedTextBrush}"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap" />
+            </Border>
         </StackPanel>
     </Grid>
 </UserControl>

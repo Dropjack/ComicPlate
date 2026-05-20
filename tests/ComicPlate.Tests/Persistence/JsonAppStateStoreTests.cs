@@ -121,8 +121,6 @@ public sealed class JsonAppStateStoreTests : IDisposable
     {
         var store = new JsonAppStateStore(_tempDirectory);
         var book = new BookEntry(@"D:\Manga\A.cbz", "A.cbz", BookSourceKind.Zip, @"D:\Manga\A.cbz");
-        var history = new NavigationHistory();
-        history.StartAt(new NavigationEntry(book.Path, book.DisplayName, book.SourceKind));
         store.SaveProgress(CreateProgress(book.Path, 50, DateTimeOffset.UtcNow));
 
         store.SaveReadingState(
@@ -131,11 +129,11 @@ public sealed class JsonAppStateStoreTests : IDisposable
             pageCount: 100,
             ReadingDirection.RightToLeft,
             ViewMode.SinglePage,
-            history);
+            new NavigationHistory());
 
         Assert.Null(store.FindProgress(book.Path));
         Assert.Equal("A.cbz", store.LoadSession().Current?.DisplayName);
-        Assert.Equal(@"D:\Manga", store.LoadSession().ReadingParentCollectionCurrent?.Path);
+        Assert.Null(store.LoadSession().ReadingParentCollectionCurrent);
     }
 
     [Fact]
@@ -143,8 +141,6 @@ public sealed class JsonAppStateStoreTests : IDisposable
     {
         var store = new JsonAppStateStore(_tempDirectory);
         var book = new BookEntry(@"D:\Manga\A.cbz", "A.cbz", BookSourceKind.Zip, @"D:\Manga\A.cbz");
-        var history = new NavigationHistory();
-        history.StartAt(new NavigationEntry(book.Path, book.DisplayName, book.SourceKind));
         store.SaveProgress(CreateProgress(book.Path, 50, DateTimeOffset.UtcNow));
 
         store.SaveReadingState(
@@ -153,12 +149,12 @@ public sealed class JsonAppStateStoreTests : IDisposable
             pageCount: 100,
             ReadingDirection.RightToLeft,
             ViewMode.SinglePage,
-            history,
+            new NavigationHistory(),
             deleteCompletedProgress: false);
 
         Assert.Equal(50, store.FindProgress(book.Path)?.LastPageIndex);
         Assert.Equal(99, store.LoadSession().Current?.LastPageIndex);
-        Assert.Equal(@"D:\Manga", store.LoadSession().ReadingParentCollectionCurrent?.Path);
+        Assert.Null(store.LoadSession().ReadingParentCollectionCurrent);
     }
 
     [Fact]
@@ -187,8 +183,9 @@ public sealed class JsonAppStateStoreTests : IDisposable
         Assert.Equal(Path.GetFullPath(bookPath), session.ReadingContainerCurrent?.Path);
         Assert.Single(session.ReadingContainerBackStack);
         Assert.Equal(Path.GetFullPath(rootPath), session.ReadingContainerBackStack[0].Path);
-        Assert.Equal(Path.GetFullPath(rootPath), session.ReadingParentCollectionCurrent?.Path);
-        Assert.Empty(session.ReadingParentCollectionBackStack);
+        Assert.Equal(Path.GetFullPath(bookPath), session.ReadingParentCollectionCurrent?.Path);
+        Assert.Single(session.ReadingParentCollectionBackStack);
+        Assert.Equal(Path.GetFullPath(rootPath), session.ReadingParentCollectionBackStack[0].Path);
     }
 
     public void Dispose()

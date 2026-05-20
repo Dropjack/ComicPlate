@@ -41,7 +41,7 @@ ComicPlate MVP 是只读阅读器。
 - 文件夹 Book ID：规范化后的绝对路径。
 - ZIP/CBZ/RAR/CBR Book ID：规范化后的绝对路径。
 - Book ID 是最终打开的可阅读单元路径，不是启动入口路径。
-- 同一本漫画无论从文件关联、命令行、Everything、Open Comics、还是从父文件夹 Context Shelf 点入，只要最终路径相同，就命中同一条 progress 记录。
+- 同一本漫画无论从文件关联、命令行、Everything、Open Comic File、拖拽快速浏览、还是从父文件夹 Context Shelf 点入，只要最终路径相同，就命中同一条 progress 记录。
 - MVP 不使用内容 hash。
 - 如果同一路径的内容变化，仍视为同一本书，但打开时重新扫描页面列表。
 - 如果上次记录的页码超过新页面数量，恢复到最后一页。
@@ -56,7 +56,9 @@ ComicPlate 有两种启动路径：
 启动面板不是书架。它只包含：
 
 - Continue Reading：打开上一次阅读位置；有可恢复会话时文案包含上次内容名，例如 `Continue Reading "BookA.cbz"`；没有可恢复会话时按钮不可用，不额外解释。
-- Open Comics：打开新的漫画入口。
+- Open Comic File：打开新的漫画文件入口。用户选择压缩包或图片文件后，ComicPlate 打开该文件，并以其所在目录建立正常 Context Shelf。
+- Open Folder / Collection：打开文件夹或合集入口。用户选择文件夹后，ComicPlate 以该文件夹作为当前 Collection。
+- 拖拽文件：快速浏览入口。用户拖入压缩包或图片文件后，ComicPlate 只打开该文件，不自动展示所在目录，Navigation Pane 关闭且不可用。
 
 启动面板不显示历史列表，不显示最近打开列表，不提供上上次入口。
 
@@ -77,7 +79,7 @@ Collection 是左侧可导航的一层容器。Shelf View 是当前 Collection �
 1. ComicPlate 把这个文件夹作为当前 Collection。
 2. 只扫描当前文件夹一层，不全量递归。
 3. 当前层支持格式图片进入主阅读/预览面板的 Page 流。
-4. 当前层支持的压缩包显示为左侧 Context Shelf entry。
+4. 当前层支持的压缩包和图片文件显示为左侧 Context Shelf entry。
 5. 当前层子文件夹显示为左侧 Context Shelf entry。
 6. 如果当前层只有图片且没有子文件夹/压缩包，可以直接作为文件夹漫画阅读。
 7. 如果当前层没有可显示内容，显示空状态。
@@ -127,10 +129,10 @@ MVP 行为：
 1. MVP 只读取当前文件夹一层。
 2. 过滤支持的图片扩展名。
 3. 当前层图片作为主面板 Page 流。
-4. 当前层子文件夹和支持压缩包作为左侧 Context Shelf entry。
+4. 当前层子文件夹、支持压缩包和图片文件作为左侧 Context Shelf entry。
 5. 对当前层项目使用自然排序，升序。
 6. 如果当前层只有图片且没有子文件夹/压缩包，可以直接进入阅读。
-7. 如果当前层既有图片又有子文件夹/压缩包，图片显示在主面板，子文件夹/压缩包显示在左侧 Context Shelf。
+7. 如果当前层既有图片又有子文件夹/压缩包，图片显示在主面板，同时图片文件、子文件夹和压缩包显示在左侧 Context Shelf。
 8. 如果没有可显示项，显示空状态：“这个文件夹里没有可阅读内容”。
 
 MVP 默认：
@@ -518,7 +520,9 @@ Context Shelf：
 启动面板：
 
 - Continue Reading。
-- Open Comics。
+- Open Comic File。
+- Open Folder / Collection。
+- 拖拽文件快速浏览。
 
 任何区域都不显示：
 

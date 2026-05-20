@@ -133,6 +133,7 @@
                                     BorderThickness="0"
                                     CornerRadius="18"
                                     ToolTip.Tip="{Binding NavigationPaneToggleText}"
+                                    IsEnabled="{Binding IsNavigationPaneAvailable}"
                                     IsVisible="{Binding IsReaderVisible}">
                                 <Grid>
                                     <PathIcon Data="{StaticResource ShelfHideIcon}"
