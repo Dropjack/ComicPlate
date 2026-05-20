@@ -17,6 +17,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly ContentOpenService _contentOpenService = new();
     private readonly ReaderImageCache _readerImageCache;
     private readonly ReadingSessionController _readingSession;
+    private readonly SettingsService _settingsService;
     private IReadOnlyList<ShelfEntry> _collectionShelfEntries = Array.Empty<ShelfEntry>();
     private BookEntry? _currentBook;
     private string? _navigationHighlightPath;
@@ -33,12 +34,18 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     public MainWindowViewModel(
         IFolderPickerService folderPickerService,
         ImagePageLoader imagePageLoader,
-        JsonAppStateStore? stateStore = null)
+        JsonAppStateStore? stateStore = null,
+        SettingsService? settingsService = null)
     {
         _folderPickerService = folderPickerService;
+        _settingsService = settingsService ?? SettingsService.CreateDefault();
+        var settings = _settingsService.Load();
         _readerImageCache = new ReaderImageCache(imagePageLoader);
         _readingSession = new ReadingSessionController(stateStore ?? JsonAppStateStore.CreateDefault());
-        Reader = new ReaderSurfaceViewModel(_readerImageCache);
+        Reader = new ReaderSurfaceViewModel(
+            _readerImageCache,
+            settings.ReadingDirection,
+            settings.ViewMode);
         Reader.PropertyChanged += OnReaderPropertyChanged;
         Reader.ReadingStateChanged += OnReaderReadingStateChanged;
         ContextShelf = new ContextShelfViewModel(ActivateContentItemAsync);
@@ -270,6 +277,12 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             or nameof(ReaderSurfaceViewModel.PageText))
         {
             OnPropertyChanged(nameof(WindowTitle));
+        }
+
+        if (e.PropertyName is nameof(ReaderSurfaceViewModel.ReadingDirection)
+            or nameof(ReaderSurfaceViewModel.ViewMode))
+        {
+            PersistReaderPreferences();
         }
     }
 
@@ -567,6 +580,16 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
         OnPropertyChanged(nameof(LastReadingPositionText));
         RaiseCommandStates();
+    }
+
+    private void PersistReaderPreferences()
+    {
+        var settings = _settingsService.Load();
+        _settingsService.Save(settings with
+        {
+            ReadingDirection = Reader.ReadingDirection,
+            ViewMode = Reader.ViewMode,
+        });
     }
 
     private void SetMessage(string message)

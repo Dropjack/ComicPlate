@@ -40,9 +40,14 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     private double _readerTransitionOffset;
     private DateTimeOffset _readerTransitionStartedAt;
 
-    public ReaderSurfaceViewModel(ReaderImageCache readerImageCache)
+    public ReaderSurfaceViewModel(
+        ReaderImageCache readerImageCache,
+        ReadingDirection initialReadingDirection = ReadingDirection.RightToLeft,
+        ViewMode initialViewMode = ViewMode.SinglePage)
     {
         _readerImageCache = readerImageCache;
+        _readerState.SetReadingDirection(initialReadingDirection);
+        _readerState.SetViewMode(initialViewMode);
         _readerTransitionTimer = new DispatcherTimer
         {
             Interval = ReaderTransitionFrameInterval,
@@ -253,6 +258,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         var targetPageIndex = _progressPreviewPageIndex ?? RatioToPageIndex(visualRatio);
         GoToProgressPage(targetPageIndex);
         ClearProgressPreview();
+        UpdatePageStatus();
     }
 
     public void CancelProgressPreview()
@@ -640,6 +646,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             ? ViewMode.DoublePage
             : ViewMode.SinglePage;
         _readerState.SetViewMode(nextViewMode);
+        OnPropertyChanged(nameof(ViewMode));
         OnPropertyChanged(nameof(ViewModeText));
         OnPropertyChanged(nameof(IsSinglePageMode));
         OnPropertyChanged(nameof(IsDoublePageMode));

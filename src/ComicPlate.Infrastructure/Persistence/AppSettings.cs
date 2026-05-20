@@ -10,6 +10,8 @@ public sealed record AppSettings
 
     public ReadingDirection ReadingDirection { get; init; } = ReadingDirection.RightToLeft;
 
+    public ViewMode ViewMode { get; init; } = ViewMode.SinglePage;
+
     public string DefaultFitMode { get; init; } = "AutoFit";
 
     public int ProgressLimit { get; init; } = 500;

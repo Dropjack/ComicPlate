@@ -1,4 +1,5 @@
 using System.Text;
+using ComicPlate.Core.Reading;
 using ComicPlate.Infrastructure.Persistence;
 
 namespace ComicPlate.Tests.Persistence;
@@ -79,12 +80,16 @@ public sealed class SettingsServiceTests : IDisposable
         {
             AllowMultipleWindows = true,
             RestoreWindowPlacement = false,
+            ReadingDirection = ReadingDirection.LeftToRight,
+            ViewMode = ViewMode.DoublePage,
         });
 
         var loaded = service.Load();
 
         Assert.True(loaded.AllowMultipleWindows);
         Assert.False(loaded.RestoreWindowPlacement);
+        Assert.Equal(ReadingDirection.LeftToRight, loaded.ReadingDirection);
+        Assert.Equal(ViewMode.DoublePage, loaded.ViewMode);
     }
 
     [Fact]

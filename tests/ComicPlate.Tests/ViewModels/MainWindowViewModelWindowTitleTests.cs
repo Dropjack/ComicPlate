@@ -1,6 +1,8 @@
 using ComicPlate.App.Services;
 using ComicPlate.App.ViewModels;
 using ComicPlate.Core.Books;
+using ComicPlate.Core.Reading;
+using ComicPlate.Infrastructure.Persistence;
 
 namespace ComicPlate.Tests.ViewModels;
 
@@ -21,6 +23,46 @@ public sealed class MainWindowViewModelWindowTitleTests
         viewModel.Reader.NextPageCommand.Execute(null);
 
         Assert.Equal("Vol. 01.cbz (2 / 3) - ComicPlate", viewModel.WindowTitle);
+    }
+
+    [Fact]
+    public void ReaderPreferencesAreLoadedAndSavedThroughSettings()
+    {
+        var tempDirectory = Path.Combine(
+            Path.GetTempPath(),
+            $"ComicPlateMainWindowViewModelTests-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDirectory);
+        try
+        {
+            var settingsService = new SettingsService(new TestUserDataPathProvider(tempDirectory));
+            settingsService.Save(AppSettings.Default with
+            {
+                ReadingDirection = ReadingDirection.LeftToRight,
+                ViewMode = ViewMode.DoublePage,
+            });
+
+            using var viewModel = new MainWindowViewModel(
+                new StubFolderPickerService(),
+                new ImagePageLoader(),
+                settingsService: settingsService);
+
+            Assert.Equal(ReadingDirection.LeftToRight, viewModel.Reader.ReadingDirection);
+            Assert.Equal(ViewMode.DoublePage, viewModel.Reader.ViewMode);
+
+            viewModel.Reader.ToggleReadingDirectionCommand.Execute(null);
+            viewModel.Reader.ToggleViewModeCommand.Execute(null);
+
+            var saved = settingsService.Load();
+            Assert.Equal(ReadingDirection.RightToLeft, saved.ReadingDirection);
+            Assert.Equal(ViewMode.SinglePage, saved.ViewMode);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
     }
 
     private static MainWindowViewModel CreateViewModel()
@@ -50,6 +92,21 @@ public sealed class MainWindowViewModelWindowTitleTests
         public Task<string?> PickFolderAsync()
         {
             return Task.FromResult<string?>(null);
+        }
+    }
+
+    private sealed class TestUserDataPathProvider : IUserDataPathProvider
+    {
+        private readonly string _directory;
+
+        public TestUserDataPathProvider(string directory)
+        {
+            _directory = directory;
+        }
+
+        public string GetUserDataDirectory()
+        {
+            return _directory;
         }
     }
 }

@@ -73,7 +73,8 @@ public partial class MainWindow : Window
         _startupPath = startupPath;
         _viewModel = new MainWindowViewModel(
             new FolderPickerService(this),
-            new ImagePageLoader());
+            new ImagePageLoader(),
+            settingsService: _settingsService);
         DataContext = _viewModel;
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         Opened += OnOpened;
