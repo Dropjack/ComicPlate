@@ -2,12 +2,16 @@ bin/
 obj/
 .vs/
 .vscode/
+*.code-workspace
+*.private.code-workspace
+.obsidian/
 *.user
 *.suo
 *.lscache
 debug.log
 artifacts/
 dist/
+release/
 publish/
 ComicPlate.exe
 *.exe

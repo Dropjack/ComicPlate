@@ -19,6 +19,22 @@
     <ApplicationIcon>..\..\platform\windows\ComicPlate.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>
+      $(AllowedOutputExtensionsInPackageBuildOutputFolder);
+      .exe
+    </AllowedOutputExtensionsInPackageBuildOutputFolder>
+  </PropertyGroup>
+
+  <Target Name="RemovePdbFilesFromReleasePublish"
+          BeforeTargets="CopyFilesToPublishDirectory"
+          Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                             Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.0.2" />
     <PackageReference Include="Avalonia.Desktop" Version="12.0.2" />
@@ -37,8 +53,8 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
-    <Content Include="Localization\*.json"
-             CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Localization\*.json"
+                      LogicalName="ComicPlate.Localization.%(Filename)%(Extension)" />
     <AvaloniaResource Include="..\..\platform\windows\ComicPlate.ico"
                       Link="!__AvaloniaDefaultWindowIcon"
                       Condition="$([MSBuild]::IsOSPlatform('Windows'))" />

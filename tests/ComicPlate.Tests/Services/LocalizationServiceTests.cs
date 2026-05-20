@@ -81,6 +81,18 @@ public sealed class LocalizationServiceTests : IDisposable
         Assert.Equal("Missing.Key", service.GetString("Missing.Key"));
     }
 
+    [Fact]
+    public void CreateLoadsEmbeddedStringsWhenExternalLocalizationFolderIsMissing()
+    {
+        var missingDirectory = Path.Combine(_tempDirectory, "MissingLocalization");
+
+        var service = LocalizationService.Create(
+            AppLanguage.English,
+            localizationDirectory: missingDirectory);
+
+        Assert.Equal("ComicPlate", service.GetString("Common.ComicPlate"));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDirectory))
