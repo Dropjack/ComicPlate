@@ -22,6 +22,8 @@ public sealed record AppSettings
 
     public bool RestoreWindowPlacement { get; init; } = true;
 
+    public bool IsMagnifierEnabled { get; init; } = true;
+
     public WindowPlacementSettings MainWindow { get; init; } = WindowPlacementSettings.Default;
 
     public double? SidebarWidth { get; init; }

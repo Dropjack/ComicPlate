@@ -173,6 +173,16 @@ public partial class MainWindow : Window
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
+        if (e.KeyModifiers == KeyModifiers.None
+            && e.Key == Key.Z
+            && IsReaderVisibleForMagnifier()
+            && _viewModel.Reader.BeginMagnifier())
+        {
+            ReaderSurface.UpdateMagnifierPointer();
+            e.Handled = true;
+            return;
+        }
+
         if (_isFullscreen && e.Key == Key.Escape)
         {
             ExitFullscreen();
@@ -253,8 +263,23 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnKeyUp(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Z)
+        {
+            _viewModel.Reader.EndMagnifier();
+            e.Handled = true;
+        }
+    }
+
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
+        if (_viewModel.Reader.AdjustMagnifierScale(e.Delta.Y))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (OperatingSystem.IsMacOS() && Math.Abs(e.Delta.X) > Math.Abs(e.Delta.Y))
         {
             if (e.Delta.X > 0)
@@ -337,6 +362,12 @@ public partial class MainWindow : Window
     {
         _appSettings = _settingsService.Load();
         CanCreateNewWindow = _appSettings.AllowMultipleWindows;
+        _viewModel.SetMagnifierEnabled(_appSettings.IsMagnifierEnabled);
+    }
+
+    private bool IsReaderVisibleForMagnifier()
+    {
+        return _viewModel.IsReaderVisible && !_viewModel.IsLoading;
     }
 
     private void ToggleFullscreen()

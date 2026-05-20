@@ -75,6 +75,10 @@
                             Classes="settings-nav"
                             Content="外观"
                             Click="OnAppearanceNavClick" />
+                    <Button x:Name="ReadingNavButton"
+                            Classes="settings-nav"
+                            Content="阅读"
+                            Click="OnReadingNavClick" />
                     <Button x:Name="DataNavButton"
                             Classes="settings-nav"
                             Content="数据与缓存"
@@ -189,6 +193,41 @@
                                       VerticalAlignment="Center">
                                 <ComboBoxItem Content="默认浅灰" />
                             </ComboBox>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel x:Name="ReadingSection"
+                            Spacing="10">
+                    <TextBlock Text="阅读"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource SettingsTextBrush}" />
+                    <Border Classes="settings-card"
+                            Background="{StaticResource SettingsCardBrush}"
+                            BorderBrush="{StaticResource SettingsBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <Grid x:Name="MagnifierRow"
+                              ColumnDefinitions="*,Auto"
+                              Margin="16,14"
+                              ColumnSpacing="16">
+                            <StackPanel Spacing="3"
+                                        MinWidth="0">
+                                <TextBlock Text="放大镜"
+                                           Foreground="{StaticResource SettingsTextBrush}"
+                                           FontSize="15" />
+                                <TextBlock Text="按住 Z 放大 Reader 内的漫画内容；放大时滚轮调整倍率。"
+                                           Foreground="{StaticResource SettingsMutedTextBrush}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Text="Z - 放大"
+                                           Foreground="{StaticResource SettingsMutedTextBrush}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch x:Name="MagnifierToggle"
+                                          Grid.Column="1"
+                                          Click="OnSettingToggleClick"
+                                          VerticalAlignment="Center" />
                         </Grid>
                     </Border>
                 </StackPanel>

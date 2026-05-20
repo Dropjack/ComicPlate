@@ -45,7 +45,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         Reader = new ReaderSurfaceViewModel(
             _readerImageCache,
             settings.ReadingDirection,
-            settings.ViewMode);
+            settings.ViewMode,
+            settings.IsMagnifierEnabled);
         Reader.PropertyChanged += OnReaderPropertyChanged;
         Reader.ReadingStateChanged += OnReaderReadingStateChanged;
         ContextShelf = new ContextShelfViewModel(ActivateContentItemAsync);
@@ -208,6 +209,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         return ContextShelf.MoveSelection(delta);
+    }
+
+    public void SetMagnifierEnabled(bool isEnabled)
+    {
+        Reader.SetMagnifierEnabled(isEnabled);
     }
 
     private BookEntry? CurrentBook

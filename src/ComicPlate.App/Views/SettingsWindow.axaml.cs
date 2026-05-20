@@ -124,6 +124,12 @@ public partial class SettingsWindow : Window
         ScrollToSection(AppearanceSection);
     }
 
+    private void OnReadingNavClick(object? sender, RoutedEventArgs e)
+    {
+        SelectNav(ReadingNavButton);
+        ScrollToSection(ReadingSection);
+    }
+
     private void OnDataNavClick(object? sender, RoutedEventArgs e)
     {
         SelectNav(DataNavButton);
@@ -207,6 +213,7 @@ public partial class SettingsWindow : Window
         {
             StartupNavButton,
             AppearanceNavButton,
+            ReadingNavButton,
             DataNavButton,
             AssociationNavButton,
             ShortcutsNavButton,
@@ -246,6 +253,7 @@ public partial class SettingsWindow : Window
             MultiWindowRow,
             RestoreWindowRow,
             PaletteRow,
+            MagnifierRow,
             DataFolderRow,
             ThumbnailCacheRow,
             ShortcutsRow,
@@ -317,6 +325,7 @@ public partial class SettingsWindow : Window
             _settings = _settingsService.Load();
             MultiWindowToggle.IsChecked = _settings.AllowMultipleWindows;
             RestoreWindowToggle.IsChecked = _settings.RestoreWindowPlacement;
+            MagnifierToggle.IsChecked = _settings.IsMagnifierEnabled;
         }
         finally
         {
@@ -407,6 +416,7 @@ public partial class SettingsWindow : Window
         {
             AllowMultipleWindows = MultiWindowToggle.IsChecked == true,
             RestoreWindowPlacement = RestoreWindowToggle.IsChecked == true,
+            IsMagnifierEnabled = MagnifierToggle.IsChecked == true,
         };
 
         _settingsService.Save(_settings);

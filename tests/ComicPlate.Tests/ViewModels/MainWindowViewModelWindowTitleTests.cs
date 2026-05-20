@@ -48,6 +48,7 @@ public sealed class MainWindowViewModelWindowTitleTests : IDisposable
             {
                 ReadingDirection = ReadingDirection.LeftToRight,
                 ViewMode = ViewMode.DoublePage,
+                IsMagnifierEnabled = false,
             });
 
             using var viewModel = new MainWindowViewModel(
@@ -58,6 +59,7 @@ public sealed class MainWindowViewModelWindowTitleTests : IDisposable
 
             Assert.Equal(ReadingDirection.LeftToRight, viewModel.Reader.ReadingDirection);
             Assert.Equal(ViewMode.DoublePage, viewModel.Reader.ViewMode);
+            Assert.False(viewModel.Reader.IsMagnifierEnabled);
 
             viewModel.Reader.ToggleReadingDirectionCommand.Execute(null);
             viewModel.Reader.ToggleViewModeCommand.Execute(null);

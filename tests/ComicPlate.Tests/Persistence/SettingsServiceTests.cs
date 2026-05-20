@@ -82,6 +82,7 @@ public sealed class SettingsServiceTests : IDisposable
             RestoreWindowPlacement = false,
             ReadingDirection = ReadingDirection.LeftToRight,
             ViewMode = ViewMode.DoublePage,
+            IsMagnifierEnabled = false,
         });
 
         var loaded = service.Load();
@@ -90,6 +91,7 @@ public sealed class SettingsServiceTests : IDisposable
         Assert.False(loaded.RestoreWindowPlacement);
         Assert.Equal(ReadingDirection.LeftToRight, loaded.ReadingDirection);
         Assert.Equal(ViewMode.DoublePage, loaded.ViewMode);
+        Assert.False(loaded.IsMagnifierEnabled);
     }
 
     [Fact]

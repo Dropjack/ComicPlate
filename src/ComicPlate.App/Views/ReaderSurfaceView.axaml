@@ -57,8 +57,13 @@
             <Grid>
                 <Canvas ClipToBounds="False">
                     <ItemsControl ItemsSource="{Binding Reader.ReaderStripItems}"
-                                  Canvas.Left="{Binding Reader.ReaderStripTranslateX}"
-                                  Canvas.Top="0">
+                                  Canvas.Left="{Binding Reader.MagnifiedReaderStripTranslateX}"
+                                  Canvas.Top="{Binding Reader.MagnifierContentTranslateY}"
+                                  RenderTransformOrigin="0,0">
+                        <ItemsControl.RenderTransform>
+                            <ScaleTransform ScaleX="{Binding Reader.MagnifierScale}"
+                                            ScaleY="{Binding Reader.MagnifierScale}" />
+                        </ItemsControl.RenderTransform>
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Horizontal" />

@@ -18,6 +18,8 @@ public partial class ReaderSurfaceView : UserControl
     private bool _isReaderDragging;
     private bool _isProgressDragging;
     private Point _readerDragStartPoint;
+    private Point _lastReaderPointerPosition;
+    private bool _hasLastReaderPointerPosition;
     private bool _isFullscreenChromeHidden;
     private bool _isFullscreenShelfPinned;
     private readonly DispatcherTimer _fullscreenOverlayHideTimer;
@@ -89,6 +91,20 @@ public partial class ReaderSurfaceView : UserControl
     {
         UpdateMacFullscreenBottomOverlayWidth(e.NewSize.Width);
         ViewModel?.Reader.SetReaderViewportSize(e.NewSize.Width, e.NewSize.Height);
+        UpdateMagnifierPointer();
+    }
+
+    public void UpdateMagnifierPointer()
+    {
+        if (!_hasLastReaderPointerPosition)
+        {
+            _lastReaderPointerPosition = new Point(
+                Math.Max(0, ReaderSurfaceRoot.Bounds.Width / 2),
+                Math.Max(0, ReaderSurfaceRoot.Bounds.Height / 2));
+            _hasLastReaderPointerPosition = true;
+        }
+
+        ViewModel?.Reader.UpdateMagnifierPointer(_lastReaderPointerPosition.X, _lastReaderPointerPosition.Y);
     }
 
     private void OnVisualLeftClick(object? sender, RoutedEventArgs e)
@@ -117,6 +133,15 @@ public partial class ReaderSurfaceView : UserControl
             return;
         }
 
+        _lastReaderPointerPosition = e.GetPosition(readerSurface);
+        _hasLastReaderPointerPosition = true;
+        UpdateMagnifierPointer();
+        if (ViewModel?.Reader.IsMagnifierActive == true)
+        {
+            e.Handled = true;
+            return;
+        }
+
         var point = e.GetCurrentPoint(readerSurface);
         if (!point.Properties.IsLeftButtonPressed)
         {
@@ -137,16 +162,24 @@ public partial class ReaderSurfaceView : UserControl
             return;
         }
 
+        var position = e.GetPosition(readerSurface);
+        _lastReaderPointerPosition = position;
+        _hasLastReaderPointerPosition = true;
+        ViewModel?.Reader.UpdateMagnifierPointer(position.X, position.Y);
+        if (ViewModel?.Reader.IsMagnifierActive == true)
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (!_isReaderDragging)
         {
-            var position = e.GetPosition(readerSurface);
             UpdateFullscreenBottomOverlay(readerSurface, position);
             UpdateFullscreenShelfOverlay(position);
             return;
         }
 
-        var dragPosition = e.GetPosition(readerSurface);
-        ViewModel?.Reader.DragReaderStrip(dragPosition.X - _readerDragStartPoint.X);
+        ViewModel?.Reader.DragReaderStrip(position.X - _readerDragStartPoint.X);
         e.Handled = true;
     }
 
