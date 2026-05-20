@@ -20,6 +20,8 @@ Todo 是“项目要做什么”。不要把学习项混进来。
 - [x] 确认阅读交互原则：翻页模式是吸附，拖拽/滚动模式是自由。
 - [x] 将虚拟化阅读带目标写入 `02/03/04` 文档。
 - [x] 确认产品方向改为文件关联优先、启动面板、当前容器一层 Context Shelf。
+- [x] 建立本地化 key map 文档，明确英文源语言、语义 key、zh-Hans 内部标签和不可本地化内容。
+- [x] 回写 Scope Cut，把已经完成的 V1 能力和超出原 scope 的实现事实补齐。
 
 ## Phase 1: 最小可运行闭环
 
@@ -143,8 +145,14 @@ Todo 是“项目要做什么”。不要把学习项混进来。
 - [x] 接入缩略图缓存清理按钮。
 - [x] 接入窗口大小和位置恢复。
 - [x] 接入允许多开窗口设置。
+- [x] 接入阅读放大镜开关。
+- [x] 接入预设配色方案设置。
+- [x] 实现四套内置主题：Mist Green、Slate Blue、Warm Paper、Night Graphite。
+- [x] 主题变更采用重启生效提示，不做运行时热切换。
 - [x] 添加文件关联设置面板的真实系统操作。
 - [x] 允许用户显式关联 CBZ、ZIP、CBR、RAR；默认不自动关联。
+- [x] 添加 Windows File Explorer 右键菜单设置面板。
+- [x] 允许用户显式为 CBZ、ZIP、CBR、RAR 注册 `Open in ComicPlate` 右键菜单。
 - [x] 实现最小压缩包格式映射：ZIP/CBZ/RAR/CBR，不做通用 archive manager。
 - [x] 支持 RAR/CBR 打开、缩略图和进度恢复。
 - [x] 将 7z/CB7 移出当前 V1；不显示设置项，不预留可见占位。
@@ -157,11 +165,38 @@ Todo 是“项目要做什么”。不要把学习项混进来。
 - [x] 优化阅读 frame 贴合：当前 frame、邻近 frame 和双页 frame 之间要严格贴合，避免出现破坏连续阅读感的空隙。
 - [ ] 写 Phase 6 变更日志到 `docs/logs/`。
 
+## Phase 6.5: UI 本地化和文案收口
+
+- [x] 定义语言设置项 `system` / `en` / `zh-Hans` / `ja`。
+- [x] 默认语言为 `system`。
+- [x] 系统语言不支持时回退到 `en`。
+- [x] 单个本地化 key 缺失时回退到 `en`。
+- [x] 使用 `en.json` 作为 source of truth。
+- [x] 使用语义路径 key，不使用英文句子作为 key。
+- [x] 建立 `en.json`、`zh-Hans.json`、`ja.json`。
+- [x] 外部语言显示使用 `中文`，内部标签保持 `zh-Hans`。
+- [x] 语言变更采用重启生效提示，不做运行时热切换。
+- [x] 添加 XAML 可用的 `{loc:Loc Key.Path}` 标记扩展。
+- [x] 本地化设置页文案、按钮、说明和状态消息。
+- [x] 本地化快捷键窗口文案。
+- [x] 本地化主窗口 Command Rail tooltip。
+- [x] 本地化 StartView 入口文案。
+- [x] 本地化 Shelf tooltip、badge 和 detail 文案。
+- [x] 本地化 Reader tooltip、视图模式、阅读方向和图片显示失败状态。
+- [x] 本地化 ViewModel 打开/加载/空状态/失败状态消息。
+- [x] 本地化文件关联和 Windows 右键菜单的用户可见状态消息。
+- [x] 本地化 Windows 注册表里用户可见的 File Type 名称和右键菜单 verb。
+- [x] 明确保留不本地化内容：文件名、路径、漫画标题、archive entry、页码、倍率、快捷键显示、扩展名和 raw format label。
+- [x] 扫描并清理剩余用户可见硬编码 UI 字符串。
+- [x] 补充设置保存、语言解析和 fallback 测试。
+- [x] 将受本地化影响的测试固定为 English，避免受本机系统语言影响。
+- [x] 全量测试通过：`dotnet test ComicPlate.sln`。
+
 ## Phase 7: 打包
 
 - [x] Windows publish。
 - [ ] macOS app bundle。
-- [ ] 应用图标。
-- [ ] 基础版本号。
+- [x] 应用图标。
+- [x] 基础版本号。
 - [ ] 本地安装/运行验证。
 - [ ] 写打包说明。
