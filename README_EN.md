@@ -6,7 +6,7 @@ ComicPlate is a lightweight local comic reader for Windows and macOS, built with
 
 It opens local folders and comic archives as readable books, restores reading progress, and does not touch the user's original files.
 
-**Current public version:** 1.0.0
+**Current public version:** 1.0.1
 
 ![ComicPlate screenshot](artworks/SamplePhoto.jpg)
 

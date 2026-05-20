@@ -6,7 +6,7 @@ ComicPlate 是一个面向 Windows 和 macOS 的轻量本地漫画阅读器，�
 
 它可以把本地文件夹和漫画压缩包作为可阅读的书打开，恢复阅读进度，并且不会修改用户的原始文件。
 
-当前公开版本：`1.0.0`。
+当前公开版本：`1.0.1`。
 
 ![ComicPlate screenshot](artworks/SamplePhoto.jpg)
 
