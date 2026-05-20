@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
@@ -19,6 +20,7 @@ public partial class MainWindow : Window
     private readonly MainWindowViewModel _viewModel;
     private readonly SettingsService _settingsService;
     private readonly IReaderWindowService _readerWindowService;
+    private readonly AppRestartService _restartService = new();
     private AppSettings _appSettings;
     private readonly string? _startupPath;
     private SettingsWindow? _settingsWindow;
@@ -337,6 +339,7 @@ public partial class MainWindow : Window
         }
 
         _settingsWindow = new SettingsWindow(new PlatformLauncher(), _settingsService);
+        _settingsWindow.RestartRequested += OnSettingsRestartRequested;
         _settingsWindow.Closed += OnSettingsWindowClosed;
         _settingsWindow.Show();
     }
@@ -352,10 +355,28 @@ public partial class MainWindow : Window
     {
         if (_settingsWindow is not null)
         {
+            _settingsWindow.RestartRequested -= OnSettingsRestartRequested;
             _settingsWindow.Closed -= OnSettingsWindowClosed;
             _settingsWindow = null;
             RefreshSettings();
         }
+    }
+
+    private void OnSettingsRestartRequested(object? sender, EventArgs e)
+    {
+        _viewModel.SaveCurrentState();
+        if (!_restartService.TryRestart(AppRestartService.GetCurrentArguments()))
+        {
+            return;
+        }
+
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.Shutdown();
+            return;
+        }
+
+        Close();
     }
 
     private void RefreshSettings()

@@ -20,7 +20,10 @@ public partial class SettingsWindow : Window
     private readonly ThumbnailCacheService _thumbnailCacheService;
     private AppSettings _settings = AppSettings.Default;
     private bool _isLoadingSettings;
+    private bool _isShowingThemeRestartPrompt;
     private ShortcutWindow? _shortcutWindow;
+
+    public event EventHandler? RestartRequested;
 
     public SettingsWindow()
         : this(AppDataService.CreateDefault(), null, null)
@@ -63,6 +66,7 @@ public partial class SettingsWindow : Window
         Classes.Add(isMacOS ? "mac-shell" : "windows-shell");
         ApplyPlatformChrome(isMacOS);
         LoadSettingsIntoControls();
+        ColorThemeComboBox.SelectionChanged += OnColorThemeSelectionChanged;
         LoadFileAssociationOptions();
         LoadExplorerContextMenuState();
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
@@ -162,6 +166,23 @@ public partial class SettingsWindow : Window
         }
 
         SaveSettingsFromControls();
+    }
+
+    private async void OnColorThemeSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_isLoadingSettings || _isShowingThemeRestartPrompt)
+        {
+            return;
+        }
+
+        var selectedTheme = GetSelectedColorTheme();
+        if (selectedTheme == _settings.ColorTheme)
+        {
+            return;
+        }
+
+        SaveSettingsFromControls();
+        await PromptRestartForThemeChangeAsync();
     }
 
     private void OnOpenDataFolderClick(object? sender, RoutedEventArgs e)
@@ -326,6 +347,7 @@ public partial class SettingsWindow : Window
             MultiWindowToggle.IsChecked = _settings.AllowMultipleWindows;
             RestoreWindowToggle.IsChecked = _settings.RestoreWindowPlacement;
             MagnifierToggle.IsChecked = _settings.IsMagnifierEnabled;
+            ColorThemeComboBox.SelectedIndex = GetColorThemeIndex(_settings.ColorTheme);
         }
         finally
         {
@@ -417,8 +439,49 @@ public partial class SettingsWindow : Window
             AllowMultipleWindows = MultiWindowToggle.IsChecked == true,
             RestoreWindowPlacement = RestoreWindowToggle.IsChecked == true,
             IsMagnifierEnabled = MagnifierToggle.IsChecked == true,
+            ColorTheme = GetSelectedColorTheme(),
         };
 
         _settingsService.Save(_settings);
+    }
+
+    private async Task PromptRestartForThemeChangeAsync()
+    {
+        _isShowingThemeRestartPrompt = true;
+        try
+        {
+            var prompt = new ThemeRestartPromptWindow();
+            var shouldRestart = await prompt.ShowDialog<bool?>(this);
+            if (shouldRestart == true)
+            {
+                RestartRequested?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        finally
+        {
+            _isShowingThemeRestartPrompt = false;
+        }
+    }
+
+    private AppColorTheme GetSelectedColorTheme()
+    {
+        return ColorThemeComboBox.SelectedIndex switch
+        {
+            1 => AppColorTheme.SlateBlue,
+            2 => AppColorTheme.WarmPaper,
+            3 => AppColorTheme.NightGraphite,
+            _ => AppColorTheme.MistGreen,
+        };
+    }
+
+    private static int GetColorThemeIndex(AppColorTheme theme)
+    {
+        return theme switch
+        {
+            AppColorTheme.SlateBlue => 1,
+            AppColorTheme.WarmPaper => 2,
+            AppColorTheme.NightGraphite => 3,
+            _ => 0,
+        };
     }
 }

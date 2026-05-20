@@ -82,6 +82,7 @@ public sealed class SettingsServiceTests : IDisposable
             RestoreWindowPlacement = false,
             ReadingDirection = ReadingDirection.LeftToRight,
             ViewMode = ViewMode.DoublePage,
+            ColorTheme = AppColorTheme.NightGraphite,
             IsMagnifierEnabled = false,
         });
 
@@ -91,6 +92,7 @@ public sealed class SettingsServiceTests : IDisposable
         Assert.False(loaded.RestoreWindowPlacement);
         Assert.Equal(ReadingDirection.LeftToRight, loaded.ReadingDirection);
         Assert.Equal(ViewMode.DoublePage, loaded.ViewMode);
+        Assert.Equal(AppColorTheme.NightGraphite, loaded.ColorTheme);
         Assert.False(loaded.IsMagnifierEnabled);
     }
 

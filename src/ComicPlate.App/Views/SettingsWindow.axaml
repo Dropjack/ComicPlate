@@ -182,16 +182,18 @@
                                 <TextBlock Text="配色方案"
                                            Foreground="{StaticResource SettingsTextBrush}"
                                            FontSize="15" />
-                                <TextBlock Text="影响左侧命令栏、Context Shelf、阅读区域、书名条和进度区。具体方案在 UI polish 阶段确定。"
+                                <TextBlock Text="影响左侧命令栏、Context Shelf、阅读区域、书名条和进度区。更改后重启生效。"
                                            Foreground="{StaticResource SettingsMutedTextBrush}"
                                            TextWrapping="Wrap" />
                             </StackPanel>
-                            <ComboBox Grid.Column="1"
-                                      IsEnabled="False"
-                                      SelectedIndex="0"
+                            <ComboBox x:Name="ColorThemeComboBox"
+                                      Grid.Column="1"
                                       Width="180"
                                       VerticalAlignment="Center">
-                                <ComboBoxItem Content="默认浅灰" />
+                                <ComboBoxItem Content="雾绿" />
+                                <ComboBoxItem Content="冷灰蓝" />
+                                <ComboBoxItem Content="暖纸米色" />
+                                <ComboBoxItem Content="夜间石墨" />
                             </ComboBox>
                         </Grid>
                     </Border>
