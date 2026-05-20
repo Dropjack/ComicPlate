@@ -10,7 +10,6 @@ namespace ComicPlate.App.ViewModels;
 public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 {
     private const int NeighborPageLimit = 5;
-    private const double ReaderFrameVerticalPadding = 0;
     private const double ReaderViewportSizeEpsilon = 0.5;
     private const double ReaderTransitionDistanceRatio = 0.32;
     private static readonly TimeSpan ReaderViewportResizeCommitDelay = TimeSpan.FromMilliseconds(140);
@@ -23,6 +22,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     private readonly ReaderMagnifierController _readerMagnifierController = new();
     private readonly ReaderState _readerState = new();
     private readonly ReaderStripController _readerStripController = new(NeighborPageLimit);
+    private readonly ReaderStripItemBuilder _readerStripItemBuilder = new();
     private readonly ReaderStripRefreshCoordinator _readerStripRefreshCoordinator =
         new(ReaderViewportResizeCommitDelay);
     private IReadOnlyList<PageImageInfo> _pageImageInfos = Array.Empty<PageImageInfo>();
@@ -230,7 +230,11 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        if (!UpdateVisibleReaderStripItemSizes())
+        if (!_readerStripItemBuilder.UpdateVisibleItemSizes(
+            _readerFrames,
+            ReaderStripItems,
+            _readerStripController,
+            _readerState.ReadingDirection))
         {
             _ = RefreshReaderStripAsync(placement);
             return;
@@ -503,32 +507,11 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             return Task.CompletedTask;
         }
 
-        var currentGroupPageIndexes = currentFrame.PageIndexes;
-        var currentGroupPageSet = currentGroupPageIndexes.ToHashSet();
-        var windowFrames = CreateFrameWindow(currentFrame.FrameIndex);
-        var activeIndexes = windowFrames
-            .SelectMany(frame => frame.PageIndexes)
-            .ToHashSet();
-        var nextItems = new ObservableCollection<ReaderStripItemViewModel>();
-
-        foreach (var frame in windowFrames)
-        {
-            var displaySizes = CalculateFrameDisplaySizes(frame);
-            for (var framePageIndex = 0; framePageIndex < frame.Pages.Count; framePageIndex++)
-            {
-                var framePage = frame.Pages[framePageIndex];
-                var slot = new ReaderStripSlot(
-                    framePage.PageIndex,
-                    framePage.DisplayIndex,
-                    framePage.Page,
-                    currentGroupPageSet.Contains(framePage.PageIndex));
-                var item = new ReaderStripItemViewModel(slot, framePage.ImageInfo);
-                item.SetViewportSize(_readerStripController.ViewportWidth, _readerStripController.ViewportHeight);
-                item.SetDisplaySize(displaySizes[framePageIndex].Width, displaySizes[framePageIndex].Height);
-
-                nextItems.Add(item);
-            }
-        }
+        var buildResult = _readerStripItemBuilder.BuildWindowItems(
+            _readerFrames,
+            currentFrame,
+            _readerStripController,
+            _readerState.ReadingDirection);
 
         if (!_readerStripRefreshCoordinator.IsCurrent(refreshVersion))
         {
@@ -540,10 +523,10 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             _readerImageCache.Clear();
         }
 
-        ReplaceReaderStripItems(nextItems, placement);
-        _readerImageCache.TrimToBudget(activeIndexes, _readerState.CurrentPageIndex);
+        ReplaceReaderStripItems(buildResult.Items, placement);
+        _readerImageCache.TrimToBudget(buildResult.ActivePageIndexes, _readerState.CurrentPageIndex);
         _readerStripRefreshCoordinator.StartImageLoad(
-            nextItems.ToArray(),
+            buildResult.Items.ToArray(),
             refreshVersion,
             _readerState.CurrentPageIndex,
             _readerImageCache,
@@ -553,67 +536,6 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         RaiseCommandStates();
         StartReaderTransition(transitionDirection);
         return Task.CompletedTask;
-    }
-
-    private IReadOnlyList<ReaderFrame> CreateFrameWindow(int currentFrameIndex)
-    {
-        return _readerStripController.CreateFrameWindow(
-            _readerFrames,
-            currentFrameIndex,
-            _readerState.ReadingDirection);
-    }
-
-    private IReadOnlyList<PageDisplaySize> CalculateFrameDisplaySizes(ReaderFrame frame)
-    {
-        if (frame.Pages.Count == 0)
-        {
-            return Array.Empty<PageDisplaySize>();
-        }
-
-        var rawSizes = frame.Pages
-            .Select(page => GetRawPageSize(page.ImageInfo))
-            .ToArray();
-        var availableHeight = Math.Max(160, _readerStripController.ViewportHeight - ReaderFrameVerticalPadding);
-        var targetHeight = availableHeight;
-
-        return rawSizes
-            .Select(size => new PageDisplaySize(size.Width * (targetHeight / size.Height), targetHeight))
-            .ToArray();
-    }
-
-    private static PageDisplaySize GetRawPageSize(PageImageInfo imageInfo)
-    {
-        return imageInfo.IsValid
-            ? new PageDisplaySize(imageInfo.PixelWidth, imageInfo.PixelHeight)
-            : new PageDisplaySize(720, 1080);
-    }
-
-    private bool UpdateVisibleReaderStripItemSizes()
-    {
-        var currentFrame = _readerFrames.FirstOrDefault(frame => frame.IsCurrent);
-        if (currentFrame is null || ReaderStripItems.Count == 0)
-        {
-            return false;
-        }
-
-        var visibleItems = ReaderStripItems.ToDictionary(item => item.PageIndex);
-        foreach (var frame in CreateFrameWindow(currentFrame.FrameIndex))
-        {
-            var displaySizes = CalculateFrameDisplaySizes(frame);
-            for (var framePageIndex = 0; framePageIndex < frame.Pages.Count; framePageIndex++)
-            {
-                var framePage = frame.Pages[framePageIndex];
-                if (!visibleItems.TryGetValue(framePage.PageIndex, out var item))
-                {
-                    return false;
-                }
-
-                item.SetViewportSize(_readerStripController.ViewportWidth, _readerStripController.ViewportHeight);
-                item.SetDisplaySize(displaySizes[framePageIndex].Width, displaySizes[framePageIndex].Height);
-            }
-        }
-
-        return true;
     }
 
     private void NextPage()
