@@ -2,8 +2,6 @@ namespace ComicPlate.Core.Reading;
 
 public static class PageDisplaySizeCalculator
 {
-    public const double HorizontalPageAspectRatio = 1.25;
-
     public static PageDisplaySize Calculate(
         double imageWidth,
         double imageHeight,
@@ -36,9 +34,6 @@ public static class PageDisplaySizeCalculator
             return fitMode;
         }
 
-        var aspectRatio = imageWidth / imageHeight;
-        return aspectRatio >= HorizontalPageAspectRatio
-            ? FitMode.FitWindow
-            : FitMode.FitHeight;
+        return FitMode.FitHeight;
     }
 }

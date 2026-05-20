@@ -6,8 +6,17 @@ using ComicPlate.Infrastructure.Persistence;
 
 namespace ComicPlate.Tests.ViewModels;
 
-public sealed class MainWindowViewModelWindowTitleTests
+public sealed class MainWindowViewModelWindowTitleTests : IDisposable
 {
+    private readonly string _tempDirectory = Path.Combine(
+        Path.GetTempPath(),
+        $"ComicPlateMainWindowViewModelTests-{Guid.NewGuid():N}");
+
+    public MainWindowViewModelWindowTitleTests()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+    }
+
     [Fact]
     public async Task WindowTitleIncludesReaderTitleAndCurrentPage()
     {
@@ -34,7 +43,7 @@ public sealed class MainWindowViewModelWindowTitleTests
         Directory.CreateDirectory(tempDirectory);
         try
         {
-            var settingsService = new SettingsService(new TestUserDataPathProvider(tempDirectory));
+            var settingsService = new SettingsService(tempDirectory);
             settingsService.Save(AppSettings.Default with
             {
                 ReadingDirection = ReadingDirection.LeftToRight,
@@ -44,6 +53,7 @@ public sealed class MainWindowViewModelWindowTitleTests
             using var viewModel = new MainWindowViewModel(
                 new StubFolderPickerService(),
                 new ImagePageLoader(),
+                new JsonAppStateStore(tempDirectory),
                 settingsService: settingsService);
 
             Assert.Equal(ReadingDirection.LeftToRight, viewModel.Reader.ReadingDirection);
@@ -65,9 +75,21 @@ public sealed class MainWindowViewModelWindowTitleTests
         }
     }
 
-    private static MainWindowViewModel CreateViewModel()
+    public void Dispose()
     {
-        return new MainWindowViewModel(new StubFolderPickerService(), new ImagePageLoader());
+        if (Directory.Exists(_tempDirectory))
+        {
+            Directory.Delete(_tempDirectory, recursive: true);
+        }
+    }
+
+    private MainWindowViewModel CreateViewModel()
+    {
+        return new MainWindowViewModel(
+            new StubFolderPickerService(),
+            new ImagePageLoader(),
+            new JsonAppStateStore(_tempDirectory),
+            new SettingsService(_tempDirectory));
     }
 
     private static void SetReaderTitle(MainWindowViewModel viewModel, string title)
@@ -95,18 +117,4 @@ public sealed class MainWindowViewModelWindowTitleTests
         }
     }
 
-    private sealed class TestUserDataPathProvider : IUserDataPathProvider
-    {
-        private readonly string _directory;
-
-        public TestUserDataPathProvider(string directory)
-        {
-            _directory = directory;
-        }
-
-        public string GetUserDataDirectory()
-        {
-            return _directory;
-        }
-    }
 }

@@ -133,21 +133,6 @@ public sealed class SettingsServiceTests : IDisposable
 
     private SettingsService CreateService()
     {
-        return new SettingsService(new TestUserDataPathProvider(_tempDirectory));
-    }
-
-    private sealed class TestUserDataPathProvider : IUserDataPathProvider
-    {
-        private readonly string _directory;
-
-        public TestUserDataPathProvider(string directory)
-        {
-            _directory = directory;
-        }
-
-        public string GetUserDataDirectory()
-        {
-            return _directory;
-        }
+        return new SettingsService(_tempDirectory);
     }
 }

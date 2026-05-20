@@ -11,7 +11,6 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 {
     private const int NeighborPageLimit = 5;
     private const int ReaderViewportResizeCommitDelayMilliseconds = 140;
-    private const double ReaderFrameHorizontalPadding = 28;
     private const double ReaderFrameVerticalPadding = 0;
     private const double ReaderViewportSizeEpsilon = 0.5;
     private const double ReaderTransitionDistanceRatio = 0.32;
@@ -478,14 +477,8 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         var rawSizes = frame.Pages
             .Select(page => GetRawPageSize(page.ImageInfo))
             .ToArray();
-        var availableWidth = Math.Max(160, _readerStripController.ViewportWidth - ReaderFrameHorizontalPadding);
         var availableHeight = Math.Max(160, _readerStripController.ViewportHeight - ReaderFrameVerticalPadding);
         var targetHeight = availableHeight;
-        var totalWidthAtTargetHeight = rawSizes.Sum(size => size.Width * (targetHeight / size.Height));
-        if (totalWidthAtTargetHeight > availableWidth)
-        {
-            targetHeight *= availableWidth / totalWidthAtTargetHeight;
-        }
 
         return rawSizes
             .Select(size => new PageDisplaySize(size.Width * (targetHeight / size.Height), targetHeight))
