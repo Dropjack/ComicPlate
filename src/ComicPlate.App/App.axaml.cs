@@ -22,7 +22,9 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var settingsService = ComicPlate.Infrastructure.Persistence.SettingsService.CreateDefault();
-            AppThemeService.Apply(settingsService.Load().ColorTheme);
+            var settings = settingsService.Load();
+            LocalizationService.Initialize(settings.Language);
+            AppThemeService.Apply(settings.ColorTheme);
             var readerWindowService = new ReaderWindowService(settingsService);
             desktop.MainWindow = new MainWindow(GetStartupPath(desktop.Args), settingsService, readerWindowService);
         }

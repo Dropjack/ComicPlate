@@ -83,6 +83,7 @@ public sealed class SettingsServiceTests : IDisposable
             ReadingDirection = ReadingDirection.LeftToRight,
             ViewMode = ViewMode.DoublePage,
             ColorTheme = AppColorTheme.NightGraphite,
+            Language = AppLanguage.SimplifiedChinese,
             IsMagnifierEnabled = false,
         });
 
@@ -93,6 +94,7 @@ public sealed class SettingsServiceTests : IDisposable
         Assert.Equal(ReadingDirection.LeftToRight, loaded.ReadingDirection);
         Assert.Equal(ViewMode.DoublePage, loaded.ViewMode);
         Assert.Equal(AppColorTheme.NightGraphite, loaded.ColorTheme);
+        Assert.Equal(AppLanguage.SimplifiedChinese, loaded.Language);
         Assert.False(loaded.IsMagnifierEnabled);
     }
 

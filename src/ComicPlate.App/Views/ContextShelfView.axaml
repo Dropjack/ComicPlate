@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:ComicPlate.App.Localization"
              x:Class="ComicPlate.App.Views.ContextShelfView">
     <UserControl.Styles>
         <Style Selector="UserControl.mac-shell Border.context-shelf-surface">
@@ -99,7 +100,7 @@
                         <Button Command="{Binding ShowShelfCommand}"
                                 Classes="pane-toggle"
                                 Classes.active="{Binding IsShelfPaneActive}"
-                                ToolTip.Tip="Shelf">
+                                ToolTip.Tip="{loc:Loc Shelf.Title}">
                             <Viewbox Width="18" Height="18">
                                 <Canvas Width="24" Height="24">
                                     <Path Classes="navi-icon" Data="M4.5 19V5.5 M8 18.5v-13 M11.5 18.5v-13 M15 18.5 13.4 5.8 M18.8 18.5 17.2 6.2 M3.8 19h16.4" />
@@ -109,7 +110,7 @@
                         <Button Command="{Binding ShowHistoryCommand}"
                                 Classes="pane-toggle"
                                 Classes.active="{Binding IsHistoryPaneActive}"
-                                ToolTip.Tip="History">
+                                ToolTip.Tip="{loc:Loc Shelf.History}">
                             <Viewbox Width="18" Height="18">
                                 <Canvas Width="24" Height="24">
                                     <Path Classes="navi-icon" Data="M5.2 7.8a8 8 0 1 1 .1 8.5 M5.2 7.8V4.6 M5.2 7.8h3.3 M12 8.2v4.3l3 1.8" />
@@ -118,7 +119,7 @@
                         </Button>
                         <Button Command="{Binding LocateCurrentBookCommand}"
                                 Classes="pane-toggle"
-                                ToolTip.Tip="Locate in Shelf">
+                                ToolTip.Tip="{loc:Loc Shelf.LocateCurrent}">
                             <Viewbox Width="18" Height="18">
                                 <Canvas Width="24" Height="24">
                                     <Ellipse Classes="navi-icon" Width="12.4" Height="12.4" Canvas.Left="5.8" Canvas.Top="5.8" />
@@ -129,7 +130,7 @@
                         </Button>
                         <Button Command="{Binding NavigateUpCommand}"
                                 Classes="pane-toggle"
-                                ToolTip.Tip="Up One Level">
+                                ToolTip.Tip="{loc:Loc Shelf.UpOneLevel}">
                             <Viewbox Width="18" Height="18">
                                 <Canvas Width="24" Height="24">
                                     <Path Classes="navi-icon" Data="M4.5 19V6.8c0-.8.6-1.4 1.4-1.4h4.1l1.8 2.1h6.3c.8 0 1.4.6 1.4 1.4V19z M8.3 13.2 12 9.5l3.7 3.7 M12 9.5v6.2" />

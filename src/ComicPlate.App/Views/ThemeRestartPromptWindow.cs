@@ -2,14 +2,24 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using ComicPlate.App.Services;
 
 namespace ComicPlate.App.Views;
 
 public sealed class ThemeRestartPromptWindow : Window
 {
     public ThemeRestartPromptWindow()
+        : this(
+            LocalizationService.Current.GetString("Restart.Theme.Title"),
+            LocalizationService.Current.GetString("Restart.Theme.Message"))
     {
-        Title = "主题已调整";
+    }
+
+    public ThemeRestartPromptWindow(string titleText, string messageText)
+    {
+        var localization = LocalizationService.Current;
+
+        Title = titleText;
         Width = 380;
         Height = 190;
         MinWidth = 340;
@@ -20,7 +30,7 @@ public sealed class ThemeRestartPromptWindow : Window
 
         var title = new TextBlock
         {
-            Text = "主题已调整",
+            Text = titleText,
             FontSize = 18,
             FontWeight = FontWeight.SemiBold,
             Foreground = Brush("TextPrimary", Brushes.Black),
@@ -28,7 +38,7 @@ public sealed class ThemeRestartPromptWindow : Window
 
         var message = new TextBlock
         {
-            Text = "新的配色将在重启 ComicPlate 后生效。是否现在重启？",
+            Text = messageText,
             TextWrapping = TextWrapping.Wrap,
             Foreground = Brush("TextSecondary", Brushes.DimGray),
             Margin = new Thickness(0, 8, 0, 0),
@@ -36,7 +46,7 @@ public sealed class ThemeRestartPromptWindow : Window
 
         var restartButton = new Button
         {
-            Content = "重启",
+            Content = localization.GetString("Common.Restart"),
             MinWidth = 88,
             HorizontalContentAlignment = HorizontalAlignment.Center,
         };
@@ -44,7 +54,7 @@ public sealed class ThemeRestartPromptWindow : Window
 
         var laterButton = new Button
         {
-            Content = "稍后",
+            Content = localization.GetString("Common.Later"),
             MinWidth = 88,
             HorizontalContentAlignment = HorizontalAlignment.Center,
         };

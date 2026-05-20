@@ -141,13 +141,17 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public string ViewModeText => _readerState.ViewMode == ViewMode.DoublePage ? "双页" : "单页";
+    public string ViewModeText => _readerState.ViewMode == ViewMode.DoublePage
+        ? LocalizationService.Current.GetString("Reader.DoublePage")
+        : LocalizationService.Current.GetString("Reader.SinglePage");
 
     public bool IsSinglePageMode => _readerState.ViewMode == ViewMode.SinglePage;
 
     public bool IsDoublePageMode => _readerState.ViewMode == ViewMode.DoublePage;
 
-    public string ReadingDirectionText => _readerState.ReadingDirection == ReadingDirection.RightToLeft ? "RTL" : "LTR";
+    public string ReadingDirectionText => _readerState.ReadingDirection == ReadingDirection.RightToLeft
+        ? LocalizationService.Current.GetString("Reader.DirectionRightToLeft")
+        : LocalizationService.Current.GetString("Reader.DirectionLeftToRight");
 
     public bool IsLeftToRightReading => _readerState.ReadingDirection == ReadingDirection.LeftToRight;
 
@@ -159,7 +163,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     public double MagnifierScale => _readerMagnifierController.Scale;
 
-    public string MagnifierScaleText => $"{MagnifierScale:0.0}x";
+    public string MagnifierScaleText => LocalizationService.Current.Format("Reader.ZoomScale", MagnifierScale);
 
     public double MagnifiedReaderStripTranslateX =>
         ReaderStripTranslateX + _readerMagnifierController.ContentTranslateX;

@@ -140,7 +140,8 @@ public sealed class ReaderStripRefreshCoordinator : IDisposable
                     && !cancellationToken.IsCancellationRequested
                     && isItemVisible(item))
                 {
-                    item.StatusMessage = $"Could not display{Environment.NewLine}{item.Slot.Page.DisplayName}";
+                    item.StatusMessage =
+                        $"{LocalizationService.Current.GetString("Reader.ImageDisplayError")}{Environment.NewLine}{item.Slot.Page.DisplayName}";
                 }
             }
         }

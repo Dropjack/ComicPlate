@@ -1,9 +1,15 @@
 using ComicPlate.App.Services;
+using ComicPlate.Infrastructure.Persistence;
 
 namespace ComicPlate.Tests.Services;
 
 public sealed class FileAssociationServiceTests
 {
+    public FileAssociationServiceTests()
+    {
+        LocalizationService.Initialize(AppLanguage.English);
+    }
+
     [Fact]
     public void WindowsServiceExposesOnlySupportedArchiveFormats()
     {
@@ -100,7 +106,7 @@ public sealed class FileAssociationServiceTests
         var result = service.Associate(".cbr");
 
         Assert.False(result.Succeeded);
-        Assert.Contains("Windows 默认应用", result.Message);
+        Assert.Contains("Windows default apps", result.Message);
         Assert.Equal(
             "ComicPlate.cbr",
             registry.ReadDefaultValue(@"Software\Classes\.cbr"));

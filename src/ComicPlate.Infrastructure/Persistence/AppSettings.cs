@@ -16,6 +16,8 @@ public sealed record AppSettings
 
     public AppColorTheme ColorTheme { get; init; } = AppColorTheme.MistGreen;
 
+    public AppLanguage Language { get; init; } = AppLanguage.System;
+
     public int ProgressLimit { get; init; } = 500;
 
     public bool RestoreProgress { get; init; } = true;

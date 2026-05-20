@@ -9,14 +9,14 @@ public sealed class UnsupportedExplorerContextMenuService : IExplorerContextMenu
         return new ExplorerContextMenuState(
             false,
             false,
-            "当前平台不支持在 ComicPlate 内注册资源管理器右键菜单。");
+            LocalizationService.Current.GetString("ExplorerContextMenu.Status.PlatformUnsupported"));
     }
 
     public ExplorerContextMenuResult SetEnabled(bool isEnabled)
     {
         return new ExplorerContextMenuResult(
             false,
-            "当前平台不支持在 ComicPlate 内注册资源管理器右键菜单。");
+            LocalizationService.Current.GetString("ExplorerContextMenu.Status.PlatformUnsupported"));
     }
     public IReadOnlyList<ExplorerContextMenuOption> GetSupportedOptions()
     {
@@ -26,7 +26,7 @@ public sealed class UnsupportedExplorerContextMenuService : IExplorerContextMenu
                 format.DisplayName,
                 false,
                 false,
-                "当前平台不支持在 ComicPlate 内注册资源管理器右键菜单。"))
+                LocalizationService.Current.GetString("ExplorerContextMenu.Status.PlatformUnsupported")))
             .ToArray();
     }
 
@@ -34,6 +34,6 @@ public sealed class UnsupportedExplorerContextMenuService : IExplorerContextMenu
     {
         return new ExplorerContextMenuResult(
             false,
-            "当前平台不支持在 ComicPlate 内注册资源管理器右键菜单。");
+            LocalizationService.Current.GetString("ExplorerContextMenu.Status.PlatformUnsupported"));
     }
 }

@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:ComicPlate.App.Localization"
              x:Class="ComicPlate.App.Views.StartView">
     <Grid RowDefinitions="*,Auto,*"
           Background="{StaticResource BackgroundBase}"
@@ -20,7 +21,7 @@
                     Padding="12,10"
                     CornerRadius="6" />
             <Button Command="{Binding OpenContentCommand}"
-                    Content="Open Comics"
+                    Content="{loc:Loc Start.OpenComics}"
                     HorizontalAlignment="Stretch"
                     Padding="12,10"
                     CornerRadius="6" />

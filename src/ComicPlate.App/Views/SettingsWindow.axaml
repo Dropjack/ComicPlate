@@ -1,7 +1,8 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:ComicPlate.App.Localization"
         x:Class="ComicPlate.App.Views.SettingsWindow"
-        Title="设置"
+        Title="{loc:Loc Settings.Title}"
         Width="840"
         Height="620"
         MinWidth="700"
@@ -59,7 +60,7 @@
                 BorderThickness="0,0,1,0">
             <Grid RowDefinitions="Auto,*"
                   Margin="18,18,12,18">
-                <TextBlock Text="设置"
+                <TextBlock Text="{loc:Loc Settings.Title}"
                            FontSize="24"
                            FontWeight="SemiBold"
                            Foreground="{StaticResource SettingsTextBrush}"
@@ -69,27 +70,27 @@
                             Spacing="4">
                     <Button x:Name="StartupNavButton"
                             Classes="settings-nav selected"
-                            Content="启动与窗口"
+                            Content="{loc:Loc Settings.StartupAndWindow}"
                             Click="OnStartupNavClick" />
                     <Button x:Name="AppearanceNavButton"
                             Classes="settings-nav"
-                            Content="外观"
+                            Content="{loc:Loc Settings.Appearance}"
                             Click="OnAppearanceNavClick" />
                     <Button x:Name="ReadingNavButton"
                             Classes="settings-nav"
-                            Content="阅读"
+                            Content="{loc:Loc Settings.Reading}"
                             Click="OnReadingNavClick" />
                     <Button x:Name="DataNavButton"
                             Classes="settings-nav"
-                            Content="数据与缓存"
+                            Content="{loc:Loc Settings.DataAndCache}"
                             Click="OnDataNavClick" />
                     <Button x:Name="AssociationNavButton"
                             Classes="settings-nav"
-                            Content="文件关联"
+                            Content="{loc:Loc Settings.FileAssociations}"
                             Click="OnAssociationNavClick" />
                     <Button x:Name="ShortcutsNavButton"
                             Classes="settings-nav"
-                            Content="快捷键"
+                            Content="{loc:Loc Settings.Shortcuts}"
                             Click="OnShortcutsNavClick" />
                 </StackPanel>
             </Grid>
@@ -103,14 +104,14 @@
             <StackPanel x:Name="ContentStack"
                         Spacing="24"
                         HorizontalAlignment="Stretch">
-                <TextBlock Text="ComicPlate 设置"
+                <TextBlock Text="{loc:Loc Settings.Header}"
                            FontSize="28"
                            FontWeight="SemiBold"
                            Foreground="{StaticResource SettingsTextBrush}" />
 
                 <StackPanel x:Name="StartupSection"
                             Spacing="10">
-                    <TextBlock Text="启动与窗口"
+                    <TextBlock Text="{loc:Loc Settings.StartupAndWindow}"
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
@@ -126,10 +127,10 @@
                                   ColumnSpacing="16">
                                 <StackPanel Spacing="3"
                                             MinWidth="0">
-                                    <TextBlock Text="允许多开窗口"
+                                    <TextBlock Text="{loc:Loc Settings.AllowMultipleWindows.Label}"
                                                Foreground="{StaticResource SettingsTextBrush}"
                                                FontSize="15" />
-                                    <TextBlock Text="允许同时打开多个 ComicPlate 窗口。"
+                                    <TextBlock Text="{loc:Loc Settings.AllowMultipleWindows.Description}"
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
@@ -146,10 +147,10 @@
                                   ColumnSpacing="16">
                                 <StackPanel Spacing="3"
                                             MinWidth="0">
-                                    <TextBlock Text="恢复窗口大小和位置"
+                                    <TextBlock Text="{loc:Loc Settings.RestoreWindowPlacement.Label}"
                                                Foreground="{StaticResource SettingsTextBrush}"
                                                FontSize="15" />
-                                    <TextBlock Text="下次启动时恢复上次关闭时的窗口大小和位置。"
+                                    <TextBlock Text="{loc:Loc Settings.RestoreWindowPlacement.Description}"
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
@@ -164,7 +165,7 @@
 
                 <StackPanel x:Name="AppearanceSection"
                             Spacing="10">
-                    <TextBlock Text="外观"
+                    <TextBlock Text="{loc:Loc Settings.Appearance}"
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
@@ -173,35 +174,62 @@
                             BorderBrush="{StaticResource SettingsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4">
-                        <Grid x:Name="PaletteRow"
-                              ColumnDefinitions="*,Auto"
-                              Margin="16,14"
-                              ColumnSpacing="16">
-                            <StackPanel Spacing="3"
-                                        MinWidth="0">
-                                <TextBlock Text="配色方案"
-                                           Foreground="{StaticResource SettingsTextBrush}"
-                                           FontSize="15" />
-                                <TextBlock Text="影响左侧命令栏、Context Shelf、阅读区域、书名条和进度区。更改后重启生效。"
-                                           Foreground="{StaticResource SettingsMutedTextBrush}"
-                                           TextWrapping="Wrap" />
-                            </StackPanel>
-                            <ComboBox x:Name="ColorThemeComboBox"
-                                      Grid.Column="1"
-                                      Width="180"
-                                      VerticalAlignment="Center">
-                                <ComboBoxItem Content="雾绿" />
-                                <ComboBoxItem Content="冷灰蓝" />
-                                <ComboBoxItem Content="暖纸米色" />
-                                <ComboBoxItem Content="夜间石墨" />
-                            </ComboBox>
-                        </Grid>
+                        <StackPanel>
+                            <Grid x:Name="PaletteRow"
+                                  ColumnDefinitions="*,Auto"
+                                  Margin="16,14"
+                                  ColumnSpacing="16">
+                                <StackPanel Spacing="3"
+                                            MinWidth="0">
+                                    <TextBlock Text="{loc:Loc Settings.Theme.Label}"
+                                               Foreground="{StaticResource SettingsTextBrush}"
+                                               FontSize="15" />
+                                    <TextBlock Text="{loc:Loc Settings.Theme.Description}"
+                                               Foreground="{StaticResource SettingsMutedTextBrush}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                                <ComboBox x:Name="ColorThemeComboBox"
+                                          Grid.Column="1"
+                                          Width="180"
+                                          VerticalAlignment="Center">
+                                    <ComboBoxItem Content="{loc:Loc Settings.Theme.MistGreen}" />
+                                    <ComboBoxItem Content="{loc:Loc Settings.Theme.SlateBlue}" />
+                                    <ComboBoxItem Content="{loc:Loc Settings.Theme.WarmPaper}" />
+                                    <ComboBoxItem Content="{loc:Loc Settings.Theme.NightGraphite}" />
+                                </ComboBox>
+                            </Grid>
+                            <Border Height="1"
+                                    Background="{StaticResource SettingsBorderBrush}" />
+                            <Grid x:Name="LanguageRow"
+                                  ColumnDefinitions="*,Auto"
+                                  Margin="16,14"
+                                  ColumnSpacing="16">
+                                <StackPanel Spacing="3"
+                                            MinWidth="0">
+                                    <TextBlock x:Name="LanguageLabelText"
+                                               Foreground="{StaticResource SettingsTextBrush}"
+                                               FontSize="15" />
+                                    <TextBlock x:Name="LanguageDescriptionText"
+                                               Foreground="{StaticResource SettingsMutedTextBrush}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                                <ComboBox x:Name="LanguageComboBox"
+                                          Grid.Column="1"
+                                          Width="180"
+                                          VerticalAlignment="Center">
+                                    <ComboBoxItem />
+                                    <ComboBoxItem />
+                                    <ComboBoxItem />
+                                    <ComboBoxItem />
+                                </ComboBox>
+                            </Grid>
+                        </StackPanel>
                     </Border>
                 </StackPanel>
 
                 <StackPanel x:Name="ReadingSection"
                             Spacing="10">
-                    <TextBlock Text="阅读"
+                    <TextBlock Text="{loc:Loc Settings.Reading}"
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
@@ -216,13 +244,13 @@
                               ColumnSpacing="16">
                             <StackPanel Spacing="3"
                                         MinWidth="0">
-                                <TextBlock Text="放大镜"
+                                <TextBlock Text="{loc:Loc Settings.Magnifier.Label}"
                                            Foreground="{StaticResource SettingsTextBrush}"
                                            FontSize="15" />
-                                <TextBlock Text="按住 Z 放大 Reader 内的漫画内容；放大时滚轮调整倍率。"
+                                <TextBlock Text="{loc:Loc Settings.Magnifier.Description}"
                                            Foreground="{StaticResource SettingsMutedTextBrush}"
                                            TextWrapping="Wrap" />
-                                <TextBlock Text="Z - 放大"
+                                <TextBlock Text="{loc:Loc Settings.Magnifier.ShortcutHint}"
                                            Foreground="{StaticResource SettingsMutedTextBrush}"
                                            TextWrapping="Wrap" />
                             </StackPanel>
@@ -236,7 +264,7 @@
 
                 <StackPanel x:Name="DataSection"
                             Spacing="10">
-                    <TextBlock Text="数据与缓存"
+                    <TextBlock Text="{loc:Loc Settings.DataAndCache}"
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
@@ -252,16 +280,16 @@
                                   ColumnSpacing="16">
                                 <StackPanel Spacing="3"
                                             MinWidth="0">
-                                    <TextBlock Text="数据目录"
+                                    <TextBlock Text="{loc:Loc Settings.DataFolder.Label}"
                                                Foreground="{StaticResource SettingsTextBrush}"
                                                FontSize="15" />
-                                    <TextBlock Text="保存本机设置、阅读进度与缓存。"
+                                    <TextBlock Text="{loc:Loc Settings.DataFolder.Description}"
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
                                 <Button x:Name="DataFolderOpenButton"
                                         Grid.Column="1"
-                                        Content="打开"
+                                        Content="{loc:Loc Common.Open}"
                                         Width="86"
                                         Click="OnOpenDataFolderClick"
                                         VerticalAlignment="Center" />
@@ -274,10 +302,10 @@
                                   ColumnSpacing="16">
                                 <StackPanel Spacing="3"
                                             MinWidth="0">
-                                    <TextBlock Text="缩略图缓存"
+                                    <TextBlock Text="{loc:Loc Settings.ThumbnailCache.Label}"
                                                Foreground="{StaticResource SettingsTextBrush}"
                                                FontSize="15" />
-                                    <TextBlock Text="清理可重建的封面缩略图。"
+                                    <TextBlock Text="{loc:Loc Settings.ThumbnailCache.Description}"
                                                Foreground="{StaticResource SettingsMutedTextBrush}"
                                                TextWrapping="Wrap" />
                                     <TextBlock x:Name="ThumbnailCacheStatusText"
@@ -286,7 +314,7 @@
                                 </StackPanel>
                                 <Button x:Name="ThumbnailCacheClearButton"
                                         Grid.Column="1"
-                                        Content="清理"
+                                        Content="{loc:Loc Common.Clear}"
                                         Width="86"
                                         Click="OnClearThumbnailCacheClick"
                                         VerticalAlignment="Center" />
@@ -297,7 +325,7 @@
 
                 <StackPanel x:Name="AssociationSection"
                             Spacing="10">
-                    <TextBlock Text="文件关联"
+                    <TextBlock Text="{loc:Loc Settings.FileAssociations}"
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
@@ -308,7 +336,7 @@
                             CornerRadius="4">
                         <StackPanel Margin="16,14"
                                     Spacing="12">
-                            <TextBlock Text="这些关联不会自动启用。只有勾选后才会修改系统默认打开方式。"
+                            <TextBlock Text="{loc:Loc Settings.FileAssociations.Description}"
                                        Foreground="{StaticResource SettingsMutedTextBrush}"
                                        TextWrapping="Wrap" />
                             <UniformGrid x:Name="AssociationOptionsGrid"
@@ -331,7 +359,7 @@
 
                 <StackPanel x:Name="ExplorerContextMenuSection"
                             Spacing="10">
-                    <TextBlock Text="资源管理器右键菜单"
+                    <TextBlock Text="{loc:Loc Settings.ExplorerContextMenu.Title}"
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
@@ -342,10 +370,10 @@
                             CornerRadius="4">
                         <StackPanel Margin="16,14"
                                     Spacing="12">
-                            <TextBlock Text="将“在 ComicPlate 中打开”添加到资源管理器上下文菜单"
+                            <TextBlock Text="{loc:Loc Settings.ExplorerContextMenu.Description}"
                                        Foreground="{StaticResource SettingsMutedTextBrush}"
                                        TextWrapping="Wrap" />
-                            <TextBlock Text="在右键菜单中显示“在 ComicPlate 中打开”"
+                            <TextBlock Text="{loc:Loc Settings.ExplorerContextMenu.OptionDescription}"
                                        Foreground="{StaticResource SettingsMutedTextBrush}"
                                        TextWrapping="Wrap" />
                             <UniformGrid x:Name="ExplorerContextMenuOptionsGrid"
@@ -376,7 +404,7 @@
 
                 <StackPanel x:Name="ShortcutsSection"
                             Spacing="10">
-                    <TextBlock Text="快捷键"
+                    <TextBlock Text="{loc:Loc Settings.Shortcuts}"
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource SettingsTextBrush}" />
@@ -391,15 +419,15 @@
                               ColumnSpacing="16">
                             <StackPanel Spacing="3"
                                         MinWidth="0">
-                                <TextBlock Text="快捷键列表"
+                                <TextBlock Text="{loc:Loc Settings.Shortcuts.Label}"
                                            Foreground="{StaticResource SettingsTextBrush}"
                                            FontSize="15" />
-                                <TextBlock Text="快捷键会使用独立窗口显示。当前阶段先保留入口，不做编辑。"
+                                <TextBlock Text="{loc:Loc Settings.Shortcuts.Description}"
                                            Foreground="{StaticResource SettingsMutedTextBrush}"
                                            TextWrapping="Wrap" />
                             </StackPanel>
                             <Button Grid.Column="1"
-                                    Content="打开"
+                                    Content="{loc:Loc Common.Open}"
                                     Width="86"
                                     Click="OnOpenShortcutsClick"
                                     VerticalAlignment="Center" />

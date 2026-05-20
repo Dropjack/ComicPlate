@@ -1,6 +1,7 @@
 using ComicPlate.Core.Books;
 using ComicPlate.Core.Navigation;
 using ComicPlate.Core.Reading;
+using ComicPlate.App.Services;
 using ComicPlate.Infrastructure.Persistence;
 
 namespace ComicPlate.App.Controllers;
@@ -26,8 +27,8 @@ public sealed class ReadingSessionController
     public bool CanOpenLastReadingPosition => _lastSession.Current is not null;
 
     public string LastReadingPositionText => _lastSession.Current is null
-        ? "Continue Reading"
-        : $"Continue Reading \"{_lastSession.Current.DisplayName}\"";
+        ? LocalizationService.Current.GetString("Start.ContinueReading")
+        : LocalizationService.Current.Format("Start.ContinueReadingWithTitle", _lastSession.Current.DisplayName);
 
     public ProgressEntry? FindProgress(string bookPath)
     {

@@ -1,4 +1,5 @@
-﻿using ComicPlate.App.Controllers;
+using ComicPlate.App.Controllers;
+using ComicPlate.App.Services;
 using ComicPlate.Core.Books;
 using ComicPlate.Core.Navigation;
 using ComicPlate.Core.Reading;
@@ -12,6 +13,7 @@ public sealed class ReadingSessionControllerTests : IDisposable
 
     public ReadingSessionControllerTests()
     {
+        LocalizationService.Initialize(AppLanguage.English);
         Directory.CreateDirectory(_rootPath);
     }
 

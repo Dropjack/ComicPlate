@@ -34,15 +34,17 @@ public sealed class WindowsFileAssociationService : IFileAssociationService
             _ => true,
             IsAssociated,
             extension => IsAssociated(extension)
-                ? "已关联到 ComicPlate。"
-                : "未关联。");
+                ? LocalizationService.Current.GetString("FileAssociation.Status.Associated")
+                : LocalizationService.Current.GetString("FileAssociation.Status.NotAssociated"));
     }
 
     public FileAssociationResult Associate(string extension)
     {
         if (!ComicArchiveFormats.TryGetByExtension(extension, out var format))
         {
-            return new FileAssociationResult(false, "不支持的文件格式。");
+            return new FileAssociationResult(
+                false,
+                LocalizationService.Current.GetString("FileAssociation.Error.UnsupportedFormat"));
         }
 
         try
@@ -50,12 +52,20 @@ public sealed class WindowsFileAssociationService : IFileAssociationService
             var progId = GetProgId(format);
             WriteAssociation(format, progId);
             return IsAssociated(format.Extension)
-                ? new FileAssociationResult(true, $"{format.DisplayName} 已关联到 ComicPlate。")
-                : new FileAssociationResult(false, $"{format.DisplayName} 已注册；请在 Windows 默认应用中确认 ComicPlate。");
+                ? new FileAssociationResult(
+                    true,
+                    LocalizationService.Current.Format("FileAssociation.Result.Associated", format.DisplayName))
+                : new FileAssociationResult(
+                    false,
+                    LocalizationService.Current.Format(
+                        "FileAssociation.Result.RegisteredNeedsWindowsConfirmation",
+                        format.DisplayName));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
-            return new FileAssociationResult(false, "文件关联失败，请检查系统权限。");
+            return new FileAssociationResult(
+                false,
+                LocalizationService.Current.GetString("FileAssociation.Error.AssociationFailed"));
         }
     }
 
@@ -63,19 +73,29 @@ public sealed class WindowsFileAssociationService : IFileAssociationService
     {
         if (!ComicArchiveFormats.TryGetByExtension(extension, out var format))
         {
-            return new FileAssociationResult(false, "不支持的文件格式。");
+            return new FileAssociationResult(
+                false,
+                LocalizationService.Current.GetString("FileAssociation.Error.UnsupportedFormat"));
         }
 
         try
         {
             RemoveAssociation(format);
             return IsAssociated(format.Extension)
-                ? new FileAssociationResult(false, $"{format.DisplayName} 仍由 Windows 默认应用设置关联到 ComicPlate；请在 Windows 默认应用中取消。")
-                : new FileAssociationResult(true, $"{format.DisplayName} 已取消 ComicPlate 关联。");
+                ? new FileAssociationResult(
+                    false,
+                    LocalizationService.Current.Format(
+                        "FileAssociation.Result.StillAssociatedByWindows",
+                        format.DisplayName))
+                : new FileAssociationResult(
+                    true,
+                    LocalizationService.Current.Format("FileAssociation.Result.Disassociated", format.DisplayName));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
-            return new FileAssociationResult(false, "取消文件关联失败，请检查系统权限或 Windows 默认应用设置。");
+            return new FileAssociationResult(
+                false,
+                LocalizationService.Current.GetString("FileAssociation.Error.DisassociationFailed"));
         }
     }
 
@@ -101,8 +121,13 @@ public sealed class WindowsFileAssociationService : IFileAssociationService
         var commandKey = $@"{progIdKey}\shell\open\command";
 
         _registry.WriteDefaultValue(extensionKey, progId);
-        _registry.WriteDefaultValue(progIdKey, $"{ApplicationName} {format.DisplayName} File");
-        _registry.WriteValue(progIdKey, "FriendlyTypeName", $"{format.DisplayName} 漫画压缩包");
+        _registry.WriteDefaultValue(
+            progIdKey,
+            LocalizationService.Current.Format("FileAssociation.Windows.ProgIdDescription", format.DisplayName));
+        _registry.WriteValue(
+            progIdKey,
+            "FriendlyTypeName",
+            LocalizationService.Current.Format("FileAssociation.Windows.FriendlyTypeName", format.DisplayName));
         _registry.WriteDefaultValue(defaultIconKey, CreateIconReference());
         _registry.WriteDefaultValue(commandKey, CreateOpenCommand());
     }
