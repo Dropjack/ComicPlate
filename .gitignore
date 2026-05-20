@@ -17,3 +17,8 @@ ComicPlate.exe
 *.dmg
 *.msi
 *.app/
+!src/ComicPlate.App/
+!src/ComicPlate.App/**
+src/ComicPlate.App/artifacts/
+src/ComicPlate.App/bin/
+src/ComicPlate.App/obj/
