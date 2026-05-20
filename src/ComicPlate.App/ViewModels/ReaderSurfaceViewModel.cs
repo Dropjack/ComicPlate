@@ -11,11 +11,6 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 {
     private const int NeighborPageLimit = 5;
     private const int ReaderViewportResizeCommitDelayMilliseconds = 140;
-    private const double MagnifierDefaultScale = 1.5;
-    private const double MagnifierMinimumScale = 1.5;
-    private const double MagnifierMaximumScale = 2.5;
-    private const double MagnifierPointerSensitivity = 1.15;
-    private const double MagnifierWheelScaleStep = 0.05;
     private const double ReaderFrameVerticalPadding = 0;
     private const double ReaderViewportSizeEpsilon = 0.5;
     private const double ReaderTransitionDistanceRatio = 0.32;
@@ -25,6 +20,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     private readonly PageImageInfoLoader _pageImageInfoLoader = new();
     private readonly ReaderFrameBuilder _readerFrameBuilder = new();
     private readonly ReaderImageCache _readerImageCache;
+    private readonly ReaderMagnifierController _readerMagnifierController = new();
     private readonly ReaderState _readerState = new();
     private readonly ReaderStripController _readerStripController = new(NeighborPageLimit);
     private IReadOnlyList<PageImageInfo> _pageImageInfos = Array.Empty<PageImageInfo>();
@@ -42,13 +38,6 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     private CancellationTokenSource? _readerViewportRefreshCts;
     private double _readerTransitionStartOffset;
     private double _readerTransitionOffset;
-    private double _magnifierScale = MagnifierDefaultScale;
-    private double _magnifierContentTranslateX;
-    private double _magnifierContentTranslateY;
-    private double _magnifierPointerX;
-    private double _magnifierPointerY;
-    private bool _isMagnifierActive;
-    private bool _isMagnifierEnabled = true;
     private DateTimeOffset _readerTransitionStartedAt;
 
     public ReaderSurfaceViewModel(
@@ -58,7 +47,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         bool isMagnifierEnabled = true)
     {
         _readerImageCache = readerImageCache;
-        _isMagnifierEnabled = isMagnifierEnabled;
+        _readerMagnifierController.SetEnabled(isMagnifierEnabled);
         _readerState.SetReadingDirection(initialReadingDirection);
         _readerState.SetViewMode(initialViewMode);
         _readerTransitionTimer = new DispatcherTimer
@@ -165,17 +154,18 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     public bool IsRightToLeftReading => _readerState.ReadingDirection == ReadingDirection.RightToLeft;
 
-    public bool IsMagnifierEnabled => _isMagnifierEnabled;
+    public bool IsMagnifierEnabled => _readerMagnifierController.IsEnabled;
 
-    public bool IsMagnifierActive => _isMagnifierActive;
+    public bool IsMagnifierActive => _readerMagnifierController.IsActive;
 
-    public double MagnifierScale => _isMagnifierActive ? _magnifierScale : 1.0;
+    public double MagnifierScale => _readerMagnifierController.Scale;
 
     public string MagnifierScaleText => $"{MagnifierScale:0.0}x";
 
-    public double MagnifiedReaderStripTranslateX => ReaderStripTranslateX + _magnifierContentTranslateX;
+    public double MagnifiedReaderStripTranslateX =>
+        ReaderStripTranslateX + _readerMagnifierController.ContentTranslateX;
 
-    public double MagnifierContentTranslateY => _magnifierContentTranslateY;
+    public double MagnifierContentTranslateY => _readerMagnifierController.ContentTranslateY;
 
     public string CurrentLogicalPath
     {
@@ -191,7 +181,13 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     public void SetMagnifierEnabled(bool isEnabled)
     {
-        if (SetProperty(ref _isMagnifierEnabled, isEnabled, nameof(IsMagnifierEnabled)) && !isEnabled)
+        if (!_readerMagnifierController.SetEnabled(isEnabled))
+        {
+            return;
+        }
+
+        OnPropertyChanged(nameof(IsMagnifierEnabled));
+        if (!isEnabled)
         {
             EndMagnifier();
         }
@@ -247,14 +243,13 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     public bool BeginMagnifier()
     {
-        if (!_isMagnifierEnabled || !_readerState.HasPages)
+        if (!_readerMagnifierController.Begin(_readerState.HasPages, out var activationChanged))
         {
             return false;
         }
 
-        if (!_isMagnifierActive)
+        if (activationChanged)
         {
-            _isMagnifierActive = true;
             OnPropertyChanged(nameof(IsMagnifierActive));
             OnPropertyChanged(nameof(MagnifierScale));
             OnPropertyChanged(nameof(MagnifierScaleText));
@@ -266,14 +261,11 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     public void EndMagnifier()
     {
-        if (!_isMagnifierActive)
+        if (!_readerMagnifierController.End())
         {
             return;
         }
 
-        _isMagnifierActive = false;
-        _magnifierContentTranslateX = 0;
-        _magnifierContentTranslateY = 0;
         OnPropertyChanged(nameof(IsMagnifierActive));
         OnPropertyChanged(nameof(MagnifierScale));
         OnPropertyChanged(nameof(MagnifierScaleText));
@@ -283,15 +275,12 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     public void UpdateMagnifierPointer(double x, double y)
     {
-        _magnifierPointerX = ProjectMagnifierPointer(
+        _readerMagnifierController.UpdatePointer(
             x,
-            _readerStripController.ViewportWidth,
-            MagnifierPointerSensitivity);
-        _magnifierPointerY = ProjectMagnifierPointer(
             y,
-            _readerStripController.ViewportHeight,
-            MagnifierPointerSensitivity);
-        if (_isMagnifierActive)
+            _readerStripController.ViewportWidth,
+            _readerStripController.ViewportHeight);
+        if (_readerMagnifierController.IsActive)
         {
             UpdateMagnifierTransform();
         }
@@ -299,24 +288,18 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     public bool AdjustMagnifierScale(double wheelDelta)
     {
-        if (!_isMagnifierActive)
+        if (!_readerMagnifierController.AdjustScale(wheelDelta, out var scaleChanged))
         {
             return false;
         }
 
-        var nextScale = Math.Clamp(
-            _magnifierScale + (wheelDelta * MagnifierWheelScaleStep),
-            MagnifierMinimumScale,
-            MagnifierMaximumScale);
-        if (Math.Abs(nextScale - _magnifierScale) <= 0.001)
+        if (scaleChanged)
         {
-            return true;
+            OnPropertyChanged(nameof(MagnifierScale));
+            OnPropertyChanged(nameof(MagnifierScaleText));
+            UpdateMagnifierTransform();
         }
 
-        _magnifierScale = nextScale;
-        OnPropertyChanged(nameof(MagnifierScale));
-        OnPropertyChanged(nameof(MagnifierScaleText));
-        UpdateMagnifierTransform();
         return true;
     }
 
@@ -954,7 +937,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     private void UpdateReaderStripTransform()
     {
         OnPropertyChanged(nameof(ReaderStripTranslateX));
-        if (_isMagnifierActive)
+        if (_readerMagnifierController.IsActive)
         {
             UpdateMagnifierTransform();
         }
@@ -966,47 +949,30 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     private void UpdateMagnifierTransform()
     {
-        if (!_isMagnifierActive)
+        if (!_readerMagnifierController.IsActive)
         {
             return;
         }
 
-        var scale = _magnifierScale;
         var normalLeft = ReaderStripTranslateX;
-        var contentXUnderPointer = _magnifierPointerX - normalLeft;
-        var contentYUnderPointer = _magnifierPointerY;
-        var desiredLeft = _magnifierPointerX - (contentXUnderPointer * scale);
-        var desiredTop = _magnifierPointerY - (contentYUnderPointer * scale);
-        var bounds = GetReaderContentBounds();
-
-        var clampedLeft = ClampScaledOffset(
-            desiredLeft,
+        _readerMagnifierController.UpdateTransform(
+            normalLeft,
             _readerStripController.ViewportWidth,
-            bounds.Left,
-            bounds.Right,
-            scale);
-        var clampedTop = ClampScaledOffset(
-            desiredTop,
             _readerStripController.ViewportHeight,
-            bounds.Top,
-            bounds.Bottom,
-            scale);
-
-        _magnifierContentTranslateX = clampedLeft - normalLeft;
-        _magnifierContentTranslateY = clampedTop;
+            GetReaderContentBounds());
         OnPropertyChanged(nameof(MagnifiedReaderStripTranslateX));
         OnPropertyChanged(nameof(MagnifierContentTranslateY));
     }
 
     private void ClampMagnifier()
     {
-        if (_isMagnifierActive)
+        if (_readerMagnifierController.IsActive)
         {
             UpdateMagnifierTransform();
         }
     }
 
-    private ReaderContentBounds GetReaderContentBounds()
+    private ReaderMagnifierContentBounds GetReaderContentBounds()
     {
         var right = _readerStripController.LayoutSlots.Count == 0
             ? _readerStripController.ViewportWidth
@@ -1015,48 +981,12 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             ? _readerStripController.ViewportHeight
             : ReaderStripItems.Max(item => item.DisplayHeight);
 
-        return new ReaderContentBounds(
+        return new ReaderMagnifierContentBounds(
             0,
             0,
             Math.Max(1, right),
             Math.Max(1, bottom));
     }
-
-    private static double ClampScaledOffset(
-        double desiredOffset,
-        double viewportExtent,
-        double contentStart,
-        double contentEnd,
-        double scale)
-    {
-        var scaledContentStart = contentStart * scale;
-        var scaledContentEnd = contentEnd * scale;
-        var scaledContentExtent = scaledContentEnd - scaledContentStart;
-        if (scaledContentExtent <= viewportExtent)
-        {
-            return ((viewportExtent - scaledContentExtent) / 2) - scaledContentStart;
-        }
-
-        var minimumOffset = viewportExtent - scaledContentEnd;
-        var maximumOffset = -scaledContentStart;
-        return Math.Clamp(desiredOffset, minimumOffset, maximumOffset);
-    }
-
-    private static double ProjectMagnifierPointer(double pointer, double viewportExtent, double sensitivity)
-    {
-        var clampedPointer = Math.Clamp(pointer, 0, Math.Max(0, viewportExtent));
-        var center = viewportExtent / 2;
-        return Math.Clamp(
-            center + ((clampedPointer - center) * sensitivity),
-            0,
-            Math.Max(0, viewportExtent));
-    }
-
-    private readonly record struct ReaderContentBounds(
-        double Left,
-        double Top,
-        double Right,
-        double Bottom);
 
     private int GetReaderTransitionDirection(int previousPageIndex, int targetPageIndex)
     {
