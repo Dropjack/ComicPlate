@@ -26,6 +26,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private string _readerTitle = "";
     private string _shelfTitle = "";
     private bool _isNavigationPaneVisible = true;
+    private bool _isNavigationPaneAvailable;
     private bool _isReaderVisible;
     private bool _isStartVisible = true;
     private bool _isLoading;
@@ -52,9 +53,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         ContextShelf = new ContextShelfViewModel(ActivateContentItemAsync);
 
         OpenContentCommand = new AsyncRelayCommand(OpenContentAsync, () => !IsLoading);
+        OpenFolderCommand = new AsyncRelayCommand(OpenFolderAsync, () => !IsLoading);
         OpenLastReadingPositionCommand = new RelayCommand(OpenLastReadingPosition, () => CanOpenLastReadingPosition);
         ShowStartCommand = new RelayCommand(ShowStart);
-        ToggleNavigationPaneCommand = new RelayCommand(ToggleNavigationPane);
+        ToggleNavigationPaneCommand = new RelayCommand(ToggleNavigationPane, () => IsNavigationPaneAvailable && !IsLoading);
         NavigateUpCommand = new RelayCommand(NavigateUp, () => CanNavigateUp);
         ShowShelfCommand = new RelayCommand(ShowShelfPane);
         ShowHistoryCommand = new RelayCommand(ShowHistoryPane);
@@ -66,6 +68,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     public ReaderSurfaceViewModel Reader { get; }
 
     public ICommand OpenContentCommand { get; }
+
+    public ICommand OpenFolderCommand { get; }
 
     public RelayCommand OpenLastReadingPositionCommand { get; }
 
@@ -132,7 +136,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool IsHistoryPaneActive => _navigationPaneMode == NavigationPaneMode.History;
 
-    public bool CanLocateCurrentBookInShelf => CurrentBook is not null && IsReaderVisible && !IsLoading;
+    public bool CanLocateCurrentBookInShelf =>
+        CurrentBook is not null && IsReaderVisible && IsNavigationPaneAvailable && !IsLoading;
 
     public bool IsStartVisible
     {
@@ -170,9 +175,21 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         ? LocalizationService.Current.GetString("Shelf.Hide")
         : LocalizationService.Current.GetString("Shelf.Show");
 
+    public bool IsNavigationPaneAvailable
+    {
+        get => _isNavigationPaneAvailable;
+        private set
+        {
+            if (SetProperty(ref _isNavigationPaneAvailable, value))
+            {
+                OnPropertyChanged(nameof(IsReaderNavigationPaneVisible));
+            }
+        }
+    }
+
     public bool IsNavigationPaneHidden => !IsNavigationPaneVisible;
 
-    public bool IsReaderNavigationPaneVisible => IsReaderVisible && IsNavigationPaneVisible;
+    public bool IsReaderNavigationPaneVisible => IsReaderVisible && IsNavigationPaneVisible && IsNavigationPaneAvailable;
 
     public bool CanNavigateUp => IsShelfPaneActive && _readingSession.CanNavigateUp && !IsLoading;
 
@@ -200,12 +217,15 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         ShowReader();
-        await OpenPathAsSessionStartAsync(path);
+        await OpenPathAsSessionStartAsync(path, OpenPathContextMode.CollectionContext);
     }
 
     public bool MoveNavigationSelection(int delta, bool allowHiddenNavigationPane = false)
     {
-        if (!IsReaderVisible || (!allowHiddenNavigationPane && !IsNavigationPaneVisible) || IsLoading)
+        if (!IsReaderVisible
+            || !IsNavigationPaneAvailable
+            || (!allowHiddenNavigationPane && !IsNavigationPaneVisible)
+            || IsLoading)
         {
             return false;
         }
@@ -232,6 +252,17 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private async Task OpenContentAsync()
     {
+        var filePath = await _folderPickerService.PickComicFileAsync();
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            return;
+        }
+
+        await OpenPathAsSessionStartAsync(filePath, OpenPathContextMode.CollectionContext);
+    }
+
+    private async Task OpenFolderAsync()
+    {
         var folderPath = await _folderPickerService.PickFolderAsync();
         if (string.IsNullOrWhiteSpace(folderPath))
         {
@@ -246,7 +277,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
         try
         {
-            await OpenPathAsSessionStartAsync(folderPath);
+            await OpenPathAsSessionStartAsync(folderPath, OpenPathContextMode.CollectionContext);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -258,6 +289,21 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         {
             IsLoading = false;
         }
+    }
+
+    public async Task OpenDroppedPathsAsync(IEnumerable<string> paths)
+    {
+        var supportedPath = paths.FirstOrDefault(IsSupportedOpenPath);
+        if (string.IsNullOrWhiteSpace(supportedPath))
+        {
+            ShowReader();
+            Reader.ClearPages();
+            ClearCollectionShelfItems();
+            SetMessageKey("Status.FileTypeUnsupported");
+            return;
+        }
+
+        await OpenPathAsSessionStartAsync(supportedPath, OpenPathContextMode.StandaloneFile);
     }
 
     public void SaveCurrentState()
@@ -344,6 +390,32 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         RaiseCommandStates();
         await OpenBookAsync(book, persistBeforeOpen: false);
         await OpenCurrentCollectionShelfAsync();
+    }
+
+    private async Task StartAtBookWithCollectionContextAsync(BookEntry book)
+    {
+        PersistCurrentReadingState(deleteCompletedProgress: true);
+        var parentPath = Path.GetDirectoryName(Path.GetFullPath(book.Path));
+        if (string.IsNullOrWhiteSpace(parentPath))
+        {
+            await StartAtBookAsync(book);
+            return;
+        }
+
+        _readingSession.StartAtContentFolder(parentPath);
+        RaiseCommandStates();
+        await OpenBookAsync(book, persistBeforeOpen: false);
+        await OpenCollectionShelfAsync(parentPath, book.Path);
+    }
+
+    private async Task StartAtStandaloneBookAsync(BookEntry book)
+    {
+        PersistCurrentReadingState(deleteCompletedProgress: true);
+        _readingSession.StartAtBook(book);
+        RaiseCommandStates();
+        await OpenBookAsync(book, persistBeforeOpen: false);
+        ClearCollectionShelfItems();
+        IsNavigationPaneVisible = false;
     }
 
     private async Task LoadContentFolderAsync(
@@ -482,8 +554,9 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         await OpenBookAsync(book);
     }
 
-    private async Task OpenPathAsSessionStartAsync(string path)
+    private async Task OpenPathAsSessionStartAsync(string path, OpenPathContextMode contextMode)
     {
+        ShowReader();
         IsLoading = true;
         SetMessageKey("Status.LoadingContents");
 
@@ -498,7 +571,15 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
             if (result.Kind == OpenPathKind.Book && result.Book is not null)
             {
-                await StartAtBookAsync(result.Book);
+                if (contextMode == OpenPathContextMode.StandaloneFile)
+                {
+                    await StartAtStandaloneBookAsync(result.Book);
+                }
+                else
+                {
+                    await StartAtBookWithCollectionContextAsync(result.Book);
+                }
+
                 return;
             }
 
@@ -535,6 +616,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void ToggleNavigationPane()
     {
+        if (!IsNavigationPaneAvailable || IsLoading)
+        {
+            return;
+        }
+
         IsNavigationPaneVisible = !IsNavigationPaneVisible;
     }
 
@@ -657,6 +743,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         _collectionShelfRootPath = "";
         _collectionShelfEntries = Array.Empty<ShelfEntry>();
         _navigationHighlightPath = null;
+        IsNavigationPaneAvailable = false;
         if (IsShelfPaneActive)
         {
             ContextShelf.ReplaceItems(Array.Empty<ShelfEntry>());
@@ -707,6 +794,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         ShelfTitle = string.IsNullOrWhiteSpace(_collectionShelfRootPath)
             ? LocalizationService.Current.GetString("Shelf.Title")
             : Path.GetFileName(_collectionShelfRootPath);
+        IsNavigationPaneAvailable = true;
+        IsNavigationPaneVisible = true;
         ContextShelf.ReplaceItems(_collectionShelfEntries);
         UpdateContextShelfVisualState();
         _ = ContextShelf.LoadThumbnailsAsync();
@@ -743,9 +832,32 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             openContentCommand.RaiseCanExecuteChanged();
         }
 
+        if (OpenFolderCommand is AsyncRelayCommand openFolderCommand)
+        {
+            openFolderCommand.RaiseCanExecuteChanged();
+        }
+
+        if (ToggleNavigationPaneCommand is RelayCommand toggleNavigationPaneCommand)
+        {
+            toggleNavigationPaneCommand.RaiseCanExecuteChanged();
+        }
+
         OpenLastReadingPositionCommand.RaiseCanExecuteChanged();
         NavigateUpCommand.RaiseCanExecuteChanged();
         LocateCurrentBookCommand.RaiseCanExecuteChanged();
+    }
+
+    private bool IsSupportedOpenPath(string path)
+    {
+        try
+        {
+            var result = _contentOpenService.ClassifyPath(path);
+            return result.Kind is OpenPathKind.ContentFolder or OpenPathKind.Book;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            return false;
+        }
     }
 
     private bool CollectionShelfContains(BookEntry book)
@@ -767,5 +879,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     {
         Shelf,
         History
+    }
+
+    private enum OpenPathContextMode
+    {
+        CollectionContext,
+        StandaloneFile
     }
 }

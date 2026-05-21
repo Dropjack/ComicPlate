@@ -44,6 +44,17 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
                 archiveFormat.SourceKind);
         }
 
+        foreach (var image in EnumeratePageFiles(_rootPath, cancellationToken))
+        {
+            var fullPath = Path.GetFullPath(image);
+            yield return new ShelfEntry(
+                fullPath,
+                Path.GetFileName(fullPath),
+                ShelfEntryKind.Book,
+                fullPath,
+                BookSourceKind.Image);
+        }
+
         foreach (var childDirectory in EnumerateDirectories(_rootPath, cancellationToken))
         {
             var fullPath = Path.GetFullPath(childDirectory);
@@ -90,8 +101,7 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
 
     private static bool ContainsDirectPageFiles(string directory, CancellationToken cancellationToken)
     {
-        return EnumerateFiles(directory, cancellationToken)
-            .Any(file => SupportedPageFormats.IsSupportedExtension(Path.GetExtension(file)));
+        return EnumeratePageFiles(directory, cancellationToken).Any();
     }
 
     private static bool ContainsChildContentCandidates(string directory, CancellationToken cancellationToken)
@@ -103,6 +113,12 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
     private static IEnumerable<string> EnumerateFiles(string directory, CancellationToken cancellationToken)
     {
         return EnumerateSafe(directory, Directory.EnumerateFiles, cancellationToken);
+    }
+
+    private static IEnumerable<string> EnumeratePageFiles(string directory, CancellationToken cancellationToken)
+    {
+        return EnumerateFiles(directory, cancellationToken)
+            .Where(file => SupportedPageFormats.IsSupportedExtension(Path.GetExtension(file)));
     }
 
     private static IEnumerable<string> EnumerateSafe(

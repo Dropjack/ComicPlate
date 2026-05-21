@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Reflection;
 using System.Text.Json;
 using ComicPlate.Infrastructure.Persistence;
 
@@ -99,7 +100,7 @@ public sealed class LocalizationService
         var path = Path.Combine(directory, $"{languageTag}.json");
         if (!File.Exists(path))
         {
-            return new Dictionary<string, string>();
+            return LoadEmbeddedLanguageFile(languageTag);
         }
 
         try
@@ -109,6 +110,29 @@ public sealed class LocalizationService
                 ?? new Dictionary<string, string>();
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return new Dictionary<string, string>();
+        }
+    }
+
+    private static IReadOnlyDictionary<string, string> LoadEmbeddedLanguageFile(string languageTag)
+    {
+        var resourceName = $"ComicPlate.Localization.{languageTag}.json";
+        var assembly = typeof(LocalizationService).Assembly;
+        using var stream = assembly.GetManifestResourceStream(resourceName);
+        if (stream is null)
+        {
+            return new Dictionary<string, string>();
+        }
+
+        try
+        {
+            using var reader = new StreamReader(stream);
+            var json = reader.ReadToEnd();
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(json)
+                ?? new Dictionary<string, string>();
+        }
+        catch (JsonException)
         {
             return new Dictionary<string, string>();
         }

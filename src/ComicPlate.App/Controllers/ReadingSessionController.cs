@@ -10,6 +10,7 @@ public sealed class ReadingSessionController
 {
     private readonly JsonAppStateStore _stateStore;
     private readonly NavigationHistory _navigationHistory = new();
+    private readonly NavigationHistory _readingParentHistory = new();
     private SessionState _lastSession;
 
     public ReadingSessionController(JsonAppStateStore stateStore)
@@ -79,15 +80,13 @@ public sealed class ReadingSessionController
     public void StartAtContentFolder(string folderPath)
     {
         _navigationHistory.StartAt(CreateNavigationEntry(folderPath, BookSourceKind.Collection));
+        CaptureReadingParentHistory();
     }
 
     public void StartAtBook(BookEntry book)
     {
-        var parent = CreateParentCollectionEntry(book.Path);
-        if (parent is not null)
-        {
-            _navigationHistory.StartAt(parent);
-        }
+        _navigationHistory.Clear();
+        _readingParentHistory.Clear();
     }
 
     public void NavigateToContentFolder(string folderPath)
@@ -99,6 +98,7 @@ public sealed class ReadingSessionController
     {
         if (_navigationHistory.Current is not null)
         {
+            CaptureReadingParentHistory();
             return;
         }
 
@@ -110,6 +110,7 @@ public sealed class ReadingSessionController
         var previous = _navigationHistory.NavigateUp();
         if (previous is not null)
         {
+            CaptureReadingParentHistory();
             return previous;
         }
 
@@ -120,6 +121,7 @@ public sealed class ReadingSessionController
         }
 
         _navigationHistory.ReplaceCurrent(parent);
+        CaptureReadingParentHistory();
         return parent;
     }
 
@@ -137,7 +139,7 @@ public sealed class ReadingSessionController
                 ? _lastSession.ReadingParentShelfCurrent
                 : _lastSession.ReadingShelfCurrent?.SourceKind == BookSourceKind.Collection
                     ? _lastSession.ReadingShelfCurrent
-                    : CreateParentCollectionEntry(current.Path);
+                    : null;
         if (parentCollection is not null)
         {
             var backStack = _lastSession.ReadingParentCollectionBackStack.Count > 0
@@ -146,7 +148,13 @@ public sealed class ReadingSessionController
                     ? _lastSession.ReadingParentShelfBackStack
                     : _lastSession.ReadingShelfBackStack;
             _navigationHistory.Restore(parentCollection, backStack);
+            _readingParentHistory.Restore(parentCollection, backStack);
         }
+        else
+        {
+            _readingParentHistory.Clear();
+        }
+
         return current;
     }
 
@@ -170,7 +178,7 @@ public sealed class ReadingSessionController
             pageCount,
             readingDirection,
             viewMode,
-            _navigationHistory,
+            _readingParentHistory.Current is not null ? _readingParentHistory : _navigationHistory,
             deleteCompletedProgress);
 
         _lastSession = _stateStore.LoadSession();
@@ -196,5 +204,16 @@ public sealed class ReadingSessionController
         return string.IsNullOrWhiteSpace(parentPath)
             ? null
             : CreateNavigationEntry(parentPath, BookSourceKind.Collection);
+    }
+
+    private void CaptureReadingParentHistory()
+    {
+        if (_navigationHistory.Current is null)
+        {
+            _readingParentHistory.Clear();
+            return;
+        }
+
+        _readingParentHistory.Restore(_navigationHistory.Current, _navigationHistory.BackStack);
     }
 }

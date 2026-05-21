@@ -15,6 +15,12 @@ public sealed class NavigationHistory
         .Reverse()
         .ToArray();
 
+    public void Clear()
+    {
+        _backStack.Clear();
+        Current = null;
+    }
+
     public void StartAt(NavigationEntry entry)
     {
         _backStack.Clear();
