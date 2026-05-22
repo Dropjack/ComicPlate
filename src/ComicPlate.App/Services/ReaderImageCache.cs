@@ -1,4 +1,5 @@
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using ComicPlate.Core.Books;
 
 namespace ComicPlate.App.Services;
@@ -6,17 +7,26 @@ namespace ComicPlate.App.Services;
 public sealed class ReaderImageCache : IDisposable
 {
     public const long DefaultBudgetBytes = 384L * 1024 * 1024;
+    private static readonly TimeSpan RetiredImageDisposeDelay = TimeSpan.FromSeconds(2);
 
     private readonly Dictionary<int, CacheEntry> _cache = new();
     private readonly ImagePageLoader _imagePageLoader;
     private readonly long _budgetBytes;
+    private readonly List<Bitmap> _retiredImages = new();
+    private readonly DispatcherTimer _retiredImageDisposeTimer;
     private long _accessClock;
     private long _estimatedBytes;
+    private bool _isDisposed;
 
     public ReaderImageCache(ImagePageLoader imagePageLoader, long budgetBytes = DefaultBudgetBytes)
     {
         _imagePageLoader = imagePageLoader;
         _budgetBytes = Math.Max(0, budgetBytes);
+        _retiredImageDisposeTimer = new DispatcherTimer
+        {
+            Interval = RetiredImageDisposeDelay,
+        };
+        _retiredImageDisposeTimer.Tick += OnRetiredImageDisposeTimerTick;
     }
 
     public async Task<Bitmap> GetOrLoadAsync(
@@ -46,7 +56,7 @@ public sealed class ReaderImageCache : IDisposable
         if (_cache.TryGetValue(pageIndex, out var oldEntry))
         {
             _estimatedBytes -= oldEntry.EstimatedBytes;
-            oldEntry.Image.Dispose();
+            RetireImage(oldEntry.Image);
         }
 
         var nextEntry = new CacheEntry(image, request, request.EstimatedBytes, GetNextAccessOrder());
@@ -84,7 +94,7 @@ public sealed class ReaderImageCache : IDisposable
     {
         foreach (var entry in _cache.Values)
         {
-            entry.Image.Dispose();
+            RetireImage(entry.Image);
         }
 
         _cache.Clear();
@@ -93,7 +103,10 @@ public sealed class ReaderImageCache : IDisposable
 
     public void Dispose()
     {
+        _isDisposed = true;
+        _retiredImageDisposeTimer.Stop();
         Clear();
+        DisposeRetiredImages();
     }
 
     private long GetNextAccessOrder()
@@ -109,7 +122,36 @@ public sealed class ReaderImageCache : IDisposable
         }
 
         _estimatedBytes -= entry.EstimatedBytes;
-        entry.Image.Dispose();
+        RetireImage(entry.Image);
+    }
+
+    private void RetireImage(Bitmap image)
+    {
+        if (_isDisposed)
+        {
+            image.Dispose();
+            return;
+        }
+
+        _retiredImages.Add(image);
+        _retiredImageDisposeTimer.Stop();
+        _retiredImageDisposeTimer.Start();
+    }
+
+    private void OnRetiredImageDisposeTimerTick(object? sender, EventArgs e)
+    {
+        _retiredImageDisposeTimer.Stop();
+        DisposeRetiredImages();
+    }
+
+    private void DisposeRetiredImages()
+    {
+        foreach (var image in _retiredImages)
+        {
+            image.Dispose();
+        }
+
+        _retiredImages.Clear();
     }
 
     private sealed class CacheEntry
