@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="PDFtoImage" Version="5.2.1" />
     <PackageReference Include="SharpCompress" Version="0.48.0" />
   </ItemGroup>
 

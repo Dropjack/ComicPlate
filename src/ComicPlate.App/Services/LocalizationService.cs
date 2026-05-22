@@ -97,22 +97,37 @@ public sealed class LocalizationService
 
     private static IReadOnlyDictionary<string, string> LoadLanguageFile(string directory, string languageTag)
     {
+        var embeddedStrings = LoadEmbeddedLanguageFile(languageTag);
         var path = Path.Combine(directory, $"{languageTag}.json");
         if (!File.Exists(path))
         {
-            return LoadEmbeddedLanguageFile(languageTag);
+            return embeddedStrings;
         }
 
         try
         {
             var json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<Dictionary<string, string>>(json)
+            var fileStrings = JsonSerializer.Deserialize<Dictionary<string, string>>(json)
                 ?? new Dictionary<string, string>();
+            return MergeLanguageStrings(embeddedStrings, fileStrings);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
-            return new Dictionary<string, string>();
+            return embeddedStrings;
         }
+    }
+
+    private static IReadOnlyDictionary<string, string> MergeLanguageStrings(
+        IReadOnlyDictionary<string, string> baseStrings,
+        IReadOnlyDictionary<string, string> overrideStrings)
+    {
+        var merged = new Dictionary<string, string>(baseStrings);
+        foreach (var item in overrideStrings)
+        {
+            merged[item.Key] = item.Value;
+        }
+
+        return merged;
     }
 
     private static IReadOnlyDictionary<string, string> LoadEmbeddedLanguageFile(string languageTag)

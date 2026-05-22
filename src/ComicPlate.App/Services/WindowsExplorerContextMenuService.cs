@@ -37,7 +37,7 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
 
     public IReadOnlyList<ExplorerContextMenuOption> GetSupportedOptions()
     {
-        return ComicArchiveFormats.SupportedFormats
+        return GetSupportedFormats()
             .Select(format => new ExplorerContextMenuOption(
                 format.Extension,
                 format.DisplayName,
@@ -86,7 +86,9 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
 
     public ExplorerContextMenuResult SetEnabled(string extension, bool isEnabled)
     {
-        if (!ComicArchiveFormats.TryGetByExtension(extension, out var format))
+        var format = GetSupportedFormats()
+            .FirstOrDefault(format => format.Extension.Equals(extension, StringComparison.OrdinalIgnoreCase));
+        if (format.Extension is null)
         {
             return new ExplorerContextMenuResult(
                 false,
@@ -134,7 +136,7 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
 
     private bool IsRegistered()
     {
-        return ComicArchiveFormats.SupportedFormats
+        return GetSupportedFormats()
             .All(format => IsRegistered(format.Extension));
     }
 
@@ -147,13 +149,13 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
 
     private void Register()
     {
-        foreach (var format in ComicArchiveFormats.SupportedFormats)
+        foreach (var format in GetSupportedFormats())
         {
             Register(format);
         }
     }
 
-    private void Register(ComicArchiveFormat format)
+    private void Register((string Extension, string DisplayName) format)
     {
         var shellKeyPath = GetShellKeyPath(format.Extension);
         var commandKeyPath = GetCommandKeyPath(format.Extension);
@@ -166,15 +168,23 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
 
     private void Unregister()
     {
-        foreach (var format in ComicArchiveFormats.SupportedFormats)
+        foreach (var format in GetSupportedFormats())
         {
             Unregister(format);
         }
     }
 
-    private void Unregister(ComicArchiveFormat format)
+    private void Unregister((string Extension, string DisplayName) format)
     {
         _registry.DeleteTree(GetShellKeyPath(format.Extension));
+    }
+
+    private static IReadOnlyList<(string Extension, string DisplayName)> GetSupportedFormats()
+    {
+        return ComicArchiveFormats.SupportedFormats
+            .Select(format => (format.Extension, format.DisplayName))
+            .Append((PdfBookFormat.Extension, PdfBookFormat.Label))
+            .ToArray();
     }
 
     private string CreateOpenCommand()

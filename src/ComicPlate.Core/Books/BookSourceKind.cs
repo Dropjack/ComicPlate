@@ -8,5 +8,6 @@ public enum BookSourceKind
     Folder,
     Image,
     Zip,
-    Rar
+    Rar,
+    Pdf
 }

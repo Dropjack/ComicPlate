@@ -83,7 +83,7 @@ public sealed class ContentListItemViewModel : ViewModelBase
 
     public static ContentListItemViewModel FromShelfEntry(ShelfEntry entry)
     {
-        var kind = entry.BookSourceKind is BookSourceKind.Zip or BookSourceKind.Rar
+        var kind = entry.BookSourceKind is BookSourceKind.Zip or BookSourceKind.Rar or BookSourceKind.Pdf
             ? ContentListItemKind.Archive
             : ContentListItemKind.Folder;
         var detail = entry.Kind == ShelfEntryKind.Collection
@@ -93,6 +93,7 @@ public sealed class ContentListItemViewModel : ViewModelBase
             BookSourceKind.Image => LocalizationService.Current.GetString("Shelf.Kind.Image"),
             BookSourceKind.Zip => LocalizationService.Current.GetString("Shelf.Kind.ZipCbz"),
             BookSourceKind.Rar => LocalizationService.Current.GetString("Shelf.Kind.RarCbr"),
+            BookSourceKind.Pdf => LocalizationService.Current.GetString("Shelf.Kind.Pdf"),
             _ => LocalizationService.Current.GetString("Shelf.Kind.ComicFolder")
         };
 

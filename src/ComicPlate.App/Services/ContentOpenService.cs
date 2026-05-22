@@ -26,6 +26,14 @@ public sealed class ContentOpenService
                 CreateBookEntry(fullPath, archiveFormat.SourceKind));
         }
 
+        if (PdfBookFormat.IsSupportedPath(fullPath))
+        {
+            return new OpenPathResult(
+                OpenPathKind.Book,
+                fullPath,
+                CreateBookEntry(fullPath, BookSourceKind.Pdf));
+        }
+
         if (SupportedPageFormats.IsSupportedExtension(Path.GetExtension(fullPath)))
         {
             return new OpenPathResult(
@@ -68,6 +76,7 @@ public sealed class ContentOpenService
             BookSourceKind.Image => new SingleImageBookSource(normalizedBook.Path),
             BookSourceKind.Zip => new ZipBookSource(normalizedBook.Path),
             BookSourceKind.Rar => new RarBookSource(normalizedBook.Path),
+            BookSourceKind.Pdf => new PdfPageBookSource(normalizedBook.Path),
             _ => new FolderBookSource(normalizedBook.Path, recursive: false)
         };
 

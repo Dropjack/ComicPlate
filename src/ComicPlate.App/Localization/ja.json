@@ -68,6 +68,7 @@
     "Shelf.Kind.ComicFolder":  "漫画フォルダー",
     "Shelf.Kind.ZipCbz":  "ZIP/CBZ",
     "Shelf.Kind.RarCbr":  "RAR/CBR",
+    "Shelf.Kind.Pdf":  "PDF",
     "Reader.PreviousFrame.Tooltip":  "前の読書フレーム",
     "Reader.NextFrame.Tooltip":  "次の読書フレーム",
     "Reader.SinglePage":  "単ページ",

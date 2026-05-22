@@ -25,8 +25,13 @@ public sealed class FolderPickerService : IFolderPickerService
                 {
                     Patterns = ComicArchiveFormats.SupportedFormats
                         .Select(format => $"*{format.Extension}")
+                        .Concat([$"*{PdfBookFormat.Extension}"])
                         .Concat(SupportedPageFormats.SupportedExtensions.Select(extension => $"*{extension}"))
                         .ToArray()
+                },
+                new FilePickerFileType("PDF files")
+                {
+                    Patterns = [$"*{PdfBookFormat.Extension}"]
                 },
                 new FilePickerFileType("Comic archives")
                 {

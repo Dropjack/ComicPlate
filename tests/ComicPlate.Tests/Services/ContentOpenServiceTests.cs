@@ -49,6 +49,7 @@ public sealed class ContentOpenServiceTests : IDisposable
     [InlineData("comic.cbz", BookSourceKind.Zip)]
     [InlineData("comic.rar", BookSourceKind.Rar)]
     [InlineData("comic.cbr", BookSourceKind.Rar)]
+    [InlineData("comic.pdf", BookSourceKind.Pdf)]
     [InlineData("001.jpg", BookSourceKind.Image)]
     public void ClassifiesReadableFilesAsBooks(string fileName, BookSourceKind sourceKind)
     {

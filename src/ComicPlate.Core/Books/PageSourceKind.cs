@@ -4,5 +4,6 @@ public enum PageSourceKind
 {
     FileSystem,
     ZipEntry,
-    RarEntry
+    RarEntry,
+    PdfPage
 }

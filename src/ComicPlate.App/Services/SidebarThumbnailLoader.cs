@@ -65,6 +65,7 @@ public sealed class SidebarThumbnailLoader : IDisposable
         {
             BookSourceKind.Zip => await LoadArchiveThumbnailAsync(item.Entry.ToBookEntry(), cancellationToken),
             BookSourceKind.Rar => await LoadArchiveThumbnailAsync(item.Entry.ToBookEntry(), cancellationToken),
+            BookSourceKind.Pdf => await LoadPdfThumbnailAsync(item.Entry.ToBookEntry(), cancellationToken),
             BookSourceKind.Folder => await LoadFolderThumbnailAsync(item.Entry.Path, cancellationToken),
             _ => null
         };
@@ -92,6 +93,20 @@ public sealed class SidebarThumbnailLoader : IDisposable
             BookSourceKind.Rar => new RarBookSource(book.Path),
             _ => throw new InvalidOperationException($"Unsupported archive source kind: {book.SourceKind}.")
         };
+    }
+
+    private async Task<Bitmap?> LoadPdfThumbnailAsync(BookEntry book, CancellationToken cancellationToken)
+    {
+        var source = new PdfPageBookSource(book.Path);
+        var pages = await source.LoadPagesAsync(cancellationToken);
+        var firstPage = pages.FirstOrDefault();
+
+        return firstPage is null
+            ? null
+            : await LoadPageThumbnailAsync(
+                $"pdf:{book.Path}:{GetLastWriteTicks(book.Path)}:{firstPage.LogicalPath}",
+                firstPage,
+                cancellationToken);
     }
 
     private async Task<Bitmap?> LoadFolderThumbnailAsync(string folderPath, CancellationToken cancellationToken)

@@ -22,7 +22,7 @@ public sealed class ExplorerContextMenuServiceTests
     }
 
     [Fact]
-    public void WindowsServiceRegistersSupportedArchiveContextMenus()
+    public void WindowsServiceRegistersSupportedContextMenus()
     {
         var registry = new InMemoryRegistry();
         var service = CreateService(registry);
@@ -37,6 +37,9 @@ public sealed class ExplorerContextMenuServiceTests
         Assert.Equal(
             "\"D:\\Tools\\ComicPlate\\ComicPlate.exe\" \"%1\"",
             registry.ReadDefaultValue(@"Software\Classes\SystemFileAssociations\.cbr\shell\ComicPlate.Open\command"));
+        Assert.Equal(
+            "\"D:\\Tools\\ComicPlate\\ComicPlate.exe\" \"%1\"",
+            registry.ReadDefaultValue(@"Software\Classes\SystemFileAssociations\.pdf\shell\ComicPlate.Open\command"));
         Assert.Equal(
             "\"D:\\Tools\\ComicPlate\\ComicPlate.exe\",0",
             registry.ReadValue(@"Software\Classes\SystemFileAssociations\.cbz\shell\ComicPlate.Open", "Icon"));
@@ -59,6 +62,21 @@ public sealed class ExplorerContextMenuServiceTests
     }
 
     [Fact]
+    public void WindowsServiceRegistersSinglePdfContextMenu()
+    {
+        var registry = new InMemoryRegistry();
+        var service = CreateService(registry);
+
+        var result = service.SetEnabled(".pdf", true);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(
+            "\"D:\\Tools\\ComicPlate\\ComicPlate.exe\" \"%1\"",
+            registry.ReadDefaultValue(@"Software\Classes\SystemFileAssociations\.pdf\shell\ComicPlate.Open\command"));
+        Assert.Null(registry.ReadDefaultValue(@"Software\Classes\SystemFileAssociations\.zip\shell\ComicPlate.Open\command"));
+    }
+
+    [Fact]
     public void WindowsServiceUnregistersSingleArchiveContextMenu()
     {
         var registry = new InMemoryRegistry();
@@ -73,7 +91,7 @@ public sealed class ExplorerContextMenuServiceTests
     }
 
     [Fact]
-    public void WindowsServiceUnregistersSupportedArchiveContextMenus()
+    public void WindowsServiceUnregistersSupportedContextMenus()
     {
         var registry = new InMemoryRegistry();
         var service = CreateService(registry);

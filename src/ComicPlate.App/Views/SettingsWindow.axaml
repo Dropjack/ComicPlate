@@ -394,6 +394,10 @@
                                           Content="RAR"
                                           Tag=".rar"
                                           Click="OnExplorerContextMenuClick" />
+                                <CheckBox x:Name="ExplorerContextMenuPdfCheckBox"
+                                          Content="PDF"
+                                          Tag=".pdf"
+                                          Click="OnExplorerContextMenuClick" />
                             </UniformGrid>
                             <TextBlock x:Name="ExplorerContextMenuStatusText"
                                        Foreground="{StaticResource SettingsMutedTextBrush}"

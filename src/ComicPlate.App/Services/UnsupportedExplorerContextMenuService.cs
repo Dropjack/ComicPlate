@@ -27,6 +27,12 @@ public sealed class UnsupportedExplorerContextMenuService : IExplorerContextMenu
                 false,
                 false,
                 LocalizationService.Current.GetString("ExplorerContextMenu.Status.PlatformUnsupported")))
+            .Append(new ExplorerContextMenuOption(
+                PdfBookFormat.Extension,
+                PdfBookFormat.Label,
+                false,
+                false,
+                LocalizationService.Current.GetString("ExplorerContextMenu.Status.PlatformUnsupported")))
             .ToArray();
     }
 

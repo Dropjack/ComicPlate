@@ -44,6 +44,17 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
                 archiveFormat.SourceKind);
         }
 
+        foreach (var pdf in EnumeratePdfFiles(_rootPath, cancellationToken))
+        {
+            var fullPath = Path.GetFullPath(pdf);
+            yield return new ShelfEntry(
+                fullPath,
+                Path.GetFileName(fullPath),
+                ShelfEntryKind.Book,
+                fullPath,
+                BookSourceKind.Pdf);
+        }
+
         foreach (var image in EnumeratePageFiles(_rootPath, cancellationToken))
         {
             var fullPath = Path.GetFullPath(image);
@@ -99,6 +110,12 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
             .Where(ComicArchiveFormats.IsSupportedArchivePath);
     }
 
+    private static IEnumerable<string> EnumeratePdfFiles(string directory, CancellationToken cancellationToken)
+    {
+        return EnumerateFiles(directory, cancellationToken)
+            .Where(PdfBookFormat.IsSupportedPath);
+    }
+
     private static bool ContainsDirectPageFiles(string directory, CancellationToken cancellationToken)
     {
         return EnumeratePageFiles(directory, cancellationToken).Any();
@@ -107,6 +124,7 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
     private static bool ContainsChildContentCandidates(string directory, CancellationToken cancellationToken)
     {
         return EnumerateArchiveFiles(directory, cancellationToken).Any()
+            || EnumeratePdfFiles(directory, cancellationToken).Any()
             || EnumerateDirectories(directory, cancellationToken).Any();
     }
 

@@ -190,6 +190,32 @@ public sealed class ReadingSessionControllerTests : IDisposable
     }
 
     [Fact]
+    public void PdfProgressUsesPdfFilePathAsProgressKey()
+    {
+        var controller = CreateController();
+        var bookPath = Path.Combine(_rootPath, "Manual.pdf");
+        var book = new BookEntry(bookPath, "Manual.pdf", BookSourceKind.Pdf, bookPath);
+
+        controller.StartAtBook(book);
+        controller.SaveReadingState(
+            book,
+            hasPages: true,
+            currentPageIndex: 17,
+            pageCount: 291,
+            ReadingDirection.LeftToRight,
+            ViewMode.SinglePage,
+            deleteCompletedProgress: false);
+
+        var progressStore = new JsonAppStateStore(_rootPath).LoadProgress();
+        var normalizedPath = JsonAppStateStore.NormalizePath(book.Path);
+
+        Assert.Single(progressStore.Books);
+        Assert.True(progressStore.Books.ContainsKey(normalizedPath));
+        Assert.Equal(BookSourceKind.Pdf, progressStore.Books[normalizedPath].SourceKind);
+        Assert.Equal(17, progressStore.Books[normalizedPath].LastPageIndex);
+    }
+
+    [Fact]
     public void MultipleControllersUpdateSingleLastSessionWithLastWriterWinning()
     {
         var firstWindow = CreateController();

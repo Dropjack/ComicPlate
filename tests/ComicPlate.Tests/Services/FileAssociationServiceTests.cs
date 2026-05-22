@@ -60,6 +60,20 @@ public sealed class FileAssociationServiceTests
     }
 
     [Fact]
+    public void WindowsServiceDoesNotAssociatePdf()
+    {
+        var registry = new InMemoryFileAssociationRegistry();
+        var service = new WindowsFileAssociationService(
+            registry,
+            @"D:\Tools\ComicPlate\ComicPlate.exe");
+
+        var result = service.Associate(".pdf");
+
+        Assert.False(result.Succeeded);
+        Assert.Empty(registry.Values);
+    }
+
+    [Fact]
     public void WindowsServiceDisassociatesComicPlateExtension()
     {
         var registry = new InMemoryFileAssociationRegistry();

@@ -25,6 +25,7 @@ public sealed class FileSystemContextShelfSourceTests : IDisposable
         File.WriteAllText(Path.Combine(_tempDirectory, "Book 1.cbz"), "");
         File.WriteAllText(Path.Combine(_tempDirectory, "Book 4.cbr"), "");
         File.WriteAllText(Path.Combine(_tempDirectory, "Book 5.rar"), "");
+        File.WriteAllText(Path.Combine(_tempDirectory, "Book 6.pdf"), "");
         File.WriteAllText(Path.Combine(_tempDirectory, "Collection", "Book 3.zip"), "");
         File.WriteAllText(Path.Combine(_tempDirectory, "notes.txt"), "");
         File.WriteAllText(Path.Combine(_tempDirectory, "Skipped.cb7"), "");
@@ -35,13 +36,13 @@ public sealed class FileSystemContextShelfSourceTests : IDisposable
         var contextShelf = await source.LoadAsync(CancellationToken.None);
 
         Assert.Equal(
-            new[] { "Book 1.cbz", "Book 2", "Book 4.cbr", "Book 5.rar", "Collection", "cover.jpg" },
+            new[] { "Book 1.cbz", "Book 2", "Book 4.cbr", "Book 5.rar", "Book 6.pdf", "Collection", "cover.jpg" },
             contextShelf.Entries.Select(book => book.DisplayName));
         Assert.Equal(
-            new[] { ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Collection, ShelfEntryKind.Book },
+            new[] { ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Book, ShelfEntryKind.Collection, ShelfEntryKind.Book },
             contextShelf.Entries.Select(entry => entry.Kind));
         Assert.Equal(
-            new BookSourceKind?[] { BookSourceKind.Zip, BookSourceKind.Folder, BookSourceKind.Rar, BookSourceKind.Rar, null, BookSourceKind.Image },
+            new BookSourceKind?[] { BookSourceKind.Zip, BookSourceKind.Folder, BookSourceKind.Rar, BookSourceKind.Rar, BookSourceKind.Pdf, null, BookSourceKind.Image },
             contextShelf.Entries.Select(entry => entry.BookSourceKind));
     }
 
@@ -53,6 +54,7 @@ public sealed class FileSystemContextShelfSourceTests : IDisposable
 
         File.WriteAllText(Path.Combine(book2.FullName, "001.jpg"), "");
         File.WriteAllText(Path.Combine(_tempDirectory, "Book 1.cbz"), "");
+        File.WriteAllText(Path.Combine(_tempDirectory, "Book 3.pdf"), "");
         File.WriteAllText(Path.Combine(_tempDirectory, "notes.txt"), "");
 
         var source = new FileSystemContextShelfSource(_tempDirectory);
@@ -60,10 +62,10 @@ public sealed class FileSystemContextShelfSourceTests : IDisposable
         var contextShelf = await source.LoadAsync(CancellationToken.None);
 
         Assert.Equal(
-            new[] { "Book 1.cbz", "Book 2" },
+            new[] { "Book 1.cbz", "Book 2", "Book 3.pdf" },
             contextShelf.Entries.Select(book => book.DisplayName));
         Assert.Equal(
-            new BookSourceKind?[] { BookSourceKind.Zip, BookSourceKind.Folder },
+            new BookSourceKind?[] { BookSourceKind.Zip, BookSourceKind.Folder, BookSourceKind.Pdf },
             contextShelf.Entries.Select(entry => entry.BookSourceKind));
     }
 
