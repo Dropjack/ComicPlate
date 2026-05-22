@@ -4,6 +4,8 @@ obj/
 .vscode/
 *.code-workspace
 *.private.code-workspace
+PROJECT_CONTEXT.local.md
+.codex-local/
 .obsidian/
 *.user
 *.suo
