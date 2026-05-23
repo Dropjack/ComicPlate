@@ -113,6 +113,11 @@ public sealed class MainWindowViewModelWindowTitleTests : IDisposable
 
     private sealed class StubFolderPickerService : IFolderPickerService
     {
+        public Task<string?> PickOpenPathAsync()
+        {
+            return Task.FromResult<string?>(null);
+        }
+
         public Task<string?> PickComicFileAsync()
         {
             return Task.FromResult<string?>(null);

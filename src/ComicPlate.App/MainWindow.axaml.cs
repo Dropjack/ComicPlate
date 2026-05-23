@@ -226,7 +226,15 @@ public partial class MainWindow : Window
                 e.Handled = true;
                 break;
             case ShortcutActionId.OpenContent:
-                _viewModel.OpenContentCommand.Execute(null);
+                if (_viewModel.IsUnifiedOpenPickerAvailable)
+                {
+                    _viewModel.OpenPathCommand.Execute(null);
+                }
+                else
+                {
+                    _viewModel.OpenContentCommand.Execute(null);
+                }
+
                 e.Handled = true;
                 break;
             case ShortcutActionId.NewWindow:

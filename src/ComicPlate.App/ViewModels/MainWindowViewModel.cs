@@ -52,6 +52,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         Reader.ReadingStateChanged += OnReaderReadingStateChanged;
         ContextShelf = new ContextShelfViewModel(ActivateContentItemAsync);
 
+        OpenPathCommand = new AsyncRelayCommand(OpenPathAsync, () => !IsLoading);
         OpenContentCommand = new AsyncRelayCommand(OpenContentAsync, () => !IsLoading);
         OpenFolderCommand = new AsyncRelayCommand(OpenFolderAsync, () => !IsLoading);
         OpenLastReadingPositionCommand = new RelayCommand(OpenLastReadingPosition, () => CanOpenLastReadingPosition);
@@ -66,6 +67,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     public ContextShelfViewModel ContextShelf { get; }
 
     public ReaderSurfaceViewModel Reader { get; }
+
+    public ICommand OpenPathCommand { get; }
 
     public ICommand OpenContentCommand { get; }
 
@@ -197,6 +200,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     public string LastReadingPositionText => _readingSession.LastReadingPositionText;
 
+    public bool IsUnifiedOpenPickerAvailable => OperatingSystem.IsMacOS();
+
+    public bool IsSplitOpenPickerAvailable => !IsUnifiedOpenPickerAvailable;
+
     public bool IsLoading
     {
         get => _isLoading;
@@ -248,6 +255,17 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             OnPropertyChanged(nameof(CanLocateCurrentBookInShelf));
             LocateCurrentBookCommand.RaiseCanExecuteChanged();
         }
+    }
+
+    private async Task OpenPathAsync()
+    {
+        var path = await _folderPickerService.PickOpenPathAsync();
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        await OpenPathAsSessionStartAsync(path, OpenPathContextMode.CollectionContext);
     }
 
     private async Task OpenContentAsync()
@@ -826,6 +844,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     {
         OnPropertyChanged(nameof(CanNavigateUp));
         OnPropertyChanged(nameof(CanOpenLastReadingPosition));
+
+        if (OpenPathCommand is AsyncRelayCommand openPathCommand)
+        {
+            openPathCommand.RaiseCanExecuteChanged();
+        }
 
         if (OpenContentCommand is AsyncRelayCommand openContentCommand)
         {
