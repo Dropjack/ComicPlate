@@ -42,6 +42,11 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
         </Style>
+
+        <Style Selector="ProgressBar.reader-progress">
+            <Setter Property="Foreground" Value="{StaticResource ReaderProgressFilledBrush}" />
+            <Setter Property="Background" Value="{StaticResource ReaderProgressTrackBrush}" />
+        </Style>
     </UserControl.Styles>
 
     <Grid x:Name="ReaderSurfaceRoot"
@@ -175,6 +180,7 @@
                               PointerReleased="OnProgressPointerReleased"
                               PointerCaptureLost="OnProgressPointerCaptureLost">
                             <ProgressBar Minimum="0"
+                                         Classes="reader-progress"
                                          Maximum="{Binding Reader.LastPageProgressIndex}"
                                          Value="{Binding Reader.DisplayPageProgressIndex}"
                                          Height="5"
@@ -266,6 +272,7 @@
                               PointerReleased="OnProgressPointerReleased"
                               PointerCaptureLost="OnProgressPointerCaptureLost">
                             <ProgressBar Minimum="0"
+                                         Classes="reader-progress"
                                          Maximum="{Binding Reader.LastPageProgressIndex}"
                                          Value="{Binding Reader.DisplayPageProgressIndex}"
                                          Height="4"
@@ -345,6 +352,7 @@
                       PointerReleased="OnProgressPointerReleased"
                       PointerCaptureLost="OnProgressPointerCaptureLost">
                     <ProgressBar Minimum="0"
+                                 Classes="reader-progress"
                                  Maximum="{Binding Reader.LastPageProgressIndex}"
                                  Value="{Binding Reader.DisplayPageProgressIndex}"
                                  Height="4"
