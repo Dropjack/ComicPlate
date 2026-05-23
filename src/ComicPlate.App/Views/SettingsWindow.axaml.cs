@@ -19,6 +19,7 @@ public partial class SettingsWindow : Window
     private readonly SettingsService _settingsService;
     private readonly ThumbnailCacheService _thumbnailCacheService;
     private AppSettings _settings = AppSettings.Default;
+    private bool _hideFileIntegrationSettings;
     private bool _isLoadingSettings;
     private bool _isShowingRestartPrompt;
     private ShortcutWindow? _shortcutWindow;
@@ -63,14 +64,20 @@ public partial class SettingsWindow : Window
         _thumbnailCacheService = new ThumbnailCacheService(_appDataService.UserDataDirectory);
         InitializeComponent();
         var isMacOS = OperatingSystem.IsMacOS();
+        _hideFileIntegrationSettings = isMacOS;
         Classes.Add(isMacOS ? "mac-shell" : "windows-shell");
         ApplyPlatformChrome(isMacOS);
         ApplyLocalizedText();
         LoadSettingsIntoControls();
         ColorThemeComboBox.SelectionChanged += OnColorThemeSelectionChanged;
         LanguageComboBox.SelectionChanged += OnLanguageSelectionChanged;
-        LoadFileAssociationOptions();
-        LoadExplorerContextMenuState();
+        ApplyFileIntegrationVisibility();
+        if (!_hideFileIntegrationSettings)
+        {
+            LoadFileAssociationOptions();
+            LoadExplorerContextMenuState();
+        }
+
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         Opened += OnOpened;
         Closed += OnClosed;
@@ -144,6 +151,11 @@ public partial class SettingsWindow : Window
 
     private void OnAssociationNavClick(object? sender, RoutedEventArgs e)
     {
+        if (_hideFileIntegrationSettings)
+        {
+            return;
+        }
+
         SelectNav(AssociationNavButton);
         ScrollToSection(AssociationSection);
     }
@@ -265,6 +277,13 @@ public partial class SettingsWindow : Window
         }
 
         selectedButton.Classes.Add("selected");
+    }
+
+    private void ApplyFileIntegrationVisibility()
+    {
+        AssociationNavButton.IsVisible = !_hideFileIntegrationSettings;
+        AssociationSection.IsVisible = !_hideFileIntegrationSettings;
+        ExplorerContextMenuSection.IsVisible = !_hideFileIntegrationSettings;
     }
 
     private void ScrollToSection(Control section)
