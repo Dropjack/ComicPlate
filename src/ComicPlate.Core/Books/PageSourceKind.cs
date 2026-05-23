@@ -5,5 +5,6 @@ public enum PageSourceKind
     FileSystem,
     ZipEntry,
     RarEntry,
-    PdfPage
+    PdfPage,
+    EpubImage
 }

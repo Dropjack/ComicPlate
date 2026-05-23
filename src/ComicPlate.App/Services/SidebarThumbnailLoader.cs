@@ -66,6 +66,7 @@ public sealed class SidebarThumbnailLoader : IDisposable
             BookSourceKind.Zip => await LoadArchiveThumbnailAsync(item.Entry.ToBookEntry(), cancellationToken),
             BookSourceKind.Rar => await LoadArchiveThumbnailAsync(item.Entry.ToBookEntry(), cancellationToken),
             BookSourceKind.Pdf => await LoadPdfThumbnailAsync(item.Entry.ToBookEntry(), cancellationToken),
+            BookSourceKind.Epub => await LoadEpubThumbnailAsync(item.Entry.ToBookEntry(), cancellationToken),
             BookSourceKind.Folder => await LoadFolderThumbnailAsync(item.Entry.Path, cancellationToken),
             _ => null
         };
@@ -105,6 +106,19 @@ public sealed class SidebarThumbnailLoader : IDisposable
             ? null
             : await LoadPageThumbnailAsync(
                 $"pdf:{book.Path}:{GetLastWriteTicks(book.Path)}:{firstPage.LogicalPath}",
+                firstPage,
+                cancellationToken);
+    }
+
+    private async Task<Bitmap?> LoadEpubThumbnailAsync(BookEntry book, CancellationToken cancellationToken)
+    {
+        var source = new EpubImageBookSource(book.Path);
+        var firstPage = await source.LoadCoverOrFirstPageAsync(cancellationToken);
+
+        return firstPage is null
+            ? null
+            : await LoadPageThumbnailAsync(
+                $"epub:{book.Path}:{GetLastWriteTicks(book.Path)}:{firstPage.LogicalPath}",
                 firstPage,
                 cancellationToken);
     }

@@ -34,6 +34,14 @@ public sealed class ContentOpenService
                 CreateBookEntry(fullPath, BookSourceKind.Pdf));
         }
 
+        if (EpubBookFormat.IsSupportedPath(fullPath))
+        {
+            return new OpenPathResult(
+                OpenPathKind.Book,
+                fullPath,
+                CreateBookEntry(fullPath, BookSourceKind.Epub));
+        }
+
         if (SupportedPageFormats.IsSupportedExtension(Path.GetExtension(fullPath)))
         {
             return new OpenPathResult(
@@ -77,6 +85,7 @@ public sealed class ContentOpenService
             BookSourceKind.Zip => new ZipBookSource(normalizedBook.Path),
             BookSourceKind.Rar => new RarBookSource(normalizedBook.Path),
             BookSourceKind.Pdf => new PdfPageBookSource(normalizedBook.Path),
+            BookSourceKind.Epub => new EpubImageBookSource(normalizedBook.Path),
             _ => new FolderBookSource(normalizedBook.Path, recursive: false)
         };
 

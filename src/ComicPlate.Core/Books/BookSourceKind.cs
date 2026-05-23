@@ -9,5 +9,6 @@ public enum BookSourceKind
     Image,
     Zip,
     Rar,
-    Pdf
+    Pdf,
+    Epub
 }

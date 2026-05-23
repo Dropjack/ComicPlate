@@ -83,7 +83,7 @@ public sealed class ContentListItemViewModel : ViewModelBase
 
     public static ContentListItemViewModel FromShelfEntry(ShelfEntry entry)
     {
-        var kind = entry.BookSourceKind is BookSourceKind.Zip or BookSourceKind.Rar or BookSourceKind.Pdf
+        var kind = entry.BookSourceKind is BookSourceKind.Zip or BookSourceKind.Rar or BookSourceKind.Pdf or BookSourceKind.Epub
             ? ContentListItemKind.Archive
             : ContentListItemKind.Folder;
         var detail = entry.Kind == ShelfEntryKind.Collection
@@ -94,6 +94,7 @@ public sealed class ContentListItemViewModel : ViewModelBase
             BookSourceKind.Zip => LocalizationService.Current.GetString("Shelf.Kind.ZipCbz"),
             BookSourceKind.Rar => LocalizationService.Current.GetString("Shelf.Kind.RarCbr"),
             BookSourceKind.Pdf => LocalizationService.Current.GetString("Shelf.Kind.Pdf"),
+            BookSourceKind.Epub => LocalizationService.Current.GetString("Shelf.Kind.Epub"),
             _ => LocalizationService.Current.GetString("Shelf.Kind.ComicFolder")
         };
 

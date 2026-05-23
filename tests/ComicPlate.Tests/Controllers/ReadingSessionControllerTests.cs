@@ -216,6 +216,34 @@ public sealed class ReadingSessionControllerTests : IDisposable
     }
 
     [Fact]
+    public void EpubProgressUsesEpubFilePathAsProgressKey()
+    {
+        var controller = CreateController();
+        var bookPath = Path.Combine(_rootPath, "Manual.epub");
+        var book = new BookEntry(bookPath, "Manual.epub", BookSourceKind.Epub, bookPath);
+
+        controller.StartAtBook(book);
+        controller.SaveReadingState(
+            book,
+            hasPages: true,
+            currentPageIndex: 9,
+            pageCount: 120,
+            ReadingDirection.RightToLeft,
+            ViewMode.DoublePage,
+            deleteCompletedProgress: false);
+
+        var progressStore = new JsonAppStateStore(_rootPath).LoadProgress();
+        var normalizedPath = JsonAppStateStore.NormalizePath(book.Path);
+
+        Assert.Single(progressStore.Books);
+        Assert.True(progressStore.Books.ContainsKey(normalizedPath));
+        Assert.Equal(BookSourceKind.Epub, progressStore.Books[normalizedPath].SourceKind);
+        Assert.Equal(9, progressStore.Books[normalizedPath].LastPageIndex);
+        Assert.Equal(ReadingDirection.RightToLeft, progressStore.Books[normalizedPath].ReadingDirection);
+        Assert.Equal(ViewMode.DoublePage, progressStore.Books[normalizedPath].ViewMode);
+    }
+
+    [Fact]
     public void MultipleControllersUpdateSingleLastSessionWithLastWriterWinning()
     {
         var firstWindow = CreateController();

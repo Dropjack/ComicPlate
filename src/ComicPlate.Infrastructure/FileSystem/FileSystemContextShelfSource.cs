@@ -55,6 +55,17 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
                 BookSourceKind.Pdf);
         }
 
+        foreach (var epub in EnumerateEpubFiles(_rootPath, cancellationToken))
+        {
+            var fullPath = Path.GetFullPath(epub);
+            yield return new ShelfEntry(
+                fullPath,
+                Path.GetFileName(fullPath),
+                ShelfEntryKind.Book,
+                fullPath,
+                BookSourceKind.Epub);
+        }
+
         foreach (var image in EnumeratePageFiles(_rootPath, cancellationToken))
         {
             var fullPath = Path.GetFullPath(image);
@@ -116,6 +127,12 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
             .Where(PdfBookFormat.IsSupportedPath);
     }
 
+    private static IEnumerable<string> EnumerateEpubFiles(string directory, CancellationToken cancellationToken)
+    {
+        return EnumerateFiles(directory, cancellationToken)
+            .Where(EpubBookFormat.IsSupportedPath);
+    }
+
     private static bool ContainsDirectPageFiles(string directory, CancellationToken cancellationToken)
     {
         return EnumeratePageFiles(directory, cancellationToken).Any();
@@ -125,6 +142,7 @@ public sealed class FileSystemContextShelfSource : IContextShelfSource
     {
         return EnumerateArchiveFiles(directory, cancellationToken).Any()
             || EnumeratePdfFiles(directory, cancellationToken).Any()
+            || EnumerateEpubFiles(directory, cancellationToken).Any()
             || EnumerateDirectories(directory, cancellationToken).Any();
     }
 

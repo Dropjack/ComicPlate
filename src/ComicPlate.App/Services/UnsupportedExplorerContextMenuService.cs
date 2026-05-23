@@ -33,6 +33,12 @@ public sealed class UnsupportedExplorerContextMenuService : IExplorerContextMenu
                 false,
                 false,
                 LocalizationService.Current.GetString("ExplorerContextMenu.Status.PlatformUnsupported")))
+            .Append(new ExplorerContextMenuOption(
+                EpubBookFormat.Extension,
+                EpubBookFormat.Label,
+                false,
+                false,
+                LocalizationService.Current.GetString("ExplorerContextMenu.Status.PlatformUnsupported")))
             .ToArray();
     }
 

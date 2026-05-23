@@ -24,7 +24,23 @@ public sealed class ContentListItemViewModelPdfTests
 
         var item = ContentListItemViewModel.FromShelfEntry(entry);
 
-        Assert.Equal("PDF", item.Detail);
+        Assert.Equal("Image PDF", item.Detail);
+        Assert.Equal(ContentListItemKind.Archive, item.Kind);
+    }
+
+    [Fact]
+    public void EpubShelfEntryUsesEpubDetailLabel()
+    {
+        var entry = new ShelfEntry(
+            @"D:\Books\comic.epub",
+            "comic.epub",
+            ShelfEntryKind.Book,
+            @"D:\Books\comic.epub",
+            BookSourceKind.Epub);
+
+        var item = ContentListItemViewModel.FromShelfEntry(entry);
+
+        Assert.Equal("Image EPUB", item.Detail);
         Assert.Equal(ContentListItemKind.Archive, item.Kind);
     }
 }

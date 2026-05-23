@@ -462,6 +462,7 @@ public partial class SettingsWindow : Window
             ".zip" => ExplorerContextMenuZipCheckBox,
             ".rar" => ExplorerContextMenuRarCheckBox,
             ".pdf" => ExplorerContextMenuPdfCheckBox,
+            ".epub" => ExplorerContextMenuEpubCheckBox,
             _ => null
         };
     }

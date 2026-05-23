@@ -398,6 +398,10 @@
                                           Content="PDF"
                                           Tag=".pdf"
                                           Click="OnExplorerContextMenuClick" />
+                                <CheckBox x:Name="ExplorerContextMenuEpubCheckBox"
+                                          Content="EPUB"
+                                          Tag=".epub"
+                                          Click="OnExplorerContextMenuClick" />
                             </UniformGrid>
                             <TextBlock x:Name="ExplorerContextMenuStatusText"
                                        Foreground="{StaticResource SettingsMutedTextBrush}"

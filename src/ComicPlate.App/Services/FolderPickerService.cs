@@ -17,21 +17,26 @@ public sealed class FolderPickerService : IFolderPickerService
     {
         var files = await _owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Open Comic File",
+            Title = "Open File",
             AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("Comic files")
+                new FilePickerFileType("Readable visual files")
                 {
                     Patterns = ComicArchiveFormats.SupportedFormats
                         .Select(format => $"*{format.Extension}")
                         .Concat([$"*{PdfBookFormat.Extension}"])
+                        .Concat([$"*{EpubBookFormat.Extension}"])
                         .Concat(SupportedPageFormats.SupportedExtensions.Select(extension => $"*{extension}"))
                         .ToArray()
                 },
-                new FilePickerFileType("PDF files")
+                new FilePickerFileType("Image PDF files")
                 {
                     Patterns = [$"*{PdfBookFormat.Extension}"]
+                },
+                new FilePickerFileType("Image EPUB files")
+                {
+                    Patterns = [$"*{EpubBookFormat.Extension}"]
                 },
                 new FilePickerFileType("Comic archives")
                 {
@@ -52,7 +57,7 @@ public sealed class FolderPickerService : IFolderPickerService
     {
         var folders = await _owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "Open Comic Folder",
+            Title = "Open Folder",
             AllowMultiple = false
         });
 

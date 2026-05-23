@@ -184,6 +184,7 @@ public sealed class WindowsExplorerContextMenuService : IExplorerContextMenuServ
         return ComicArchiveFormats.SupportedFormats
             .Select(format => (format.Extension, format.DisplayName))
             .Append((PdfBookFormat.Extension, PdfBookFormat.Label))
+            .Append((EpubBookFormat.Extension, EpubBookFormat.Label))
             .ToArray();
     }
 
