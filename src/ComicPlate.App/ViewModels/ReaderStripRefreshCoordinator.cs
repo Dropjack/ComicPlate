@@ -115,6 +115,8 @@ public sealed class ReaderStripRefreshCoordinator : IDisposable
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                ApplyCachedPreviewIfAvailable(item, imageCache, refreshVersion, isItemVisible, cancellationToken);
+
                 var image = await imageCache.GetOrLoadAsync(
                     item.PageIndex,
                     item.Slot.Page,
@@ -144,6 +146,28 @@ public sealed class ReaderStripRefreshCoordinator : IDisposable
                         $"{LocalizationService.Current.GetString("Reader.ImageDisplayError")}{Environment.NewLine}{item.Slot.Page.DisplayName}";
                 }
             }
+        }
+    }
+
+    private void ApplyCachedPreviewIfAvailable(
+        ReaderStripItemViewModel item,
+        ReaderImageCache imageCache,
+        int refreshVersion,
+        Func<ReaderStripItemViewModel, bool> isItemVisible,
+        CancellationToken cancellationToken)
+    {
+        if (item.HasImage
+            || !IsCurrent(refreshVersion)
+            || cancellationToken.IsCancellationRequested
+            || !isItemVisible(item))
+        {
+            return;
+        }
+
+        var preview = imageCache.TryGetPreview(item.PageIndex);
+        if (preview is not null)
+        {
+            item.Image = preview;
         }
     }
 }

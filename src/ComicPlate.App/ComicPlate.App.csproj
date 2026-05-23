@@ -55,6 +55,8 @@
     <AvaloniaResource Include="Assets\**" />
     <EmbeddedResource Include="Localization\*.json"
                       LogicalName="ComicPlate.Localization.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Config\reader-motion.jsonc"
+                      LogicalName="ComicPlate.Config.reader-motion.jsonc" />
     <AvaloniaResource Include="..\..\platform\windows\ComicPlate.ico"
                       Link="!__AvaloniaDefaultWindowIcon"
                       Condition="$([MSBuild]::IsOSPlatform('Windows'))" />

@@ -160,6 +160,19 @@ public sealed class ReaderSurfaceViewModelProgressPreviewTests
         Assert.True(viewModel.MagnifierContentTranslateY + scaledContentHeight >= 800);
     }
 
+    [Fact]
+    public async Task LoadPagesUsesInitialMetadataBeforeFirstReaderStrip()
+    {
+        using var viewModel = CreateViewModel();
+        viewModel.SetReaderViewportSize(1000, 800);
+
+        await viewModel.LoadPagesAsync([CreatePngPage("wide.png", 1600, 800)]);
+
+        var item = Assert.Single(viewModel.ReaderStripItems);
+        Assert.Equal(800, item.DisplayHeight);
+        Assert.Equal(1600, item.DisplayWidth);
+    }
+
     private static ReaderSurfaceViewModel CreateViewModel()
     {
         return new ReaderSurfaceViewModel(new ReaderImageCache(new ImagePageLoader()));
@@ -174,5 +187,31 @@ public sealed class ReaderSurfaceViewModelProgressPreviewTests
                 PageSourceKind.FileSystem,
                 _ => Task.FromResult<Stream>(new MemoryStream())))
             .ToArray();
+    }
+
+    private static PageEntry CreatePngPage(string name, int width, int height)
+    {
+        return new PageEntry(
+            name,
+            name,
+            PageSourceKind.FileSystem,
+            _ => Task.FromResult<Stream>(new MemoryStream(CreatePngHeader(width, height))));
+    }
+
+    private static byte[] CreatePngHeader(int width, int height)
+    {
+        var header = new byte[24];
+        new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }.CopyTo(header, 0);
+        WriteBigEndian(header, 16, width);
+        WriteBigEndian(header, 20, height);
+        return header;
+    }
+
+    private static void WriteBigEndian(byte[] buffer, int offset, int value)
+    {
+        buffer[offset] = (byte)((value >> 24) & 0xFF);
+        buffer[offset + 1] = (byte)((value >> 16) & 0xFF);
+        buffer[offset + 2] = (byte)((value >> 8) & 0xFF);
+        buffer[offset + 3] = (byte)(value & 0xFF);
     }
 }

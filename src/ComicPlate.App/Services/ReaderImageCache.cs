@@ -10,7 +10,7 @@ public sealed class ReaderImageCache : IDisposable
     private static readonly TimeSpan RetiredImageDisposeDelay = TimeSpan.FromSeconds(2);
 
     private readonly Dictionary<int, CacheEntry> _cache = new();
-    private readonly ImagePageLoader _imagePageLoader;
+    private readonly Func<PageEntry, ReaderImageDecodeRequest, CancellationToken, Task<Bitmap>> _loadImageAsync;
     private readonly long _budgetBytes;
     private readonly List<Bitmap> _retiredImages = new();
     private readonly DispatcherTimer _retiredImageDisposeTimer;
@@ -19,8 +19,15 @@ public sealed class ReaderImageCache : IDisposable
     private bool _isDisposed;
 
     public ReaderImageCache(ImagePageLoader imagePageLoader, long budgetBytes = DefaultBudgetBytes)
+        : this(imagePageLoader.LoadAsync, budgetBytes)
     {
-        _imagePageLoader = imagePageLoader;
+    }
+
+    public ReaderImageCache(
+        Func<PageEntry, ReaderImageDecodeRequest, CancellationToken, Task<Bitmap>> loadImageAsync,
+        long budgetBytes = DefaultBudgetBytes)
+    {
+        _loadImageAsync = loadImageAsync;
         _budgetBytes = Math.Max(0, budgetBytes);
         _retiredImageDisposeTimer = new DispatcherTimer
         {
@@ -42,7 +49,7 @@ public sealed class ReaderImageCache : IDisposable
             return cachedEntry.Image;
         }
 
-        var image = await _imagePageLoader.LoadAsync(
+        var image = await _loadImageAsync(
             page,
             request,
             cancellationToken);
@@ -63,6 +70,29 @@ public sealed class ReaderImageCache : IDisposable
         _cache[pageIndex] = nextEntry;
         _estimatedBytes += nextEntry.EstimatedBytes;
         return image;
+    }
+
+    public Bitmap? TryGetPreview(int pageIndex)
+    {
+        if (!_cache.TryGetValue(pageIndex, out var cachedEntry))
+        {
+            return null;
+        }
+
+        cachedEntry.MarkAccessed(GetNextAccessOrder());
+        return cachedEntry.Image;
+    }
+
+    public Bitmap? TryGetReusable(int pageIndex, ReaderImageDecodeRequest request)
+    {
+        if (!_cache.TryGetValue(pageIndex, out var cachedEntry)
+            || !cachedEntry.Request.CanReuseFor(request))
+        {
+            return null;
+        }
+
+        cachedEntry.MarkAccessed(GetNextAccessOrder());
+        return cachedEntry.Image;
     }
 
     public void TrimToBudget(IReadOnlySet<int> activeIndexes, int currentPageIndex)

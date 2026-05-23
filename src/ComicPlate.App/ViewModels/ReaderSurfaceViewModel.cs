@@ -9,14 +9,13 @@ namespace ComicPlate.App.ViewModels;
 
 public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 {
+    private const int InitialMetadataPageRadius = 12;
     private const int NeighborPageLimit = 5;
     private const double ReaderViewportSizeEpsilon = 0.5;
-    private const double ReaderTransitionDistanceRatio = 0.32;
     private static readonly TimeSpan ReaderViewportResizeCommitDelay = TimeSpan.FromMilliseconds(140);
-    private static readonly TimeSpan ReaderTransitionDuration = TimeSpan.FromMilliseconds(150);
-    private static readonly TimeSpan ReaderTransitionFrameInterval = TimeSpan.FromMilliseconds(16);
 
-    private readonly PageImageInfoLoader _pageImageInfoLoader = new();
+    private readonly PageImageInfoLoader _pageImageInfoLoader;
+    private readonly ReaderMotionSettings _motionSettings;
     private readonly ReaderFrameBuilder _readerFrameBuilder = new();
     private readonly ReaderImageCache _readerImageCache;
     private readonly ReaderMagnifierController _readerMagnifierController = new();
@@ -34,7 +33,12 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     private bool _hasReaderViewportSize;
     private int? _progressPreviewPageIndex;
     private string? _progressPreviewPageText;
+    private readonly DispatcherTimer _bookOpenRevealTimer;
     private readonly DispatcherTimer _readerTransitionTimer;
+    private double _bookOpenRevealStartOffset;
+    private double _bookOpenRevealOffset;
+    private double _bookOpenRevealOpacity = 1;
+    private DateTimeOffset _bookOpenRevealStartedAt;
     private double _readerTransitionStartOffset;
     private double _readerTransitionOffset;
     private DateTimeOffset _readerTransitionStartedAt;
@@ -43,15 +47,24 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         ReaderImageCache readerImageCache,
         ReadingDirection initialReadingDirection = ReadingDirection.RightToLeft,
         ViewMode initialViewMode = ViewMode.SinglePage,
-        bool isMagnifierEnabled = true)
+        bool isMagnifierEnabled = true,
+        PageImageInfoLoader? pageImageInfoLoader = null,
+        ReaderMotionSettings? motionSettings = null)
     {
         _readerImageCache = readerImageCache;
+        _pageImageInfoLoader = pageImageInfoLoader ?? new PageImageInfoLoader();
+        _motionSettings = (motionSettings ?? ReaderMotionSettingsLoader.LoadEmbeddedOrDefault()).Normalize();
         _readerMagnifierController.SetEnabled(isMagnifierEnabled);
         _readerState.SetReadingDirection(initialReadingDirection);
         _readerState.SetViewMode(initialViewMode);
+        _bookOpenRevealTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(_motionSettings.BookOpenReveal.FrameIntervalMs),
+        };
+        _bookOpenRevealTimer.Tick += OnBookOpenRevealTimerTick;
         _readerTransitionTimer = new DispatcherTimer
         {
-            Interval = ReaderTransitionFrameInterval,
+            Interval = TimeSpan.FromMilliseconds(_motionSettings.ReaderTransition.FrameIntervalMs),
         };
         _readerTransitionTimer.Tick += OnReaderTransitionTimerTick;
 
@@ -176,7 +189,10 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _currentLogicalPath, value);
     }
 
-    public double ReaderStripTranslateX => _readerStripController.TranslateX + _readerTransitionOffset;
+    public double ReaderStripTranslateX =>
+        _readerStripController.TranslateX + _readerTransitionOffset + _bookOpenRevealOffset;
+
+    public double ReaderStripOpacity => _bookOpenRevealOpacity;
 
     public ReadingDirection ReadingDirection => _readerState.ReadingDirection;
 
@@ -405,7 +421,8 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         CancelReaderViewportRefresh();
         CancelReaderStripImageLoads();
         var pageInfoLoadVersion = ++_pageInfoLoadVersion;
-        _pageImageInfos = CreateUnknownPageImageInfos(pages.Count);
+        var initialPageImageInfos = CreateUnknownPageImageInfos(pages.Count);
+        _pageImageInfos = initialPageImageInfos;
         _readerState.LoadPages(pages, initialPageIndex);
         PageItems.Clear();
 
@@ -423,7 +440,24 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        await RefreshReaderStripAsync(clearImageCacheBeforeReplace: true);
+        ReplaceReaderStripItems(new ObservableCollection<ReaderStripItemViewModel>());
+        UpdatePageStatus();
+        RaiseCommandStates();
+
+        await _pageImageInfoLoader.LoadAsync(
+            pages,
+            initialPageImageInfos,
+            GetInitialMetadataPageIndexes(_readerState.CurrentPageIndex, pages.Count),
+            CancellationToken.None);
+        if (pageInfoLoadVersion != _pageInfoLoadVersion || pages != _readerState.Pages)
+        {
+            return;
+        }
+
+        _pageImageInfos = initialPageImageInfos;
+        await RefreshReaderStripAsync(
+            clearImageCacheBeforeReplace: true,
+            startBookOpenReveal: true);
         _ = LoadPageImageInfosInBackgroundAsync(pages, pageInfoLoadVersion);
     }
 
@@ -432,6 +466,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         ClearProgressPreview();
         CancelReaderViewportRefresh();
         CancelReaderStripImageLoads();
+        StopBookOpenReveal();
         _readerImageCache.Clear();
         _pageInfoLoadVersion++;
         _pageImageInfos = Array.Empty<PageImageInfo>();
@@ -443,18 +478,31 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         RaiseCommandStates();
     }
 
-    private static IReadOnlyList<PageImageInfo> CreateUnknownPageImageInfos(int pageCount)
+    private static PageImageInfo[] CreateUnknownPageImageInfos(int pageCount)
     {
         var infos = new PageImageInfo[pageCount];
         Array.Fill(infos, PageImageInfo.Unknown);
         return infos;
     }
 
+    private static IReadOnlyList<int> GetInitialMetadataPageIndexes(int currentPageIndex, int pageCount)
+    {
+        if (pageCount <= 0)
+        {
+            return Array.Empty<int>();
+        }
+
+        var start = Math.Max(0, currentPageIndex - InitialMetadataPageRadius);
+        var end = Math.Min(pageCount - 1, currentPageIndex + InitialMetadataPageRadius);
+        return Enumerable.Range(start, end - start + 1).ToArray();
+    }
+
     private async Task LoadPageImageInfosInBackgroundAsync(
         IReadOnlyList<PageEntry> pages,
         int pageInfoLoadVersion)
     {
-        var infos = await Task.Run(() => _pageImageInfoLoader.LoadAsync(pages, CancellationToken.None));
+        var seedInfos = _pageImageInfos;
+        var infos = await Task.Run(() => _pageImageInfoLoader.LoadAsync(pages, seedInfos, CancellationToken.None));
         if (pageInfoLoadVersion != _pageInfoLoadVersion || pages != _readerState.Pages)
         {
             return;
@@ -463,16 +511,23 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         _pageImageInfos = infos;
         await RefreshReaderStripAsync(new ReaderStripPlacement(
             _readerState.CurrentPageIndex,
-            _readerStripController.GetPageScreenCenter(_readerState.CurrentPageIndex, ReaderStripTranslateX)));
+            _readerStripController.GetPageScreenCenter(_readerState.CurrentPageIndex, ReaderStripTranslateX)),
+            preserveBookOpenReveal: true);
     }
 
     private Task RefreshReaderStripAsync(
         ReaderStripPlacement? placement = null,
         int transitionDirection = 0,
-        bool clearImageCacheBeforeReplace = false)
+        bool clearImageCacheBeforeReplace = false,
+        bool startBookOpenReveal = false,
+        bool preserveBookOpenReveal = false)
     {
         var refreshVersion = _readerStripRefreshCoordinator.BeginRefresh();
         StopReaderTransition();
+        if (startBookOpenReveal || !preserveBookOpenReveal)
+        {
+            StopBookOpenReveal();
+        }
 
         if (!_readerState.HasPages)
         {
@@ -539,6 +594,11 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         ReadingStateChanged?.Invoke();
         RaiseCommandStates();
         StartReaderTransition(transitionDirection);
+        if (startBookOpenReveal)
+        {
+            StartBookOpenReveal();
+        }
+
         return Task.CompletedTask;
     }
 
@@ -709,6 +769,8 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        StopBookOpenReveal();
+        _bookOpenRevealTimer.Tick -= OnBookOpenRevealTimerTick;
         StopReaderTransition();
         _readerTransitionTimer.Tick -= OnReaderTransitionTimerTick;
         _readerStripRefreshCoordinator.Dispose();
@@ -794,6 +856,43 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         }
     }
 
+    private void StartBookOpenReveal()
+    {
+        var motion = _motionSettings.BookOpenReveal;
+        if (!motion.Enabled || !_readerState.HasPages || _readerStripController.ViewportWidth <= 0)
+        {
+            return;
+        }
+
+        _bookOpenRevealStartOffset = _readerState.ReadingDirection == ReadingDirection.RightToLeft
+            ? motion.DistanceDip
+            : -motion.DistanceDip;
+        _bookOpenRevealOffset = _bookOpenRevealStartOffset;
+        _bookOpenRevealOpacity = motion.OpacityFrom;
+        _bookOpenRevealStartedAt = DateTimeOffset.UtcNow;
+        OnPropertyChanged(nameof(ReaderStripOpacity));
+        UpdateReaderStripTransform();
+        _bookOpenRevealTimer.Start();
+    }
+
+    private void StopBookOpenReveal()
+    {
+        var targetOpacity = _motionSettings.BookOpenReveal.OpacityTo;
+        _bookOpenRevealTimer.Stop();
+        if (Math.Abs(_bookOpenRevealOffset) <= 0.001
+            && Math.Abs(_bookOpenRevealOpacity - targetOpacity) <= 0.001)
+        {
+            _bookOpenRevealOffset = 0;
+            _bookOpenRevealOpacity = targetOpacity;
+            return;
+        }
+
+        _bookOpenRevealOffset = 0;
+        _bookOpenRevealOpacity = targetOpacity;
+        OnPropertyChanged(nameof(ReaderStripOpacity));
+        UpdateReaderStripTransform();
+    }
+
     private void UpdateMagnifierTransform()
     {
         if (!_readerMagnifierController.IsActive)
@@ -850,15 +949,16 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
 
     private void StartReaderTransition(int direction)
     {
-        if (direction == 0 || _readerStripController.ViewportWidth <= 0)
+        var motion = _motionSettings.ReaderTransition;
+        if (!motion.Enabled || direction == 0 || _readerStripController.ViewportWidth <= 0)
         {
             return;
         }
 
         var distance = Math.Clamp(
-            _readerStripController.ViewportWidth * ReaderTransitionDistanceRatio,
-            120,
-            360);
+            _readerStripController.ViewportWidth * motion.DistanceViewportRatio,
+            motion.MinDistanceDip,
+            motion.MaxDistanceDip);
         _readerTransitionStartOffset = direction > 0 ? distance : -distance;
         _readerTransitionOffset = _readerTransitionStartOffset;
         _readerTransitionStartedAt = DateTimeOffset.UtcNow;
@@ -883,7 +983,7 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     {
         var elapsed = DateTimeOffset.UtcNow - _readerTransitionStartedAt;
         var progress = Math.Clamp(
-            elapsed.TotalMilliseconds / ReaderTransitionDuration.TotalMilliseconds,
+            elapsed.TotalMilliseconds / _motionSettings.ReaderTransition.DurationMs,
             0,
             1);
         if (progress >= 1)
@@ -895,6 +995,32 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         var easedProgress = EaseOutCubic(progress);
         _readerTransitionOffset = _readerTransitionStartOffset * (1 - easedProgress);
         UpdateReaderStripTransform();
+    }
+
+    private void OnBookOpenRevealTimerTick(object? sender, EventArgs e)
+    {
+        var motion = _motionSettings.BookOpenReveal;
+        var elapsed = DateTimeOffset.UtcNow - _bookOpenRevealStartedAt;
+        var progress = Math.Clamp(
+            elapsed.TotalMilliseconds / motion.DurationMs,
+            0,
+            1);
+        if (progress >= 1)
+        {
+            StopBookOpenReveal();
+            return;
+        }
+
+        var easedProgress = EaseOutCubic(progress);
+        _bookOpenRevealOffset = _bookOpenRevealStartOffset * (1 - easedProgress);
+        _bookOpenRevealOpacity = Lerp(motion.OpacityFrom, motion.OpacityTo, easedProgress);
+        OnPropertyChanged(nameof(ReaderStripOpacity));
+        UpdateReaderStripTransform();
+    }
+
+    private static double Lerp(double start, double end, double progress)
+    {
+        return start + ((end - start) * progress);
     }
 
     private static double EaseOutCubic(double progress)

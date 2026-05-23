@@ -60,6 +60,7 @@
                     <ItemsControl ItemsSource="{Binding Reader.ReaderStripItems}"
                                   Canvas.Left="{Binding Reader.MagnifiedReaderStripTranslateX}"
                                   Canvas.Top="{Binding Reader.MagnifierContentTranslateY}"
+                                  Opacity="{Binding Reader.ReaderStripOpacity}"
                                   RenderTransformOrigin="0,0">
                         <ItemsControl.RenderTransform>
                             <ScaleTransform ScaleX="{Binding Reader.MagnifierScale}"

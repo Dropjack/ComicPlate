@@ -1,0 +1,23 @@
+{
+  // New book / book switch reveal. This is embedded into the app and is not exposed in UI.
+  "bookOpenReveal": {
+    "enabled": true,
+    "distanceDip": 140,
+    "durationMs": 220,
+    "frameIntervalMs": 16,
+    "opacityFrom": 0.0,
+    "opacityTo": 1.0,
+    "easing": "easeOutCubic"
+  },
+
+  // Explicit frame navigation / progress jump motion.
+  "readerTransition": {
+    "enabled": true,
+    "distanceViewportRatio": 0.32,
+    "minDistanceDip": 90,
+    "maxDistanceDip": 360,
+    "durationMs": 150,
+    "frameIntervalMs": 16,
+    "easing": "easeOutCubic"
+  }
+}
