@@ -6,7 +6,8 @@
           Background="{StaticResource BackgroundBase}"
           Margin="24">
         <StackPanel Grid.Row="1"
-                    Width="320"
+                    Width="360"
+                    MaxWidth="420"
                     HorizontalAlignment="Center"
                     Spacing="12">
             <TextBlock Text="ComicPlate"
@@ -20,24 +21,16 @@
                     HorizontalAlignment="Stretch"
                     Padding="12,10"
                     CornerRadius="6" />
-            <Button Command="{Binding OpenPathCommand}"
-                    Content="{loc:Loc Start.Open}"
-                    HorizontalAlignment="Stretch"
-                    Padding="12,10"
-                    CornerRadius="6"
-                    IsVisible="{Binding IsUnifiedOpenPickerAvailable}" />
             <Button Command="{Binding OpenContentCommand}"
                     Content="{loc:Loc Start.OpenComics}"
                     HorizontalAlignment="Stretch"
                     Padding="12,10"
-                    CornerRadius="6"
-                    IsVisible="{Binding IsSplitOpenPickerAvailable}" />
+                    CornerRadius="6" />
             <Button Command="{Binding OpenFolderCommand}"
                     Content="{loc:Loc Start.OpenFolder}"
                     HorizontalAlignment="Stretch"
                     Padding="12,10"
-                    CornerRadius="6"
-                    IsVisible="{Binding IsSplitOpenPickerAvailable}" />
+                    CornerRadius="6" />
             <Border Background="{StaticResource SubtlePanelBrush}"
                     BorderBrush="{StaticResource BorderBrushSoft}"
                     BorderThickness="1"
@@ -46,8 +39,11 @@
                     HorizontalAlignment="Stretch">
                 <TextBlock Text="{loc:Loc Start.DragHint}"
                            Foreground="{StaticResource MutedTextBrush}"
+                           HorizontalAlignment="Center"
                            TextAlignment="Center"
-                           TextWrapping="Wrap" />
+                           TextWrapping="Wrap"
+                           TextTrimming="None"
+                           LineHeight="20" />
             </Border>
         </StackPanel>
     </Grid>

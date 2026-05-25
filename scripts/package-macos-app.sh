@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="${APP_NAME:-ComicPlate}"
 BUNDLE_ID="${BUNDLE_ID:-com.doro.comicplate}"
-VERSION="${VERSION:-0.1.0}"
+VERSION="${VERSION:-1.1.1}"
 BUILD="${BUILD:-1}"
 RID="${RID:-osx-arm64}"
 SELF_CONTAINED="${SELF_CONTAINED:-true}"

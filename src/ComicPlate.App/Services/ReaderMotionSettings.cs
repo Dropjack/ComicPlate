@@ -6,6 +6,10 @@ public sealed class ReaderMotionSettings
 
     public ReaderTransitionMotionSettings ReaderTransition { get; init; } = new();
 
+    public ReaderInputMotionSettings ReaderInput { get; init; } = new();
+
+    public ReaderMagnifierMotionSettings Magnifier { get; init; } = new();
+
     public static ReaderMotionSettings Default { get; } = new();
 
     public ReaderMotionSettings Normalize()
@@ -14,6 +18,8 @@ public sealed class ReaderMotionSettings
         {
             BookOpenReveal = BookOpenReveal.Normalize(),
             ReaderTransition = ReaderTransition.Normalize(),
+            ReaderInput = ReaderInput.Normalize(),
+            Magnifier = Magnifier.Normalize(),
         };
     }
 }
@@ -45,6 +51,54 @@ public sealed class BookOpenRevealMotionSettings
             OpacityFrom = ClampFinite(OpacityFrom, 0, 1, 0),
             OpacityTo = ClampFinite(OpacityTo, 0, 1, 1),
             Easing = string.IsNullOrWhiteSpace(Easing) ? "easeOutCubic" : Easing,
+        };
+    }
+
+    private static double ClampFinite(double value, double min, double max, double fallback)
+    {
+        return double.IsFinite(value) ? Math.Clamp(value, min, max) : fallback;
+    }
+}
+
+public sealed class ReaderInputMotionSettings
+{
+    public double WheelFreeMoveViewportRatio { get; init; } = 0.35;
+
+    public double WheelFreeMoveMinDistanceDip { get; init; } = 120;
+
+    public double WheelDeltaMultiplier { get; init; } = 1;
+
+    public double TouchpadHorizontalDeltaMultiplier { get; init; } = 1;
+
+    public ReaderInputMotionSettings Normalize()
+    {
+        return new ReaderInputMotionSettings
+        {
+            WheelFreeMoveViewportRatio = ClampFinite(WheelFreeMoveViewportRatio, 0, 2, 0.35),
+            WheelFreeMoveMinDistanceDip = ClampFinite(WheelFreeMoveMinDistanceDip, 0, 720, 120),
+            WheelDeltaMultiplier = ClampFinite(WheelDeltaMultiplier, 0.05, 10, 1),
+            TouchpadHorizontalDeltaMultiplier = ClampFinite(TouchpadHorizontalDeltaMultiplier, 0.05, 10, 1),
+        };
+    }
+
+    private static double ClampFinite(double value, double min, double max, double fallback)
+    {
+        return double.IsFinite(value) ? Math.Clamp(value, min, max) : fallback;
+    }
+}
+
+public sealed class ReaderMagnifierMotionSettings
+{
+    public double PointerSensitivity { get; init; } = 1.15;
+
+    public double WheelScaleStep { get; init; } = 0.05;
+
+    public ReaderMagnifierMotionSettings Normalize()
+    {
+        return new ReaderMagnifierMotionSettings
+        {
+            PointerSensitivity = ClampFinite(PointerSensitivity, 0.1, 4, 1.15),
+            WheelScaleStep = ClampFinite(WheelScaleStep, 0.001, 0.5, 0.05),
         };
     }
 

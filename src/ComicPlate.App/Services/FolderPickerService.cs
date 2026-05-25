@@ -1,7 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using ComicPlate.Core.Books;
-using System.Diagnostics;
 
 namespace ComicPlate.App.Services;
 
@@ -14,29 +13,15 @@ public sealed class FolderPickerService : IFolderPickerService
         _owner = owner;
     }
 
-    public async Task<string?> PickOpenPathAsync()
-    {
-        if (OperatingSystem.IsMacOS())
-        {
-            var path = await TryPickFileOrFolderWithMacOpenPanelAsync();
-            if (!string.IsNullOrWhiteSpace(path))
-            {
-                return path;
-            }
-        }
-
-        return await PickComicFileAsync();
-    }
-
     public async Task<string?> PickComicFileAsync()
     {
         var files = await _owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Open File",
+            Title = Text("Picker.OpenFile.Title"),
             AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("Readable visual files")
+                new FilePickerFileType(Text("Picker.Filter.ReadableFiles"))
                 {
                     Patterns = ComicArchiveFormats.SupportedFormats
                         .Select(format => $"*{format.Extension}")
@@ -45,15 +30,15 @@ public sealed class FolderPickerService : IFolderPickerService
                         .Concat(SupportedPageFormats.SupportedExtensions.Select(extension => $"*{extension}"))
                         .ToArray()
                 },
-                new FilePickerFileType("Image PDF files")
+                new FilePickerFileType(Text("Picker.Filter.ImagePdf"))
                 {
                     Patterns = [$"*{PdfBookFormat.Extension}"]
                 },
-                new FilePickerFileType("Image EPUB files")
+                new FilePickerFileType(Text("Picker.Filter.ImageEpub"))
                 {
                     Patterns = [$"*{EpubBookFormat.Extension}"]
                 },
-                new FilePickerFileType("Comic archives")
+                new FilePickerFileType(Text("Picker.Filter.ComicArchives"))
                 {
                     Patterns = ComicArchiveFormats.SupportedFormats
                         .Select(format => $"*{format.Extension}")
@@ -72,7 +57,7 @@ public sealed class FolderPickerService : IFolderPickerService
     {
         var folders = await _owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "Open Folder",
+            Title = Text("Picker.OpenFolder.Title"),
             AllowMultiple = false
         });
 
@@ -81,67 +66,8 @@ public sealed class FolderPickerService : IFolderPickerService
             : folders[0].Path.LocalPath;
     }
 
-    private static async Task<string?> TryPickFileOrFolderWithMacOpenPanelAsync()
+    private static string Text(string key)
     {
-        try
-        {
-            using var process = new Process();
-            process.StartInfo = new ProcessStartInfo
-            {
-                FileName = "osascript",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            foreach (var line in CreateMacOpenPanelScript())
-            {
-                process.StartInfo.ArgumentList.Add("-e");
-                process.StartInfo.ArgumentList.Add(line);
-            }
-
-            process.Start();
-            var outputTask = process.StandardOutput.ReadToEndAsync();
-            var errorTask = process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync();
-            _ = await errorTask;
-
-            if (process.ExitCode != 0)
-            {
-                return null;
-            }
-
-            var output = (await outputTask).Trim();
-            return string.IsNullOrWhiteSpace(output) ? null : output;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static string[] CreateMacOpenPanelScript()
-    {
-        return
-        [
-            "use framework \"AppKit\"",
-            "use scripting additions",
-            "set panel to current application's NSOpenPanel's openPanel()",
-            "panel's setCanChooseFiles:true",
-            "panel's setCanChooseDirectories:true",
-            "panel's setAllowsMultipleSelection:false",
-            "panel's setResolvesAliases:true",
-            "panel's setTitle:\"Open\"",
-            "set resultCode to panel's runModal()",
-            "if (resultCode as integer) is 1 then",
-            "set selectedUrls to panel's URLs()",
-            "if (count of selectedUrls) > 0 then",
-            "set selectedUrl to item 1 of selectedUrls",
-            "return (selectedUrl's path()) as text",
-            "end if",
-            "end if",
-            "return \"\""
-        ];
+        return LocalizationService.Current.GetString(key);
     }
 }

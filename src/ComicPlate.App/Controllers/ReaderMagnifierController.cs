@@ -1,3 +1,5 @@
+using ComicPlate.App.Services;
+
 namespace ComicPlate.App.Controllers;
 
 public sealed class ReaderMagnifierController
@@ -5,12 +7,16 @@ public sealed class ReaderMagnifierController
     private const double DefaultScale = 1.5;
     private const double MinimumScale = 1.5;
     private const double MaximumScale = 2.5;
-    private const double PointerSensitivity = 1.15;
-    private const double WheelScaleStep = 0.05;
 
+    private readonly ReaderMagnifierMotionSettings _motionSettings;
     private double _scale = DefaultScale;
     private double _pointerX;
     private double _pointerY;
+
+    public ReaderMagnifierController(ReaderMagnifierMotionSettings? motionSettings = null)
+    {
+        _motionSettings = (motionSettings ?? new ReaderMagnifierMotionSettings()).Normalize();
+    }
 
     public bool IsEnabled { get; private set; } = true;
 
@@ -65,8 +71,8 @@ public sealed class ReaderMagnifierController
 
     public void UpdatePointer(double x, double y, double viewportWidth, double viewportHeight)
     {
-        _pointerX = ProjectPointer(x, viewportWidth, PointerSensitivity);
-        _pointerY = ProjectPointer(y, viewportHeight, PointerSensitivity);
+        _pointerX = ProjectPointer(x, viewportWidth, _motionSettings.PointerSensitivity);
+        _pointerY = ProjectPointer(y, viewportHeight, _motionSettings.PointerSensitivity);
     }
 
     public bool AdjustScale(double wheelDelta, out bool scaleChanged)
@@ -78,7 +84,7 @@ public sealed class ReaderMagnifierController
         }
 
         var nextScale = Math.Clamp(
-            _scale + (wheelDelta * WheelScaleStep),
+            _scale + (wheelDelta * _motionSettings.WheelScaleStep),
             MinimumScale,
             MaximumScale);
         if (Math.Abs(nextScale - _scale) <= 0.001)

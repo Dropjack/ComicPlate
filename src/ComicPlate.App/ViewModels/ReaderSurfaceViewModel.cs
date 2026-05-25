@@ -18,9 +18,9 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
     private readonly ReaderMotionSettings _motionSettings;
     private readonly ReaderFrameBuilder _readerFrameBuilder = new();
     private readonly ReaderImageCache _readerImageCache;
-    private readonly ReaderMagnifierController _readerMagnifierController = new();
+    private readonly ReaderMagnifierController _readerMagnifierController;
     private readonly ReaderState _readerState = new();
-    private readonly ReaderStripController _readerStripController = new(NeighborPageLimit);
+    private readonly ReaderStripController _readerStripController;
     private readonly ReaderStripItemBuilder _readerStripItemBuilder = new();
     private readonly ReaderStripRefreshCoordinator _readerStripRefreshCoordinator =
         new(ReaderViewportResizeCommitDelay);
@@ -54,6 +54,8 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         _readerImageCache = readerImageCache;
         _pageImageInfoLoader = pageImageInfoLoader ?? new PageImageInfoLoader();
         _motionSettings = (motionSettings ?? ReaderMotionSettingsLoader.LoadEmbeddedOrDefault()).Normalize();
+        _readerMagnifierController = new ReaderMagnifierController(_motionSettings.Magnifier);
+        _readerStripController = new ReaderStripController(NeighborPageLimit, _motionSettings.ReaderInput);
         _readerMagnifierController.SetEnabled(isMagnifierEnabled);
         _readerState.SetReadingDirection(initialReadingDirection);
         _readerState.SetViewMode(initialViewMode);
@@ -326,14 +328,24 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         return true;
     }
 
-    public void WheelNextReadingGroup()
+    public void WheelNextReadingGroup(double inputDeltaMagnitude = 1)
     {
-        MoveReaderStripFreely(GetNextReadingDirectionOffsetDelta());
+        MoveReaderStripFreely(GetNextReadingDirectionOffsetDelta(inputDeltaMagnitude));
     }
 
-    public void WheelPreviousReadingGroup()
+    public void WheelPreviousReadingGroup(double inputDeltaMagnitude = 1)
     {
-        MoveReaderStripFreely(-GetNextReadingDirectionOffsetDelta());
+        MoveReaderStripFreely(-GetNextReadingDirectionOffsetDelta(inputDeltaMagnitude));
+    }
+
+    public void TouchpadScrollVisualLeft(double inputDeltaMagnitude = 1)
+    {
+        MoveReaderStripFreely(_readerStripController.GetVisualLeftOffsetDelta(inputDeltaMagnitude));
+    }
+
+    public void TouchpadScrollVisualRight(double inputDeltaMagnitude = 1)
+    {
+        MoveReaderStripFreely(_readerStripController.GetVisualRightOffsetDelta(inputDeltaMagnitude));
     }
 
     public void GoToProgressRatio(double visualRatio)
@@ -832,9 +844,11 @@ public sealed class ReaderSurfaceViewModel : ViewModelBase, IDisposable
         _ = RefreshReaderStripAsync(result.Placement);
     }
 
-    private double GetNextReadingDirectionOffsetDelta()
+    private double GetNextReadingDirectionOffsetDelta(double inputDeltaMagnitude = 1)
     {
-        return _readerStripController.GetNextReadingDirectionOffsetDelta(_readerState.ReadingDirection);
+        return _readerStripController.GetNextReadingDirectionOffsetDelta(
+            _readerState.ReadingDirection,
+            inputDeltaMagnitude);
     }
 
     private void ResetReaderStripDrag()

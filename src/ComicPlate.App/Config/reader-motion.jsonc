@@ -19,5 +19,20 @@
     "durationMs": 150,
     "frameIntervalMs": 16,
     "easing": "easeOutCubic"
+  },
+
+  // Free reader movement from mouse wheel and touchpad scroll. This does not affect
+  // explicit keyboard/button navigation, which still snaps to a reading frame.
+  "readerInput": {
+    "wheelFreeMoveViewportRatio": 0.35,
+    "wheelFreeMoveMinDistanceDip": 120,
+    "wheelDeltaMultiplier": 1.0,
+    "touchpadHorizontalDeltaMultiplier": 1.0
+  },
+
+  // Reader magnifier tuning. These values are embedded and are not exposed in UI.
+  "magnifier": {
+    "pointerSensitivity": 1.15,
+    "wheelScaleStep": 0.05
   }
 }

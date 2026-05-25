@@ -226,15 +226,7 @@ public partial class MainWindow : Window
                 e.Handled = true;
                 break;
             case ShortcutActionId.OpenContent:
-                if (_viewModel.IsUnifiedOpenPickerAvailable)
-                {
-                    _viewModel.OpenPathCommand.Execute(null);
-                }
-                else
-                {
-                    _viewModel.OpenContentCommand.Execute(null);
-                }
-
+                _viewModel.OpenContentCommand.Execute(null);
                 e.Handled = true;
                 break;
             case ShortcutActionId.NewWindow:
@@ -297,23 +289,23 @@ public partial class MainWindow : Window
         {
             if (e.Delta.X > 0)
             {
-                _viewModel.Reader.VisualLeftCommand.Execute(null);
+                _viewModel.Reader.TouchpadScrollVisualLeft(Math.Abs(e.Delta.X));
                 e.Handled = true;
             }
             else if (e.Delta.X < 0)
             {
-                _viewModel.Reader.VisualRightCommand.Execute(null);
+                _viewModel.Reader.TouchpadScrollVisualRight(Math.Abs(e.Delta.X));
                 e.Handled = true;
             }
         }
         else if (e.Delta.Y < 0)
         {
-            _viewModel.Reader.WheelNextReadingGroup();
+            _viewModel.Reader.WheelNextReadingGroup(Math.Abs(e.Delta.Y));
             e.Handled = true;
         }
         else if (e.Delta.Y > 0)
         {
-            _viewModel.Reader.WheelPreviousReadingGroup();
+            _viewModel.Reader.WheelPreviousReadingGroup(Math.Abs(e.Delta.Y));
             e.Handled = true;
         }
     }

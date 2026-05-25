@@ -98,20 +98,6 @@
                         <StackPanel Grid.Row="1"
                                     Spacing="8"
                                     HorizontalAlignment="Center">
-                            <Button Command="{Binding OpenPathCommand}"
-                                    Width="52"
-                                    MinHeight="44"
-                                    Padding="0"
-                                    Background="Transparent"
-                                    BorderBrush="Transparent"
-                                    BorderThickness="0"
-                                    CornerRadius="18"
-                                    ToolTip.Tip="{loc:Loc Main.Open.Tooltip}"
-                                    IsVisible="{Binding IsUnifiedOpenPickerAvailable}">
-                                <PathIcon Data="{StaticResource OpenBookIcon}"
-                                          Width="24"
-                                          Height="24" />
-                            </Button>
                             <Button Command="{Binding OpenContentCommand}"
                                     Width="52"
                                     MinHeight="44"
@@ -120,8 +106,7 @@
                                     BorderBrush="Transparent"
                                     BorderThickness="0"
                                     CornerRadius="18"
-                                    ToolTip.Tip="{loc:Loc Main.OpenComic.Tooltip}"
-                                    IsVisible="{Binding IsSplitOpenPickerAvailable}">
+                                    ToolTip.Tip="{loc:Loc Main.OpenComic.Tooltip}">
                                 <PathIcon Data="{StaticResource OpenBookIcon}"
                                           Width="24"
                                           Height="24" />
@@ -134,8 +119,7 @@
                                     BorderBrush="Transparent"
                                     BorderThickness="0"
                                     CornerRadius="18"
-                                    ToolTip.Tip="{loc:Loc Main.OpenFolder.Tooltip}"
-                                    IsVisible="{Binding IsSplitOpenPickerAvailable}">
+                                    ToolTip.Tip="{loc:Loc Main.OpenFolder.Tooltip}">
                                 <PathIcon Data="{StaticResource OpenFolderIcon}"
                                           Width="24"
                                           Height="24" />

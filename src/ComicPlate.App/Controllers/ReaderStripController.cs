@@ -1,21 +1,22 @@
 using ComicPlate.Core.Reading;
+using ComicPlate.App.Services;
 
 namespace ComicPlate.App.Controllers;
 
 public sealed class ReaderStripController
 {
-    private const double WheelFreeMoveViewportRatio = 0.35;
-
     private readonly VirtualizedReaderStrip _readerStrip;
+    private readonly ReaderInputMotionSettings _inputSettings;
     private IReadOnlyList<VirtualizedReaderStripSlot> _layoutSlots = Array.Empty<VirtualizedReaderStripSlot>();
     private double _baseOffset;
     private double _dragOffset;
     private double _viewportHeight = 600;
     private double _viewportWidth = 800;
 
-    public ReaderStripController(int neighborPageLimit)
+    public ReaderStripController(int neighborPageLimit, ReaderInputMotionSettings? inputSettings = null)
     {
         _readerStrip = new VirtualizedReaderStrip(neighborPageLimit);
+        _inputSettings = (inputSettings ?? new ReaderInputMotionSettings()).Normalize();
     }
 
     public double ViewportHeight => _viewportHeight;
@@ -126,12 +127,22 @@ public sealed class ReaderStripController
         return new ReaderStripCommitResult(true, targetFrame.PageIndexes.Min(), placement);
     }
 
-    public double GetNextReadingDirectionOffsetDelta(ReadingDirection readingDirection)
+    public double GetNextReadingDirectionOffsetDelta(ReadingDirection readingDirection, double inputDeltaMagnitude = 1)
     {
-        var magnitude = Math.Max(120, _viewportWidth * WheelFreeMoveViewportRatio);
+        var magnitude = GetFreeMoveMagnitude(inputDeltaMagnitude, _inputSettings.WheelDeltaMultiplier);
         return readingDirection == ReadingDirection.RightToLeft
             ? magnitude
             : -magnitude;
+    }
+
+    public double GetVisualLeftOffsetDelta(double inputDeltaMagnitude = 1)
+    {
+        return GetFreeMoveMagnitude(inputDeltaMagnitude, _inputSettings.TouchpadHorizontalDeltaMultiplier);
+    }
+
+    public double GetVisualRightOffsetDelta(double inputDeltaMagnitude = 1)
+    {
+        return -GetFreeMoveMagnitude(inputDeltaMagnitude, _inputSettings.TouchpadHorizontalDeltaMultiplier);
     }
 
     public double GetPageScreenCenter(int pageIndex, double stripOffset)
@@ -171,5 +182,16 @@ public sealed class ReaderStripController
         }
 
         return Math.Clamp(offset, _viewportWidth - contentWidth, 0);
+    }
+
+    private double GetFreeMoveMagnitude(double inputDeltaMagnitude, double multiplier)
+    {
+        var normalizedDelta = double.IsFinite(inputDeltaMagnitude)
+            ? Math.Max(0, inputDeltaMagnitude)
+            : 1;
+        var baseMagnitude = Math.Max(
+            _inputSettings.WheelFreeMoveMinDistanceDip,
+            _viewportWidth * _inputSettings.WheelFreeMoveViewportRatio);
+        return baseMagnitude * normalizedDelta * multiplier;
     }
 }
