@@ -27,12 +27,12 @@
     "wheelFreeMoveViewportRatio": 0.35,
     "wheelFreeMoveMinDistanceDip": 120,
     "wheelDeltaMultiplier": 1.0,
-    "touchpadHorizontalDeltaMultiplier": 1.0
+    "touchpadHorizontalDeltaMultiplier": 0.2
   },
 
   // Reader magnifier tuning. These values are embedded and are not exposed in UI.
   "magnifier": {
-    "pointerSensitivity": 1.15,
+    "pointerSensitivity": 1.5,
     "wheelScaleStep": 0.05
   }
 }

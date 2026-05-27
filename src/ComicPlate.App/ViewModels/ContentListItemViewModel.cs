@@ -10,6 +10,7 @@ public sealed class ContentListItemViewModel : ViewModelBase
     private string _thumbnailStatus = "";
     private bool _isReading;
     private bool _isNavigationCurrent;
+    private bool _isOpened;
 
     private ContentListItemViewModel(
         ContentListItemKind kind,
@@ -52,6 +53,12 @@ public sealed class ContentListItemViewModel : ViewModelBase
     {
         get => _isNavigationCurrent;
         set => SetProperty(ref _isNavigationCurrent, value);
+    }
+
+    public bool IsOpened
+    {
+        get => _isOpened;
+        set => SetProperty(ref _isOpened, value);
     }
 
     public Bitmap? Thumbnail

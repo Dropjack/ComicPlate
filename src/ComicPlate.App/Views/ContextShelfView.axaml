@@ -150,7 +150,7 @@
                      BorderThickness="0">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Grid ColumnDefinitions="56,*"
+                        <Grid ColumnDefinitions="56,*,2"
                               Classes="context-shelf-item"
                               Classes.reading="{Binding IsReading}"
                               Classes.navigation="{Binding IsNavigationCurrent}"
@@ -201,6 +201,10 @@
                                            FontSize="12"
                                            TextTrimming="CharacterEllipsis" />
                             </Grid>
+                            <Border Grid.Column="2"
+                                    Width="2"
+                                    Background="{StaticResource ReaderProgressTrackBrush}"
+                                    IsVisible="{Binding IsOpened}" />
                         </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>

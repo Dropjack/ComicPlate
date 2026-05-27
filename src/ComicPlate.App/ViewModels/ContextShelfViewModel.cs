@@ -81,10 +81,19 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(ItemCount));
     }
 
-    public void SetVisualState(string? readingBookId, string? navigationCollectionPath)
+    public void SetVisualState(
+        string? readingBookId,
+        string? navigationCollectionPath,
+        IReadOnlySet<string>? openedBookPaths)
     {
         var normalizedReadingBookId = NormalizePath(readingBookId);
         var normalizedNavigationCollectionPath = NormalizePath(navigationCollectionPath);
+        var normalizedOpenedBookPaths = openedBookPaths is null
+            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            : openedBookPaths
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(path => NormalizePath(path)!)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         foreach (var item in Items)
         {
@@ -94,6 +103,9 @@ public sealed class ContextShelfViewModel : ViewModelBase, IDisposable
             item.IsNavigationCurrent =
                 item.Entry.Kind == ShelfEntryKind.Collection
                 && PathsEqual(item.Entry.Path, normalizedNavigationCollectionPath);
+            item.IsOpened =
+                item.Entry.Kind == ShelfEntryKind.Book
+                && normalizedOpenedBookPaths.Contains(NormalizePath(item.Entry.Path) ?? "");
         }
     }
 

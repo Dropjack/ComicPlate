@@ -5,4 +5,6 @@ public sealed record ProgressStore(
     Dictionary<string, ProgressEntry> Books)
 {
     public static ProgressStore Empty { get; } = new(1, new Dictionary<string, ProgressEntry>(StringComparer.OrdinalIgnoreCase));
+
+    public Dictionary<string, OpenedBookEntry> OpenedBooks { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 }

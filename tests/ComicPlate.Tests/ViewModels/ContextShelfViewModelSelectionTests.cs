@@ -49,6 +49,36 @@ public sealed class ContextShelfViewModelSelectionTests
         Assert.Equal(new[] { "Book 1" }, activated);
     }
 
+    [Fact]
+    public void SetVisualState_MarksOpenedBookItems()
+    {
+        var viewModel = new ContextShelfViewModel(_ => Task.CompletedTask);
+        var openedBook = CreateBook("Book 1");
+        var unopenedBook = CreateBook("Book 2");
+        viewModel.ReplaceItems(new[]
+        {
+            openedBook,
+            unopenedBook,
+            new ShelfEntry(
+                Path.Combine("C:\\Comics", "Folder"),
+                "Folder",
+                ShelfEntryKind.Collection,
+                Path.Combine("C:\\Comics", "Folder")),
+        });
+
+        viewModel.SetVisualState(
+            readingBookId: null,
+            navigationCollectionPath: null,
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                Path.GetFullPath(openedBook.Path)
+            });
+
+        Assert.True(viewModel.Items[0].IsOpened);
+        Assert.False(viewModel.Items[1].IsOpened);
+        Assert.False(viewModel.Items[2].IsOpened);
+    }
+
     private static ShelfEntry CreateBook(string name)
     {
         var path = Path.Combine("C:\\Comics", $"{name}.cbz");

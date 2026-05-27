@@ -36,6 +36,16 @@ public sealed class ReadingSessionController
         return _stateStore.FindProgress(bookPath);
     }
 
+    public IReadOnlySet<string> GetOpenedBookPaths()
+    {
+        return _stateStore.GetOpenedBookPaths();
+    }
+
+    public void MarkBookOpened(BookEntry book)
+    {
+        _stateStore.MarkBookOpened(book);
+    }
+
     public IReadOnlyList<BookEntry> GetRecentBooks(int limit)
     {
         if (limit <= 0)

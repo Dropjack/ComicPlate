@@ -91,6 +91,42 @@ public sealed class JsonAppStateStore
         }
     }
 
+    public IReadOnlySet<string> GetOpenedBookPaths()
+    {
+        lock (FileGate)
+        {
+            return LoadProgressCore()
+                .OpenedBooks
+                .Keys
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    public bool IsBookOpened(string bookPath)
+    {
+        var key = NormalizePath(bookPath);
+        lock (FileGate)
+        {
+            return LoadProgressCore().OpenedBooks.ContainsKey(key);
+        }
+    }
+
+    public void MarkBookOpened(BookEntry book)
+    {
+        var normalizedPath = NormalizePath(book.Path);
+        lock (FileGate)
+        {
+            var store = LoadProgressCore();
+            store.OpenedBooks[normalizedPath] = new OpenedBookEntry(
+                normalizedPath,
+                book.DisplayName,
+                book.SourceKind,
+                DateTimeOffset.UtcNow);
+            TrimOpenedBooks(store);
+            WriteJson(ProgressPath, store);
+        }
+    }
+
     public void SaveProgress(ProgressEntry entry)
     {
         lock (FileGate)
@@ -299,9 +335,16 @@ public sealed class JsonAppStateStore
     private ProgressStore LoadProgressCore()
     {
         var store = ReadJson(ProgressPath, ProgressStore.Empty);
-        return new ProgressStore(
+        var normalizedStore = new ProgressStore(
             store.Version,
-            new Dictionary<string, ProgressEntry>(store.Books, StringComparer.OrdinalIgnoreCase));
+            new Dictionary<string, ProgressEntry>(store.Books ?? new Dictionary<string, ProgressEntry>(), StringComparer.OrdinalIgnoreCase))
+        {
+            OpenedBooks = new Dictionary<string, OpenedBookEntry>(
+                store.OpenedBooks ?? new Dictionary<string, OpenedBookEntry>(),
+                StringComparer.OrdinalIgnoreCase)
+        };
+
+        return normalizedStore;
     }
 
     private static void WriteJson<T>(string path, T value)
@@ -327,6 +370,25 @@ public sealed class JsonAppStateStore
         foreach (var key in staleKeys)
         {
             store.Books.Remove(key);
+        }
+    }
+
+    private void TrimOpenedBooks(ProgressStore store)
+    {
+        if (store.OpenedBooks.Count <= _progressLimit)
+        {
+            return;
+        }
+
+        var staleKeys = store.OpenedBooks
+            .OrderBy(pair => pair.Value.LastOpenedAt)
+            .Take(store.OpenedBooks.Count - _progressLimit)
+            .Select(pair => pair.Key)
+            .ToArray();
+
+        foreach (var key in staleKeys)
+        {
+            store.OpenedBooks.Remove(key);
         }
     }
 }

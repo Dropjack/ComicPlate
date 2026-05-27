@@ -437,6 +437,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             CurrentBook = result.DirectPages.Count > 0 ? result.DirectFolderBook : null;
             ReaderTitle = CurrentBook?.DisplayName ?? "";
             await Reader.LoadPagesAsync(result.DirectPages, progress?.LastPageIndex ?? 0);
+            if (CurrentBook is not null)
+            {
+                _readingSession.MarkBookOpened(CurrentBook);
+                UpdateContextShelfVisualState();
+            }
         }
 
         if (ContextShelf.IsEmpty && result.DirectPages.Count == 0 && Reader.ReaderStripItems.Count == 0)
@@ -505,6 +510,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
             var progress = initialPageIndex.HasValue ? null : _readingSession.FindProgress(book.Path);
             CurrentBook = pages.Count > 0 ? result.Book : null;
             await Reader.LoadPagesAsync(pages, initialPageIndex ?? progress?.LastPageIndex ?? 0);
+            if (CurrentBook is not null)
+            {
+                _readingSession.MarkBookOpened(CurrentBook);
+                UpdateContextShelfVisualState();
+            }
 
             if (pages.Count == 0)
             {
@@ -753,7 +763,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void UpdateContextShelfVisualState()
     {
-        ContextShelf.SetVisualState(CurrentBook?.Id, _navigationHighlightPath);
+        ContextShelf.SetVisualState(
+            CurrentBook?.Id,
+            _navigationHighlightPath,
+            _readingSession.GetOpenedBookPaths());
     }
 
     private async Task LocateCurrentBookInShelfAsync()

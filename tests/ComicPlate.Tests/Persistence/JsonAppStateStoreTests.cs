@@ -100,6 +100,45 @@ public sealed class JsonAppStateStoreTests : IDisposable
     }
 
     [Fact]
+    public void LoadsProgressWithoutOpenedBooksForBackwardCompatibility()
+    {
+        var store = new JsonAppStateStore(_tempDirectory);
+        File.WriteAllText(
+            Path.Combine(_tempDirectory, "progress.json"),
+            """
+            {
+              "Version": 1,
+              "Books": {}
+            }
+            """);
+
+        var loaded = store.LoadProgress();
+
+        Assert.Empty(loaded.Books);
+        Assert.Empty(loaded.OpenedBooks);
+    }
+
+    [Fact]
+    public void MarksBookOpenedIndependentlyFromProgress()
+    {
+        var store = new JsonAppStateStore(_tempDirectory);
+        var book = new BookEntry(@"D:\Manga\A.cbz", "A.cbz", BookSourceKind.Zip, @"D:\Manga\A.cbz");
+
+        store.MarkBookOpened(book);
+        store.SaveReadingState(
+            book,
+            pageIndex: 99,
+            pageCount: 100,
+            ReadingDirection.RightToLeft,
+            ViewMode.SinglePage,
+            new NavigationHistory());
+
+        Assert.True(store.IsBookOpened(book.Path));
+        Assert.Null(store.FindProgress(book.Path));
+        Assert.Contains(Path.GetFullPath(book.Path), store.GetOpenedBookPaths());
+    }
+
+    [Fact]
     public void TrimsOldProgressEntries()
     {
         var store = new JsonAppStateStore(_tempDirectory, progressLimit: 2);
