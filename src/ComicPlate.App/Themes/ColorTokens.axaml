@@ -24,6 +24,10 @@
     <Color x:Key="OverlayDarkColor">#CC1F1F1F</Color>
     <Color x:Key="MacFullscreenChromeColor">#80F9F7F5</Color>
     <Color x:Key="MacFullscreenChromeBorderColor">#66FFFFFF</Color>
+    <Color x:Key="MacSidebarGlassTintColor">#F3F5F2</Color>
+    <Color x:Key="MacSidebarGlassFallbackColor">#CCF3F5F2</Color>
+    <Color x:Key="MacSidebarGlassOverlayColor">#D9F3F5F2</Color>
+    <Color x:Key="MacSidebarGlassBorderColor">#99C9D4D0</Color>
 
     <SolidColorBrush x:Key="BackgroundBase" Color="{StaticResource BackgroundBaseColor}" />
     <SolidColorBrush x:Key="SurfacePanel" Color="{StaticResource SurfacePanelColor}" />
@@ -48,6 +52,8 @@
     <SolidColorBrush x:Key="OverlayDark" Color="{StaticResource OverlayDarkColor}" />
     <SolidColorBrush x:Key="MacFullscreenChromeBrush" Color="{StaticResource MacFullscreenChromeColor}" />
     <SolidColorBrush x:Key="MacFullscreenChromeBorderBrush" Color="{StaticResource MacFullscreenChromeBorderColor}" />
+    <SolidColorBrush x:Key="MacSidebarGlassOverlayBrush" Color="{StaticResource MacSidebarGlassOverlayColor}" />
+    <SolidColorBrush x:Key="MacSidebarGlassBorderBrush" Color="{StaticResource MacSidebarGlassBorderColor}" />
 
     <!-- Compatibility keys used by current XAML. Keep these until the Views are fully renamed to token terms. -->
     <SolidColorBrush x:Key="PanelBrush" Color="{StaticResource SurfacePanelColor}" />

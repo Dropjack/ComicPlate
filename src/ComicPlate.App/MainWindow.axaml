@@ -47,12 +47,17 @@
         </Style>
 
         <Style Selector="Window.mac-shell Border.left-floating-panel">
-            <Setter Property="Background" Value="#F2F7FAFC" />
-            <Setter Property="BorderBrush" Value="#B8FFFFFF" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
             <Setter Property="CornerRadius" Value="30" />
             <Setter Property="Margin" Value="10,40,0,10" />
-            <Setter Property="BoxShadow" Value="0 16 42 0 #26000000, inset 0 1 0 0 #E6FFFFFF" />
+        </Style>
+
+        <Style Selector="Window.mac-shell Border.left-floating-panel.shelf-open">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource MacSidebarGlassBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BoxShadow" Value="0 18 46 0 #30000000, inset 0 1 0 0 #F2FFFFFF" />
         </Style>
 
         <Style Selector="Window.windows-shell Border.left-floating-panel">
@@ -73,6 +78,10 @@
 
         <Style Selector="Window.windows-shell Grid.command-rail-content">
             <Setter Property="Margin" Value="0,12" />
+        </Style>
+
+        <Style Selector="Window.mac-shell TextBlock.app-mark">
+            <Setter Property="IsVisible" Value="False" />
         </Style>
 
         <Style Selector="Window.mac-shell Border.reader-title-bar">
@@ -100,14 +109,14 @@
         <Border x:Name="MacTitleBar"
                 Classes="mac-title-bar"
                 Height="36"
-                Width="240"
-                HorizontalAlignment="Left"
+                HorizontalAlignment="Stretch"
                 VerticalAlignment="Top"
                 ZIndex="4"
                 IsVisible="False"
                 PointerPressed="OnMacTitleBarPointerPressed">
             <Grid ColumnDefinitions="*,Auto,*"
-                  Margin="150,0,20,0">
+                  Background="Transparent"
+                  Margin="150,0,150,0">
                 <TextBlock Grid.Column="1"
                            Text="{Binding WindowTitle}"
                            Foreground="{StaticResource TextBrush}"
@@ -121,10 +130,17 @@
         <Border x:Name="LeftFloatingPanel"
                 Grid.Column="0"
                 Classes="left-floating-panel"
+                Classes.shelf-open="{Binding IsReaderNavigationPaneVisible}"
                 ClipToBounds="True"
                 HorizontalAlignment="Left"
                 ZIndex="5">
             <Grid ColumnDefinitions="64,Auto,Auto">
+                <Border Grid.ColumnSpan="3"
+                        Background="{DynamicResource MacSidebarGlassOverlayBrush}"
+                        CornerRadius="30"
+                        IsHitTestVisible="False"
+                        IsVisible="{Binding IsReaderNavigationPaneVisible}" />
+
                 <Border Grid.Column="0"
                         x:Name="CommandRail"
                         Classes="command-rail"
@@ -132,6 +148,7 @@
                     <Grid RowDefinitions="Auto,*"
                           Classes="command-rail-content">
                         <TextBlock Grid.Row="0"
+                                   Classes="app-mark"
                                    Text="CP"
                                    Foreground="{StaticResource TextBrush}"
                                    FontWeight="SemiBold"

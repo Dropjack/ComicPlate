@@ -67,7 +67,7 @@ public partial class MainWindow : Window
         if (isMacOS)
         {
             ExtendClientAreaToDecorationsHint = true;
-            ExtendClientAreaTitleBarHeightHint = -1;
+            ExtendClientAreaTitleBarHeightHint = 44;
             MacTitleBar.IsVisible = true;
             MainShell.ColumnDefinitions = new ColumnDefinitions("*");
             Grid.SetColumn(LeftFloatingPanel, 0);
@@ -180,10 +180,10 @@ public partial class MainWindow : Window
             return;
         }
 
-        var leftInset = MacPanelOuterSpacing + MacCommandRailWidth;
+        var leftInset = 0d;
         if (_viewModel.IsReaderNavigationPaneVisible)
         {
-            leftInset += MacShelfWidth + 1;
+            leftInset = MacPanelOuterSpacing + MacCommandRailWidth + MacShelfWidth + 1;
         }
 
         ReaderSurface.SetMacBottomChromeInset(leftInset);

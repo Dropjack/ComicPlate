@@ -31,7 +31,11 @@ public static class AppThemeService
                 ShelfNavigationHighlight: "#CAD8D3",
                 OverlayDark: "#CC1F1F1F",
                 MacFullscreenChrome: "#80F9F7F5",
-                MacFullscreenChromeBorder: "#66FFFFFF"),
+                MacFullscreenChromeBorder: "#66FFFFFF",
+                MacSidebarGlassTint: "#F3F5F2",
+                MacSidebarGlassFallback: "#CCF3F5F2",
+                MacSidebarGlassOverlay: "#D9F3F5F2",
+                MacSidebarGlassBorder: "#99C9D4D0"),
             [AppColorTheme.SlateBlue] = new(
                 BackgroundBase: "#EEF3F8",
                 SurfacePanel: "#F6F8FA",
@@ -53,7 +57,11 @@ public static class AppThemeService
                 ShelfNavigationHighlight: "#C8D8E6",
                 OverlayDark: "#CC1C2228",
                 MacFullscreenChrome: "#80F7FAFC",
-                MacFullscreenChromeBorder: "#66FFFFFF"),
+                MacFullscreenChromeBorder: "#66FFFFFF",
+                MacSidebarGlassTint: "#F6F8FA",
+                MacSidebarGlassFallback: "#CCF6F8FA",
+                MacSidebarGlassOverlay: "#D9F6F8FA",
+                MacSidebarGlassBorder: "#99C8D3DE"),
             [AppColorTheme.WarmPaper] = new(
                 BackgroundBase: "#F4EFE7",
                 SurfacePanel: "#FAF7F1",
@@ -75,7 +83,11 @@ public static class AppThemeService
                 ShelfNavigationHighlight: "#D8C8B4",
                 OverlayDark: "#CC1E1A15",
                 MacFullscreenChrome: "#80FFF9EF",
-                MacFullscreenChromeBorder: "#66FFFFFF"),
+                MacFullscreenChromeBorder: "#66FFFFFF",
+                MacSidebarGlassTint: "#FAF7F1",
+                MacSidebarGlassFallback: "#CCFAF7F1",
+                MacSidebarGlassOverlay: "#D9FAF7F1",
+                MacSidebarGlassBorder: "#99D5CABB"),
             [AppColorTheme.NightGraphite] = new(
                 BackgroundBase: "#171B1F",
                 SurfacePanel: "#1F252A",
@@ -97,7 +109,11 @@ public static class AppThemeService
                 ShelfNavigationHighlight: "#354A56",
                 OverlayDark: "#CC000000",
                 MacFullscreenChrome: "#80222A30",
-                MacFullscreenChromeBorder: "#335F6A72"),
+                MacFullscreenChromeBorder: "#335F6A72",
+                MacSidebarGlassTint: "#1F252A",
+                MacSidebarGlassFallback: "#CC1F252A",
+                MacSidebarGlassOverlay: "#D91F252A",
+                MacSidebarGlassBorder: "#8035414A"),
         };
 
     private static readonly IReadOnlyDictionary<string, string> CompatibilityBrushes =
@@ -149,6 +165,14 @@ public static class AppThemeService
             application,
             "MacFullscreenChromeBorderBrush",
             palette.Colors[nameof(ThemePalette.MacFullscreenChromeBorder)]);
+        SetBrushResource(
+            application,
+            "MacSidebarGlassOverlayBrush",
+            palette.Colors[nameof(ThemePalette.MacSidebarGlassOverlay)]);
+        SetBrushResource(
+            application,
+            "MacSidebarGlassBorderBrush",
+            palette.Colors[nameof(ThemePalette.MacSidebarGlassBorder)]);
 
         foreach (var (brushKey, token) in CompatibilityBrushes)
         {
@@ -194,7 +218,11 @@ public static class AppThemeService
         string ShelfNavigationHighlight,
         string OverlayDark,
         string MacFullscreenChrome,
-        string MacFullscreenChromeBorder)
+        string MacFullscreenChromeBorder,
+        string MacSidebarGlassTint,
+        string MacSidebarGlassFallback,
+        string MacSidebarGlassOverlay,
+        string MacSidebarGlassBorder)
     {
         public IReadOnlyDictionary<string, Color> Colors { get; } = new Dictionary<string, Color>
         {
@@ -219,6 +247,10 @@ public static class AppThemeService
             [nameof(OverlayDark)] = Color.Parse(OverlayDark),
             [nameof(MacFullscreenChrome)] = Color.Parse(MacFullscreenChrome),
             [nameof(MacFullscreenChromeBorder)] = Color.Parse(MacFullscreenChromeBorder),
+            [nameof(MacSidebarGlassTint)] = Color.Parse(MacSidebarGlassTint),
+            [nameof(MacSidebarGlassFallback)] = Color.Parse(MacSidebarGlassFallback),
+            [nameof(MacSidebarGlassOverlay)] = Color.Parse(MacSidebarGlassOverlay),
+            [nameof(MacSidebarGlassBorder)] = Color.Parse(MacSidebarGlassBorder),
         };
     }
 }

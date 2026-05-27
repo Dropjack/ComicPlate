@@ -9,8 +9,18 @@
             <Setter Property="CornerRadius" Value="0" />
         </Style>
 
+        <Style Selector="UserControl.mac-shell Border.context-shelf-header">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="#44FFFFFF" />
+        </Style>
+
         <Style Selector="UserControl.mac-shell ListBox.context-shelf-list">
             <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="UserControl.mac-shell Border.context-shelf-footer">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="#33FFFFFF" />
         </Style>
 
         <Style Selector="ListBox.context-shelf-list ListBoxItem">
@@ -20,6 +30,15 @@
 
         <Style Selector="ListBox.context-shelf-list ListBoxItem:selected">
             <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="UserControl.windows-shell ListBox.context-shelf-list">
+            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+        </Style>
+
+        <Style Selector="UserControl.windows-shell Border.context-shelf-footer">
+            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
         </Style>
 
         <Style Selector="Grid.context-shelf-item.navigation">
@@ -77,6 +96,7 @@
             BorderThickness="0">
         <Grid RowDefinitions="72,*,58">
             <Border Grid.Row="0"
+                    Classes="context-shelf-header"
                     BorderBrush="{StaticResource BorderBrushSoft}"
                     BorderThickness="0,0,0,1">
                 <Grid RowDefinitions="*,Auto"
@@ -146,7 +166,6 @@
                      Classes="context-shelf-list"
                      ItemsSource="{Binding ContextShelf.Items}"
                      SelectedIndex="{Binding ContextShelf.CurrentIndex, Mode=TwoWay}"
-                     Background="{StaticResource PanelBrush}"
                      BorderThickness="0">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
@@ -211,8 +230,7 @@
             </ListBox>
 
             <Border Grid.Row="2"
-                    Background="{StaticResource PanelBrush}"
-                    BorderBrush="{StaticResource BorderBrushSoft}"
+                    Classes="context-shelf-footer"
                     BorderThickness="0,1,0,0" />
         </Grid>
     </Border>
