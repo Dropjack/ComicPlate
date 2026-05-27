@@ -50,13 +50,14 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="CornerRadius" Value="30" />
-            <Setter Property="Margin" Value="10,40,0,10" />
+            <Setter Property="Margin" Value="10,48,0,10" />
         </Style>
 
         <Style Selector="Window.mac-shell Border.left-floating-panel.shelf-open">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="{DynamicResource MacSidebarGlassBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Margin" Value="10,48,0,10" />
             <Setter Property="BoxShadow" Value="0 18 46 0 #30000000, inset 0 1 0 0 #F2FFFFFF" />
         </Style>
 
@@ -94,11 +95,11 @@
         </Style>
 
         <Style Selector="Window.mac-shell Grid.reader-stage">
-            <Setter Property="Margin" Value="0,36,8,8" />
+            <Setter Property="Margin" Value="0,0,8,8" />
         </Style>
 
         <Style Selector="Window.mac-shell Border.mac-title-bar">
-            <Setter Property="Background" Value="{StaticResource BackgroundBase}" />
+            <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
         </Style>
     </Window.Styles>
@@ -108,22 +109,42 @@
           Classes="main-shell">
         <Border x:Name="MacTitleBar"
                 Classes="mac-title-bar"
-                Height="36"
+                Height="32"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Top"
                 ZIndex="4"
                 IsVisible="False"
                 PointerPressed="OnMacTitleBarPointerPressed">
-            <Grid ColumnDefinitions="*,Auto,*"
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto"
                   Background="Transparent"
-                  Margin="150,0,150,0">
+                  Margin="180,0,18,0">
                 <TextBlock Grid.Column="1"
-                           Text="{Binding WindowTitle}"
+                           Text="{Binding ReaderTitle}"
                            Foreground="{StaticResource TextBrush}"
-                           FontSize="15"
+                           FontSize="13"
                            FontWeight="SemiBold"
+                           MaxWidth="520"
+                           HorizontalAlignment="Right"
                            VerticalAlignment="Center"
                            TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="2"
+                           Text="{Binding Reader.PageText}"
+                           Foreground="{StaticResource MutedTextBrush}"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           Margin="8,0,0,0"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="3"
+                           Text="{Binding Reader.MagnifierScaleText}"
+                           IsVisible="{Binding Reader.IsMagnifierActive}"
+                           Foreground="{StaticResource MutedTextBrush}"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           MinWidth="38"
+                           Margin="8,0,0,0"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center" />
             </Grid>
         </Border>
 
