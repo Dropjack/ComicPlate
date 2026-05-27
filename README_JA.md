@@ -6,7 +6,7 @@ ComicPlate は Windows と macOS 向けの軽量なローカル漫画リーダ�
 
 ローカルフォルダーや漫画アーカイブを読みやすい本として開き、読書位置を復元します。ユーザーの元ファイルは変更しません。
 
-**現在の公開バージョン:** 1.1.1
+**現在の公開バージョン:** 1.1.2
 
 ![ComicPlate screenshot](artworks/SamplePhoto.jpg)
 
