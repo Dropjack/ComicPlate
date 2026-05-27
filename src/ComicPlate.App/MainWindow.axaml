@@ -39,21 +39,40 @@
         </Style>
 
         <Style Selector="Window.mac-shell Grid.main-shell">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="Window.windows-shell Grid.main-shell">
             <Setter Property="Background" Value="{StaticResource BackgroundBase}" />
         </Style>
 
         <Style Selector="Window.mac-shell Border.left-floating-panel">
-            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
+            <Setter Property="Background" Value="#F2F7FAFC" />
+            <Setter Property="BorderBrush" Value="#B8FFFFFF" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="28,0,0,28" />
-            <Setter Property="Margin" Value="8,8,0,8" />
+            <Setter Property="CornerRadius" Value="30" />
+            <Setter Property="Margin" Value="10,40,0,10" />
+            <Setter Property="BoxShadow" Value="0 16 42 0 #26000000, inset 0 1 0 0 #E6FFFFFF" />
+        </Style>
+
+        <Style Selector="Window.windows-shell Border.left-floating-panel">
+            <Setter Property="Background" Value="{StaticResource SurfaceMuted}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
+            <Setter Property="BorderThickness" Value="0,0,1,0" />
         </Style>
 
         <Style Selector="Window.mac-shell Border.command-rail">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="28,0,0,28" />
+            <Setter Property="CornerRadius" Value="30,0,0,30" />
+        </Style>
+
+        <Style Selector="Window.mac-shell Grid.command-rail-content">
+            <Setter Property="Margin" Value="0,12" />
+        </Style>
+
+        <Style Selector="Window.windows-shell Grid.command-rail-content">
+            <Setter Property="Margin" Value="0,12" />
         </Style>
 
         <Style Selector="Window.mac-shell Border.reader-title-bar">
@@ -66,28 +85,52 @@
         </Style>
 
         <Style Selector="Window.mac-shell Grid.reader-stage">
-            <Setter Property="Margin" Value="0,8,8,8" />
+            <Setter Property="Margin" Value="0,36,8,8" />
+        </Style>
+
+        <Style Selector="Window.mac-shell Border.mac-title-bar">
+            <Setter Property="Background" Value="{StaticResource BackgroundBase}" />
+            <Setter Property="BorderThickness" Value="0" />
         </Style>
     </Window.Styles>
 
     <Grid x:Name="MainShell"
           ColumnDefinitions="64,*"
-          Classes="main-shell"
-          Background="{StaticResource BackgroundBase}">
+          Classes="main-shell">
+        <Border x:Name="MacTitleBar"
+                Classes="mac-title-bar"
+                Height="36"
+                Width="240"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                ZIndex="4"
+                IsVisible="False"
+                PointerPressed="OnMacTitleBarPointerPressed">
+            <Grid ColumnDefinitions="*,Auto,*"
+                  Margin="150,0,20,0">
+                <TextBlock Grid.Column="1"
+                           Text="{Binding WindowTitle}"
+                           Foreground="{StaticResource TextBrush}"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+            </Grid>
+        </Border>
+
         <Border x:Name="LeftFloatingPanel"
                 Grid.Column="0"
                 Classes="left-floating-panel"
-                Background="{StaticResource SurfaceMuted}"
-                BorderBrush="{StaticResource BorderBrushSoft}"
-                BorderThickness="0,0,1,0"
-                ClipToBounds="True">
+                ClipToBounds="True"
+                HorizontalAlignment="Left"
+                ZIndex="5">
             <Grid ColumnDefinitions="64,Auto,Auto">
                 <Border Grid.Column="0"
                         x:Name="CommandRail"
                         Classes="command-rail"
                         Background="Transparent">
                     <Grid RowDefinitions="Auto,*"
-                          Margin="0,12">
+                          Classes="command-rail-content">
                         <TextBlock Grid.Row="0"
                                    Text="CP"
                                    Foreground="{StaticResource TextBrush}"
@@ -223,7 +266,7 @@
                 <Border x:Name="MacShelfDivider"
                         Grid.Column="1"
                         Width="1"
-                        Background="{StaticResource BorderBrushSoft}"
+                        Background="#55FFFFFF"
                         IsVisible="{Binding IsReaderNavigationPaneVisible}" />
 
                 <views:ContextShelfView x:Name="MacContextShelf"
@@ -234,7 +277,8 @@
             </Grid>
         </Border>
 
-        <views:StartView Grid.Column="1"
+        <views:StartView x:Name="StartScreen"
+                         Grid.Column="1"
                          IsVisible="{Binding IsStartVisible}" />
 
         <Grid x:Name="ReaderLayoutGrid"

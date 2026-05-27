@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -14,6 +15,10 @@ namespace ComicPlate.App;
 
 public partial class MainWindow : Window
 {
+    private const double MacCommandRailWidth = 64;
+    private const double MacShelfWidth = 300;
+    private const double MacPanelOuterSpacing = 10;
+
     public static readonly StyledProperty<bool> CanCreateNewWindowProperty =
         AvaloniaProperty.Register<MainWindow, bool>(nameof(CanCreateNewWindow), defaultValue: true);
 
@@ -61,7 +66,13 @@ public partial class MainWindow : Window
         Classes.Add(isMacOS ? "mac-shell" : "windows-shell");
         if (isMacOS)
         {
-            MainShell.ColumnDefinitions = new ColumnDefinitions("Auto,*");
+            ExtendClientAreaToDecorationsHint = true;
+            ExtendClientAreaTitleBarHeightHint = -1;
+            MacTitleBar.IsVisible = true;
+            MainShell.ColumnDefinitions = new ColumnDefinitions("*");
+            Grid.SetColumn(LeftFloatingPanel, 0);
+            Grid.SetColumn(StartScreen, 0);
+            Grid.SetColumn(ReaderLayoutGrid, 0);
             ReaderLayoutGrid.ColumnDefinitions = new ColumnDefinitions("*");
             Grid.SetColumn(ReaderStageGrid, 0);
             WindowsShelfHost.IsVisible = false;
@@ -78,6 +89,8 @@ public partial class MainWindow : Window
             new ImagePageLoader(),
             settingsService: _settingsService);
         DataContext = _viewModel;
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        ApplyMacBottomChromeInset();
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
@@ -106,6 +119,7 @@ public partial class MainWindow : Window
     {
         _settingsWindow?.Close();
         _settingsWindow = null;
+        _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
         _viewModel.SaveCurrentState();
         _viewModel.Dispose();
         _appSettings = _settingsService.Load();
@@ -137,6 +151,42 @@ public partial class MainWindow : Window
             X = Position.X,
             Y = Position.Y,
         };
+    }
+
+    private void OnMacTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            BeginMoveDrag(e);
+            e.Handled = true;
+        }
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(MainWindowViewModel.IsReaderNavigationPaneVisible)
+            or nameof(MainWindowViewModel.IsReaderVisible)
+            or nameof(MainWindowViewModel.IsNavigationPaneAvailable)
+            or nameof(MainWindowViewModel.IsNavigationPaneVisible))
+        {
+            ApplyMacBottomChromeInset();
+        }
+    }
+
+    private void ApplyMacBottomChromeInset()
+    {
+        if (!OperatingSystem.IsMacOS())
+        {
+            return;
+        }
+
+        var leftInset = MacPanelOuterSpacing + MacCommandRailWidth;
+        if (_viewModel.IsReaderNavigationPaneVisible)
+        {
+            leftInset += MacShelfWidth + 1;
+        }
+
+        ReaderSurface.SetMacBottomChromeInset(leftInset);
     }
 
     private bool TryGetValidPosition(
@@ -460,10 +510,13 @@ public partial class MainWindow : Window
         var isMacOS = OperatingSystem.IsMacOS();
 
         LeftFloatingPanel.IsVisible = !_isFullscreen;
+        MacTitleBar.IsVisible = !_isFullscreen && isMacOS;
         MainShell.ColumnDefinitions = _isFullscreen
-            ? new ColumnDefinitions("0,*")
+            ? isMacOS
+                ? new ColumnDefinitions("*")
+                : new ColumnDefinitions("0,*")
             : isMacOS
-                ? new ColumnDefinitions("Auto,*")
+                ? new ColumnDefinitions("*")
                 : new ColumnDefinitions("64,*");
         ReaderLayoutGrid.ColumnDefinitions = _isFullscreen
             ? isMacOS
@@ -480,5 +533,6 @@ public partial class MainWindow : Window
         Grid.SetColumn(ReaderStageGrid, isMacOS ? 0 : 1);
         WindowsShelfHost.IsVisible = !_isFullscreen && !isMacOS;
         ReaderSurface.SetFullscreenChromeHidden(_isFullscreen);
+        ApplyMacBottomChromeInset();
     }
 }

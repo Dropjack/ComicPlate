@@ -62,6 +62,19 @@ public partial class ReaderSurfaceView : UserControl
     public bool IsFullscreenShelfOverlayVisible =>
         FullscreenShelfOverlay.IsVisible || MacFullscreenShelfOverlay.IsVisible;
 
+    public void SetMacBottomChromeInset(double leftInset)
+    {
+        if (!OperatingSystem.IsMacOS())
+        {
+            return;
+        }
+
+        var safeInset = Math.Max(0, leftInset);
+        BottomBubble.Margin = new Thickness(safeInset + 8, 4, 8, 8);
+        BottomButtonRow.Margin = new Thickness(safeInset, 0, 0, 0);
+        BottomProgressRow.Margin = new Thickness(safeInset, 0, 0, 0);
+    }
+
     public void ToggleFullscreenShelfOverlay()
     {
         SetFullscreenShelfOverlayPinned(!_isFullscreenShelfPinned);
